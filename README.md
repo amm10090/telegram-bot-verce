@@ -1,85 +1,138 @@
-markdown
-
 # Telegram Bot 项目
 
-这是一个基于 **Telegram Bot API** 开发的 Telegram 机器人，支持简单的指令响应和功能扩展。通过 **Vercel** 部署，使用 **Node.js** 作为后端，采用 **Webhook** 模式接收 Telegram 消息。
+这是一个基于 Python 开发并部署在 Vercel 平台上的 Telegram 机器人项目。该机器人提供了基础的菜单交互功能，可以方便地进行功能扩展。
 
-## 功能
+## 功能特点
 
-- 支持 `/start` 命令，欢迎用户。
-- 使用 **Vercel** 无服务器平台进行托管，自动扩展。
-- 使用 **node-telegram-bot-api** 库与 Telegram 进行交互。
+本项目具有以下主要特点：
 
-## 部署说明
+- 基于 `python-telegram-bot` 库开发
+- 支持自定义键盘菜单
+- 使用 FastAPI 框架处理 webhook 请求
+- 完全异步处理，性能优异
+- 支持 Vercel 平台一键部署
+- 包含前端展示页面
 
-该项目使用 **Vercel** 部署，具体步骤如下：
+## 技术栈
 
-### 1. 创建 Telegram Bot
+- 后端框架：FastAPI
+- Bot 开发库：python-telegram-bot 20.7
+- 部署平台：Vercel
+- 前端部署：静态文件托管
 
-首先，使用 **BotFather** 创建一个新的 Telegram Bot，并获取到 Bot Token。
+## 项目结构
 
-1. 打开 Telegram，搜索 **BotFather**。
-2. 输入 `/newbot` 创建新 Bot，按照提示设置 Bot 的名称和用户名。
-3. 获取 Bot Token，保存下来，稍后在项目中使用。
+```
+project/
+├── main.py              # 主程序文件
+├── requirements.txt     # 项目依赖
+├── vercel.json         # Vercel 配置文件
+└── public/             # 前端静态文件
+    ├── index.html      # 主页面
+    ├── css/           # 样式文件
+    ├── js/            # JavaScript 文件
+    └── assets/        # 资源文件
+```
 
-### 2. 准备本地开发环境
+## 安装部署
 
-本地环境需要安装以下工具：
+1. **环境准备**
 
-- **Node.js** 和 **npm**（推荐使用最新稳定版本）
-- **Git**（用于版本控制）
+   首先确保您已经安装了 Python 3.9 或更高版本，并准备好 Vercel 账号。
 
-### 3. 克隆项目
+2. **获取 Telegram Bot Token**
 
-首先，克隆该项目到本地：
+   通过 Telegram 的 @BotFather 创建新的机器人，并获取 API Token。
 
-git clone https://github.com/your-username/telegram-bot-vercel.git
-cd telegram-bot-vercel 4. 安装依赖
-使用 npm 或 yarn 安装项目依赖：
+3. **配置环境变量**
 
-npm install
-或者，如果你使用的是 Yarn：
+   在 Vercel 项目设置中添加以下环境变量：
 
-yarn install 5. 配置环境变量
-在 Vercel 上部署时，使用以下环境变量配置你的 Bot Token：
+   - `TELEGRAM_BOT_TOKEN`：您的 Bot Token
 
-打开 Vercel 仪表板，选择你的项目。
-转到 Settings > Environment Variables，添加名为 BOT_TOKEN 的环境变量，并将你的 Bot Token 作为值。 6. 配置 Webhook
-部署完成后，需要将你的 Vercel 项目 URL 设置为 Telegram Bot 的 Webhook：
+4. **部署步骤**
 
-获取你部署后的 URL，例如 https://your-bot.vercel.app/api/bot。
-使用以下命令设置 Webhook：
-curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook" -d "url=https://your-bot.vercel.app/api/bot" 7. 部署到 Vercel
-将代码推送到 GitHub 后，Vercel 会自动部署你的项目。
+   ```bash
+   # 克隆项目
+   git clone <项目地址>
+   cd <项目目录>
 
-在 Vercel 中连接你的 GitHub 仓库。
-完成部署后，Vercel 会提供一个 URL，你可以通过该 URL 访问 Bot。
-.gitignore 配置
-为了避免将不必要的文件提交到 Git 仓库，请确保在 .gitignore 中包含以下内容：
+   # 安装依赖
+   pip install -r requirements.txt
 
-# 忽略 node_modules 文件夹
+   # 本地测试（可选）
+   python main.py
 
-node_modules/
-移除 node_modules 文件夹
-如果你之前已经将 node_modules 提交到了 Git 仓库，请运行以下命令来移除它：
+   # Vercel 部署
+   vercel
+   ```
 
-git rm -r --cached node_modules
-git commit -m "Remove node_modules and add to .gitignore"
-git push origin main
-贡献
-欢迎提出问题和贡献代码，任何建议或反馈都可以通过 GitHub Issue 或 Pull Request 进行提交。
+5. **设置 Webhook**
 
-License
-该项目使用 MIT License 进行许可。
+   部署完成后，需要设置 Webhook URL：
 
----
+   ```
+   https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_VERCEL_URL>/webhook
+   ```
 
-## 说明
+## 使用说明
 
-这个 `README.md` 文件包含了项目的基本信息、部署步骤、配置环境变量以及如何设置 Webhook 的说明。你可以根据需要扩展功能和细节部分。特别是，里面的 **Vercel 部署** 和 **Webhook 配置** 部分，可以确保你的 Bot 部署流程清晰且无缝。
+1. 在 Telegram 中搜索您的机器人用户名
+2. 发送 `/start` 命令开始使用
+3. 使用显示的菜单按钮进行交互
 
----
+## 自定义开发
 
-_“一个优秀的 `README.md`，是项目成功部署的敲门砖。”_ – Intellectual.AI ✨
+如果您想要扩展机器人的功能，可以：
 
-如果你需要进一步定制化或添加其他功能说明，请告诉我！ 🌐
+1. 在 `main.py` 中添加新的命令处理器
+2. 修改 `MENU_KEYBOARD` 添加新的菜单选项
+3. 实现新的回调函数处理用户交互
+4. 在 public 目录下修改前端页面
+
+## 注意事项
+
+- 确保环境变量配置正确
+- Webhook URL 必须使用 HTTPS
+- 定期检查 Bot Token 的有效性
+- 注意遵守 Telegram Bot API 的使用限制
+
+## 故障排除
+
+如果遇到以下问题：
+
+1. **Webhook 设置失败**
+
+   - 检查 URL 是否正确
+   - 确认 HTTPS 证书有效
+
+2. **机器人无响应**
+   - 检查 Token 是否正确
+   - 查看 Vercel 日志输出
+
+## 贡献指南
+
+欢迎提交 Pull Request 来改进这个项目。在提交之前，请确保：
+
+1. 代码符合 PEP 8 规范
+2. 添加必要的测试用例
+3. 更新相关文档
+
+## 许可证
+
+本项目采用 MIT 许可证。详情请参阅 LICENSE 文件。
+
+## 联系方式
+
+如有问题或建议，请通过以下方式联系：
+
+- 提交 Issue
+- 发送邮件至：[您的邮箱]
+
+## 致谢
+
+感谢以下开源项目的支持：
+
+- python-telegram-bot
+- FastAPI
+- Vercel

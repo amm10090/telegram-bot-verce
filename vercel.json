@@ -1,19 +1,27 @@
 {
     "version": 2,
+    "builds": [
+        {
+            "src": "main.py",
+            "use": "@vercel/python"
+        },
+        {
+            "src": "public/**",
+            "use": "@vercel/static"
+        }
+    ],
     "routes": [
         {
-            "src": "/api/bot",
-            "dest": "/api/bot.js"
+            "src": "/webhook",
+            "dest": "main.py"
+        },
+        {
+            "src": "/api/(.*)",
+            "dest": "main.py"
         },
         {
             "src": "/(.*)",
-            "dest": "/public/index.html"
+            "dest": "/public/$1"
         }
-    ],
-    "functions": {
-        "api/bot.js": {
-            "memory": 1024,
-            "maxDuration": 10
-        }
-    }
+    ]
 }
