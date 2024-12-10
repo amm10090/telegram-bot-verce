@@ -2,23 +2,14 @@
     "version": 2,
     "builds": [
         {
-            "src": "main.py",
-            "use": "@vercel/python"
+            "src": "api/webhook.js",
+            "use": "@vercel/node"
         }
     ],
     "routes": [
         {
-            "src": "/(.*)",
-            "dest": "main.py"
+            "src": "/api/webhook",
+            "dest": "api/webhook.js"
         }
-    ],
-    "functions": {
-        "main.py": {
-            "memory": 1024,
-            "maxDuration": 10
-        }
-    },
-    "env": {
-        "PYTHONUNBUFFERED": "1"
-    }
+    ]
 }
