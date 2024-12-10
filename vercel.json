@@ -6,6 +6,10 @@
             "use": "@vercel/node"
         },
         {
+            "src": "api/test.js",
+            "use": "@vercel/node"
+        },
+        {
             "src": "public/**",
             "use": "@vercel/static"
         }
@@ -14,6 +18,10 @@
         {
             "source": "/api/webhook",
             "destination": "/api/webhook.js"
+        },
+        {
+            "source": "/api/test",
+            "destination": "/api/test.js"
         },
         {
             "source": "/",
