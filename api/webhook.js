@@ -2,13 +2,14 @@
 
 import { Telegraf } from 'telegraf';
 
-// 环境变量验证
+// 环境变量验证 - 确保机器人能够正常运行的必要条件
 const BOT_TOKEN = process.env.BOT_TOKEN;
 if (!BOT_TOKEN) {
     throw new Error('BOT_TOKEN environment variable is required');
 }
 
-// 创建 bot 实例 - 使用 singleton 模式确保在多个请求之间复用实例
+// 使用单例模式管理 bot 实例
+// 这确保了在多个请求之间复用同一个实例，提高性能并维持状态一致性
 let botInstance = null;
 const getBot = () => {
     if (!botInstance) {
@@ -18,7 +19,7 @@ const getBot = () => {
     return botInstance;
 };
 
-// 定义帮助文档内容
+// 定义帮助文档内容 - 为用户提供清晰的功能指引
 const HELP_CONTENT = `
 欢迎使用我们的服务！以下是主要功能介绍：
 
@@ -43,7 +44,7 @@ const HELP_CONTENT = `
 - 获取详细报告
 `;
 
-// 设置自定义键盘布局
+// 设置自定义键盘布局 - 提供用户友好的交互界面
 const MAIN_KEYBOARD = {
     reply_markup: {
         keyboard: [
@@ -55,13 +56,20 @@ const MAIN_KEYBOARD = {
 };
 
 // 用户状态管理 - 使用 Map 实现内存缓存
+// 注意：在 Serverless 环境中，这个状态在函数调用之间不会保持
 const userStates = new Map();
 
 // 配置机器人命令和处理函数
 function configureBotCommands(bot) {
-    // 处理 /start 命令
+    // 处理 /start 命令 - 用户初次接触机器人时的入口
     bot.command('start', async (ctx) => {
         try {
+            console.log('Processing /start command:', {
+                userId: ctx.from?.id,
+                username: ctx.from?.username,
+                timestamp: new Date().toISOString()
+            });
+
             const welcomeMessage = `
 👋 欢迎使用我们的服务！
 
@@ -81,7 +89,11 @@ function configureBotCommands(bot) {
                 lastActivity: new Date()
             });
         } catch (error) {
-            console.error('Start command error:', error);
+            console.error('Start command error:', {
+                error: error.message,
+                userId: ctx.from?.id,
+                timestamp: new Date().toISOString()
+            });
             await handleError(ctx, error);
         }
     });
@@ -89,6 +101,10 @@ function configureBotCommands(bot) {
     // 处理帮助文档按钮
     bot.hears('📚 帮助文档', async (ctx) => {
         try {
+            console.log('Accessing help document:', {
+                userId: ctx.from?.id,
+                timestamp: new Date().toISOString()
+            });
             await ctx.reply(HELP_CONTENT, MAIN_KEYBOARD);
             updateUserActivity(ctx.from.id);
         } catch (error) {
@@ -100,6 +116,10 @@ function configureBotCommands(bot) {
     // 处理搜索功能
     bot.hears('🔍 搜索', async (ctx) => {
         try {
+            console.log('Initiating search:', {
+                userId: ctx.from?.id,
+                timestamp: new Date().toISOString()
+            });
             userStates.set(ctx.from.id, {
                 ...getUserState(ctx.from.id),
                 searchMode: true,
@@ -121,6 +141,10 @@ function configureBotCommands(bot) {
     // 处理设置按钮
     bot.hears('⚙️ 设置', async (ctx) => {
         try {
+            console.log('Accessing settings:', {
+                userId: ctx.from?.id,
+                timestamp: new Date().toISOString()
+            });
             const settingsMessage = `
 设置选项：
 
@@ -142,6 +166,10 @@ function configureBotCommands(bot) {
     // 处理统计数据按钮
     bot.hears('📊 统计数据', async (ctx) => {
         try {
+            console.log('Accessing statistics:', {
+                userId: ctx.from?.id,
+                timestamp: new Date().toISOString()
+            });
             const userState = getUserState(ctx.from.id);
             const usageTime = userState?.startTime
                 ? Math.floor((new Date() - userState.startTime) / 1000 / 60)
@@ -167,6 +195,10 @@ function configureBotCommands(bot) {
     // 处理取消搜索
     bot.hears('取消搜索', async (ctx) => {
         try {
+            console.log('Cancelling search:', {
+                userId: ctx.from?.id,
+                timestamp: new Date().toISOString()
+            });
             const userState = getUserState(ctx.from.id);
             if (userState?.searchMode) {
                 userState.searchMode = false;
@@ -183,6 +215,11 @@ function configureBotCommands(bot) {
     // 处理普通文本消息
     bot.on('text', async (ctx) => {
         try {
+            console.log('Received text message:', {
+                userId: ctx.from?.id,
+                messageText: ctx.message?.text,
+                timestamp: new Date().toISOString()
+            });
             const userState = getUserState(ctx.from.id);
 
             if (userState?.searchMode) {
@@ -201,12 +238,16 @@ function configureBotCommands(bot) {
 
     // 全局错误处理
     bot.catch(async (error, ctx) => {
-        console.error('Global error:', error);
+        console.error('Global error:', {
+            error: error.message,
+            userId: ctx.from?.id,
+            timestamp: new Date().toISOString()
+        });
         await handleError(ctx, error);
     });
 }
 
-// 辅助函数
+// 辅助函数 - 用于管理用户状态和计算活跃度
 function getUserState(userId) {
     return userStates.get(userId) || {
         startTime: new Date(),
@@ -233,37 +274,80 @@ async function handleError(ctx, error) {
     try {
         await ctx.reply(errorMessage, MAIN_KEYBOARD);
     } catch (replyError) {
-        console.error('Error while sending error message:', replyError);
+        console.error('Error while sending error message:', {
+            originalError: error.message,
+            replyError: replyError.message,
+            timestamp: new Date().toISOString()
+        });
     }
 }
 
 // Vercel Serverless 函数处理程序
 export default async function handler(request, response) {
+    // 添加请求日志记录
+    console.log('Incoming webhook request:', {
+        timestamp: new Date().toISOString(),
+        method: request.method,
+        headers: request.headers,
+        url: request.url,
+        body: JSON.stringify(request.body, null, 2)
+    });
+
+    // 设置 CORS 头部
+    response.setHeader('Access-Control-Allow-Methods', 'POST');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // 处理预检请求
+    if (request.method === 'OPTIONS') {
+        console.log('Handling OPTIONS request');
+        return response.status(200).end();
+    }
+
     try {
         // 请求方法验证
         if (request.method !== 'POST') {
+            console.log('Rejected non-POST request:', request.method);
             return response.status(405).json({
-                error: 'Method not allowed'
+                error: 'Method not allowed',
+                allowedMethods: ['POST']
             });
         }
 
-        // 获取请求体
+        // 获取和验证请求体
         const update = request.body;
         if (!update) {
+            console.log('Empty request body received');
             return response.status(400).json({
                 error: 'Request body is required'
             });
         }
 
+        console.log('Processing Telegram update:', {
+            updateId: update.update_id,
+            messageId: update.message?.message_id,
+            chatId: update.message?.chat?.id,
+            text: update.message?.text
+        });
+
         // 获取 bot 实例并处理更新
         const bot = getBot();
+        console.log('Bot instance retrieved successfully');
+
         await bot.handleUpdate(update);
+        console.log('Update handled successfully');
 
         // 返回成功响应
         return response.status(200).json({ ok: true });
     } catch (error) {
-        // 错误处理和日志记录
-        console.error('Webhook handler error:', error);
+        // 详细的错误日志记录
+        console.error('Webhook handler error:', {
+            message: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString(),
+            requestBody: request.body
+        });
+
+        // 返回适当的错误响应
         return response.status(500).json({
             ok: false,
             error: process.env.NODE_ENV === 'production'
