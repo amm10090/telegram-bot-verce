@@ -20,6 +20,10 @@
             "destination": "/api/webhook.js"
         },
         {
+            "source": "/api/stats",
+            "destination": "/api/stats.js"
+        },
+        {
             "source": "/api/test",
             "destination": "/api/test.js"
         },
