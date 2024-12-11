@@ -78,7 +78,7 @@
     ],
     "headers": [
         {
-            "src": "/(.*)",
+            "source": "/(.*)",
             "headers": [
                 {
                     "key": "X-Content-Type-Options",
