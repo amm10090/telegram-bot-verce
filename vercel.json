@@ -24,20 +24,6 @@
     ],
     "routes": [
         {
-            "src": "^/static/(.*)",
-            "dest": "/static/$1",
-            "headers": {
-                "cache-control": "public, max-age=31536000, immutable"
-            }
-        },
-        {
-            "src": "^/assets/(.*)",
-            "dest": "/assets/$1",
-            "headers": {
-                "cache-control": "public, max-age=31536000, immutable"
-            }
-        },
-        {
             "src": "^/api/webhook",
             "dest": "/api/webhook.js",
             "methods": [
@@ -62,6 +48,20 @@
             ]
         },
         {
+            "src": "^/static/(.*)",
+            "dest": "/static/$1",
+            "headers": {
+                "cache-control": "public, max-age=31536000, immutable"
+            }
+        },
+        {
+            "src": "^/assets/(.*)",
+            "dest": "/assets/$1",
+            "headers": {
+                "cache-control": "public, max-age=31536000, immutable"
+            }
+        },
+        {
             "src": "^/favicon.ico",
             "dest": "/favicon.ico"
         },
@@ -78,7 +78,7 @@
     ],
     "headers": [
         {
-            "source": "/(.*)",
+            "src": "/(.*)",
             "headers": [
                 {
                     "key": "X-Content-Type-Options",

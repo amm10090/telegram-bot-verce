@@ -40,3 +40,8 @@
   ├── package.json # 项目配置和依赖管理
   ├── README.md # 项目说明文档
   └── vercel.json # Vercel 部署配置文件
+  项目根目录/
+  ├── src/ # 源代码目录
+  ├── public/ # 静态资源目录
+  ├── dist/ # 构建输出目录
+  └── api/ # API 端点目录
