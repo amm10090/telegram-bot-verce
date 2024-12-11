@@ -2,61 +2,67 @@
 import { Telegraf } from 'telegraf';
 import { MongoClient } from 'mongodb';
 
-// 数据库连接管理类
-// 使用单例模式确保整个应用共享同一个数据库连接
+/**
+ * 数据库管理类
+ * 使用单例模式管理数据库连接，确保连接的复用和稳定性
+ */
 class DatabaseManager {
     constructor() {
         this.client = null;
         this.db = null;
-        this.retryCount = 0;
-        this.maxRetries = 3;
         this.connectionOptions = {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
+            // TLS/SSL 设置
+            tls: true,
+            tlsInsecure: false,
+
+            // 连接池设置
+            minPoolSize: 1,
+            maxPoolSize: 10,
+
+            // 超时设置
             serverSelectionTimeoutMS: 5000,
-            connectTimeoutMS: 5000,
-            maxPoolSize: 10
+            socketTimeoutMS: 10000,
+            connectTimeoutMS: 10000
         };
     }
 
+    /**
+     * 建立数据库连接
+     * 包含重试机制和错误处理
+     */
     async connect() {
-        // 如果已经存在数据库连接，直接返回
         if (this.db) {
             return this.db;
         }
 
         try {
-            // 建立新的数据库连接
             if (!this.client) {
                 this.client = await MongoClient.connect(
                     process.env.MONGODB_URI,
                     this.connectionOptions
                 );
+                this.db = this.client.db('bot_monitoring');
                 console.log('Successfully connected to MongoDB');
             }
-            this.db = this.client.db('bot_monitoring');
-            this.retryCount = 0; // 重置重试计数
             return this.db;
         } catch (error) {
-            // 实现重试机制
-            if (this.retryCount < this.maxRetries) {
-                this.retryCount++;
-                console.log(`Retrying database connection (${this.retryCount}/${this.maxRetries})`);
-                // 等待短暂时间后重试
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                return this.connect();
-            }
-            console.error('Failed to connect to MongoDB after retries:', error);
+            console.error('MongoDB connection error:', error);
             throw error;
         }
     }
 
+    /**
+     * 获取指定的数据库集合
+     * @param {string} name 集合名称
+     */
     async getCollection(name) {
         const db = await this.connect();
         return db.collection(name);
     }
 
-    // 关闭数据库连接
+    /**
+     * 关闭数据库连接
+     */
     async close() {
         if (this.client) {
             await this.client.close();
@@ -66,24 +72,26 @@ class DatabaseManager {
     }
 }
 
-// Bot 监控类
-// 处理所有与监控和统计相关的功能
+/**
+ * Bot 监控类
+ * 处理所有与监控和统计相关的功能
+ */
 class BotMonitor {
     constructor(dbManager) {
         this.dbManager = dbManager;
         this.messageCache = new Map();
         this.statsUpdateInterval = null;
         this.isUpdating = false;
+        this.operationTimeout = 3000; // 3秒超时
+        this.retryCount = 0;
+        this.maxRetries = 3;
     }
 
-    // 记录消息到数据库和缓存
+    /**
+     * 记录消息到数据库和缓存
+     */
     async logMessage(ctx) {
         try {
-            // 设置操作超时保护
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Database operation timeout')), 5000)
-            );
-
             const operationPromise = (async () => {
                 const messages = await this.dbManager.getCollection('messages');
                 const messageData = {
@@ -99,18 +107,25 @@ class BotMonitor {
                     }
                 };
 
-                await messages.insertOne(messageData);
+                await messages.insertOne(messageData, { maxTimeMS: this.operationTimeout });
                 this.updateMessageCache(messageData);
             })();
 
-            await Promise.race([operationPromise, timeoutPromise]);
+            await Promise.race([
+                operationPromise,
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Operation timeout')), this.operationTimeout)
+                )
+            ]);
         } catch (error) {
-            console.error('Error logging message:', error);
-            // 错误不影响bot正常运行
+            console.error('Message logging error:', error);
+            await this.retryOperation(() => this.logMessage(ctx));
         }
     }
 
-    // 更新消息缓存
+    /**
+     * 更新消息缓存
+     */
     updateMessageCache(messageData) {
         const today = new Date().toISOString().split('T')[0];
         if (!this.messageCache.has(today)) {
@@ -131,7 +146,24 @@ class BotMonitor {
         stats.lastUpdate = new Date();
     }
 
-    // 获取每日统计数据
+    /**
+     * 重试操作机制
+     */
+    async retryOperation(operation, maxRetries = 3) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                await operation();
+                return;
+            } catch (error) {
+                if (i === maxRetries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+            }
+        }
+    }
+
+    /**
+     * 获取每日统计数据
+     */
     async getDailyStats() {
         try {
             const today = new Date();
@@ -157,7 +189,9 @@ class BotMonitor {
         }
     }
 
-    // 更新每日统计数据到数据库
+    /**
+     * 更新每日统计数据到数据库
+     */
     async updateDailyStats() {
         if (this.isUpdating) {
             return;
@@ -190,7 +224,9 @@ class BotMonitor {
         }
     }
 
-    // 记录错误信息
+    /**
+     * 记录错误信息
+     */
     async logError(error, ctx) {
         try {
             const errors = await this.dbManager.getCollection('errors');
@@ -210,7 +246,9 @@ class BotMonitor {
     }
 }
 
-// Bot 配置和命令处理
+/**
+ * Bot键盘布局配置
+ */
 const MAIN_KEYBOARD = {
     reply_markup: {
         keyboard: [
@@ -221,6 +259,9 @@ const MAIN_KEYBOARD = {
     }
 };
 
+/**
+ * 帮助文档内容
+ */
 const HELP_CONTENT = `
 欢迎使用我们的服务！以下是主要功能介绍：
 
@@ -245,12 +286,14 @@ const HELP_CONTENT = `
 - 获取详细报告
 `;
 
-// 全局实例
+// 创建全局实例
 let botInstance = null;
 const dbManager = new DatabaseManager();
 const monitor = new BotMonitor(dbManager);
 
-// Bot 实例获取函数
+/**
+ * 获取Bot实例
+ */
 const getBot = () => {
     if (!botInstance) {
         botInstance = new Telegraf(process.env.BOT_TOKEN);
@@ -259,7 +302,9 @@ const getBot = () => {
     return botInstance;
 };
 
-// 配置 Bot 命令
+/**
+ * 配置Bot命令
+ */
 function configureBotCommands(bot) {
     // 中间件：记录所有消息
     bot.use(async (ctx, next) => {
@@ -270,6 +315,12 @@ function configureBotCommands(bot) {
     // 处理 /start 命令
     bot.command('start', async (ctx) => {
         try {
+            console.log('Processing /start command:', {
+                userId: ctx.from?.id,
+                username: ctx.from?.username,
+                timestamp: new Date().toISOString()
+            });
+
             const welcomeMessage = `
 👋 欢迎使用我们的服务！
 
@@ -292,6 +343,10 @@ function configureBotCommands(bot) {
     // 处理帮助文档按钮
     bot.hears('📚 帮助文档', async (ctx) => {
         try {
+            console.log('Accessing help document:', {
+                userId: ctx.from?.id,
+                timestamp: new Date().toISOString()
+            });
             await ctx.reply(HELP_CONTENT, MAIN_KEYBOARD);
         } catch (error) {
             console.error('Help document error:', error);
@@ -303,6 +358,10 @@ function configureBotCommands(bot) {
     // 处理搜索功能
     bot.hears('🔍 搜索', async (ctx) => {
         try {
+            console.log('Initiating search:', {
+                userId: ctx.from?.id,
+                timestamp: new Date().toISOString()
+            });
             await ctx.reply('请输入要搜索的关键词：', {
                 reply_markup: {
                     keyboard: [['取消搜索']],
@@ -319,6 +378,10 @@ function configureBotCommands(bot) {
     // 处理设置按钮
     bot.hears('⚙️ 设置', async (ctx) => {
         try {
+            console.log('Accessing settings:', {
+                userId: ctx.from?.id,
+                timestamp: new Date().toISOString()
+            });
             const settingsMessage = `
 设置选项：
 
@@ -340,6 +403,10 @@ function configureBotCommands(bot) {
     // 处理统计数据按钮
     bot.hears('📊 统计数据', async (ctx) => {
         try {
+            console.log('Accessing statistics:', {
+                userId: ctx.from?.id,
+                timestamp: new Date().toISOString()
+            });
             const stats = await monitor.getDailyStats();
             const statsMessage = `
 📊 今日统计
@@ -375,7 +442,9 @@ function configureBotCommands(bot) {
     });
 }
 
-// 错误处理函数
+/**
+ * 错误处理函数
+ */
 async function handleError(ctx, error) {
     const errorMessage = '抱歉，处理您的请求时出现错误。请稍后重试。';
     try {
@@ -389,10 +458,15 @@ async function handleError(ctx, error) {
     }
 }
 
-// Vercel Serverless 函数处理程序
+/**
+ * Vercel Serverless 函数处理程序
+ * 处理所有传入的 webhook 请求
+ */
 export default async function handler(request, response) {
-    // 设置较长的超时时间
-    response.setTimeout(30000);
+    // 设置请求超时保护
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 8000)
+    );
 
     console.log('Incoming webhook request:', {
         timestamp: new Date().toISOString(),
@@ -409,41 +483,45 @@ export default async function handler(request, response) {
         return response.status(200).end();
     }
 
-    // 只允许 POST 请求
-    if (request.method !== 'POST') {
-        return response.status(405).json({
-            error: 'Method not allowed'
-        });
-    }
-
     try {
-        // 验证请求体
-        const update = request.body;
-        if (!update) {
-            return response.status(400).json({
-                error: 'Request body is required'
-            });
-        }
+        // 快速响应处理
+        const handleRequestPromise = (async () => {
+            if (request.method === 'POST') {
+                const update = request.body;
+                if (!update) {
+                    return response.status(400).json({
+                        error: 'Request body is required'
+                    });
+                }
 
-        // 处理更新，设置超时保护
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Bot update timeout')), 8000)
-        );
+                const bot = getBot();
 
-        const bot = getBot();
-        const updatePromise = bot.handleUpdate(update);
+                // 异步处理消息更新
+                await bot.handleUpdate(update);
 
-        // 等待处理完成或超时
-        await Promise.race([updatePromise, timeoutPromise]);
+                // 异步处理数据库操作，不阻塞主响应
+                setImmediate(async () => {
+                    try {
+                        await monitor.logMessage(update);
+                    } catch (error) {
+                        console.error('Async operation error:', error);
+                    }
+                });
 
-        // 异步更新统计数据
-        if (!monitor.statsUpdateInterval) {
-            monitor.statsUpdateInterval = setInterval(() => {
-                monitor.updateDailyStats().catch(console.error);
-            }, parseInt(process.env.MONITOR_UPDATE_INTERVAL || '60') * 1000);
-        }
+                // 设置定时更新统计数据
+                if (!monitor.statsUpdateInterval) {
+                    monitor.statsUpdateInterval = setInterval(() => {
+                        monitor.updateDailyStats().catch(console.error);
+                    }, parseInt(process.env.MONITOR_UPDATE_INTERVAL || '60') * 1000);
+                }
 
-        return response.status(200).json({ ok: true });
+                return response.status(200).json({ ok: true });
+            }
+            return response.status(405).json({ error: 'Method not allowed' });
+        })();
+
+        // 使用 Promise.race 确保请求不会超时
+        await Promise.race([handleRequestPromise, timeoutPromise]);
     } catch (error) {
         console.error('Webhook handler error:', {
             message: error.message,
@@ -464,44 +542,29 @@ export default async function handler(request, response) {
             } : undefined
         });
     } finally {
-        // 在完成所有操作后执行清理工作
+        // 自动清理过期缓存和资源
         try {
-            // 检查是否需要清理消息缓存
+            // 检查并清理过期的消息缓存（24小时前的数据）
             const now = new Date();
             for (const [date, stats] of monitor.messageCache.entries()) {
                 const cacheDate = new Date(date);
-                // 清理超过24小时的缓存数据
                 if (now - cacheDate > 24 * 60 * 60 * 1000) {
                     monitor.messageCache.delete(date);
                 }
             }
-
-            // 如果服务器即将关闭，确保更新最后的统计数据
-            if (process.env.VERCEL_REGION === 'dev1') {
-                await monitor.updateDailyStats();
-                clearInterval(monitor.statsUpdateInterval);
-                monitor.statsUpdateInterval = null;
-            }
-        } catch (cleanupError) {
-            // 记录清理过程中的错误，但不影响响应
-            console.error('Cleanup error:', {
-                message: cleanupError.message,
-                timestamp: new Date().toISOString()
-            });
+        } catch (error) {
+            console.error('Cleanup error:', error);
         }
     }
 }
 
-// 导出监控实例供其他模块使用
-export const botMonitor = monitor;
-
-// 导出数据库管理器实例供其他模块使用
-export const databaseManager = dbManager;
-
-// 提供一个清理函数用于优雅关闭
+/**
+ * 清理函数
+ * 用于在进程结束前进行资源清理
+ */
 export async function cleanup() {
     try {
-        // 清除统计更新定时器
+        // 清除定时器
         if (monitor.statsUpdateInterval) {
             clearInterval(monitor.statsUpdateInterval);
             monitor.statsUpdateInterval = null;
@@ -513,20 +576,19 @@ export async function cleanup() {
         // 关闭数据库连接
         await dbManager.close();
 
-        // 重置所有实例
+        // 清理实例
         botInstance = null;
         monitor.messageCache.clear();
 
         console.log('Cleanup completed successfully');
     } catch (error) {
         console.error('Error during cleanup:', error);
-        throw error; // 重新抛出错误以便上层处理
+        throw error;
     }
 }
 
-// 添加进程退出时的清理处理
+// 添加进程退出处理（仅在开发环境）
 if (process.env.NODE_ENV !== 'production') {
-    // 开发环境下添加进程退出处理
     process.on('SIGTERM', async () => {
         console.log('SIGTERM received, cleaning up...');
         await cleanup();
@@ -539,3 +601,9 @@ if (process.env.NODE_ENV !== 'production') {
         process.exit(0);
     });
 }
+
+// 导出监控实例供其他模块使用
+export const botMonitor = monitor;
+
+// 导出数据库管理器实例供其他模块使用
+export const databaseManager = dbManager;
