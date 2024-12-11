@@ -24,24 +24,23 @@
 - 显示自定义菜单键盘
 - 支持基本的对话交互
 - 部署在 Vercel serverless 环境
-  TELEGRAM-BOT-VERCE/ # 项目根目录
-  ├── api/ # API 文件夹，包含 Vercel Serverless 函数
-  │ ├── test.js # 测试接口文件
-  │ └── webhook.js # Telegram webhook 处理程序
-  │
-  ├── node_modules/ # Node.js 依赖包目录
-  │ └── ... # 项目依赖的各个模块
-  │
-  ├── public/ # 静态文件目录
-  │ └── index.html # 管理面板前端页面
-  │
-  ├── .gitignore # Git 忽略文件配置
-  ├── package-lock.json # 依赖版本锁定文件
-  ├── package.json # 项目配置和依赖管理
-  ├── README.md # 项目说明文档
-  └── vercel.json # Vercel 部署配置文件
-  项目根目录/
-  ├── src/ # 源代码目录
-  ├── public/ # 静态资源目录
-  ├── dist/ # 构建输出目录
-  └── api/ # API 端点目录
+
+TELEGRAM-BOT-VERCE/ # 项目根目录
+├── api/
+│ ├── monitoring.js
+│ ├── start.js
+│ ├── test.js
+│ └── webhook.js
+├── node_modules/
+├── public/
+│ └── index.html
+├── src/
+│ ├── Dashboard.jsx
+│ └── index.js
+├── .babelrc
+├── .gitignore
+├── package-lock.json
+├── package.json
+├── README.md
+├── vercel.json
+└── webpack.config.js

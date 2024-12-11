@@ -22,61 +22,52 @@
             }
         }
     ],
-    "routes": [
+    "rewrites": [
         {
-            "src": "^/api/webhook",
-            "dest": "/api/webhook.js",
-            "methods": [
-                "POST",
-                "OPTIONS"
-            ]
+            "source": "/api/webhook",
+            "destination": "/api/webhook.js"
         },
         {
-            "src": "^/api/test",
-            "dest": "/api/test.js",
-            "methods": [
-                "GET",
-                "OPTIONS"
-            ]
+            "source": "/api/test",
+            "destination": "/api/test.js"
         },
         {
-            "src": "^/api/start",
-            "dest": "/api/start.js",
-            "methods": [
-                "GET",
-                "OPTIONS"
-            ]
+            "source": "/api/start",
+            "destination": "/api/start.js"
         },
         {
-            "src": "^/static/(.*)",
-            "dest": "/static/$1",
-            "headers": {
-                "cache-control": "public, max-age=31536000, immutable"
-            }
-        },
-        {
-            "src": "^/assets/(.*)",
-            "dest": "/assets/$1",
-            "headers": {
-                "cache-control": "public, max-age=31536000, immutable"
-            }
-        },
-        {
-            "src": "^/favicon.ico",
-            "dest": "/favicon.ico"
-        },
-        {
-            "handle": "filesystem"
-        },
-        {
-            "src": "^/(.*)",
-            "dest": "/index.html",
-            "headers": {
-                "cache-control": "public, max-age=0, must-revalidate"
-            }
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ],
     "headers": [
+        {
+            "source": "/static/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        },
+        {
+            "source": "/assets/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        },
+        {
+            "source": "/favicon.ico",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=86400"
+                }
+            ]
+        },
         {
             "source": "/(.*)",
             "headers": [
@@ -102,5 +93,7 @@
                 }
             ]
         }
-    ]
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false
 }
