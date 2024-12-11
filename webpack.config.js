@@ -1,116 +1,47 @@
-// 引入核心模块
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
-/**
- * 路径解析助手函数
- * 用于将相对路径转换为绝对路径，并在控制台输出转换信息
- * @param {string} relativePath - 相对路径
- * @returns {string} - 绝对路径
- */
-const getAbsolutePath = (relativePath) => {
-    const absolutePath = path.resolve(__dirname, relativePath);
-    console.log(`路径解析: ${relativePath} -> ${absolutePath}`);
-    return absolutePath;
+// 环境变量
+const isProduction = process.env.NODE_ENV === 'production';
+const isDevelopment = !isProduction;
+
+// 路径配置
+const PATHS = {
+    src: path.resolve(__dirname, './src'),
+    public: path.resolve(__dirname, './public'),
+    dist: path.resolve(__dirname, './dist'),
 };
 
-// webpack 主配置
+// webpack 配置
 module.exports = {
+    // 设置模式
+    mode: isProduction ? 'production' : 'development',
+
     // 入口配置
-    entry: getAbsolutePath('./src/index.js'),
+    entry: path.join(PATHS.src, 'index.js'),
 
     // 输出配置
     output: {
-        // 输出目录为 dist
-        path: getAbsolutePath('./dist'),
-        // 主文件使用内容哈希命名
+        path: PATHS.dist,
         filename: 'static/js/[name].[contenthash:8].js',
-        // 块文件使用内容哈希命名
         chunkFilename: 'static/js/[name].[contenthash:8].chunk.js',
-        // 资源文件路径前缀
         publicPath: '/',
-        // 每次构建前清理输出目录
         clean: true,
-        // 确保跨平台路径正确
-        crossOriginLoading: 'anonymous',
-        // 设置资源文件的输出路径
-        assetModuleFilename: 'static/media/[name].[hash:8][ext]'
     },
 
-    // 优化配置
-    optimization: {
-        // 开启代码压缩
-        minimize: true,
-        minimizer: [
-            new TerserPlugin({
-                terserOptions: {
-                    compress: {
-                        drop_console: true,    // 移除 console
-                        drop_debugger: true,   // 移除 debugger
-                        pure_funcs: ['console.log']  // 移除 console.log
-                    },
-                    format: {
-                        comments: false,      // 移除注释
-                    },
-                },
-                extractComments: false,      // 不将注释提取到单独的文件
-            }),
-        ],
-        // 代码分割配置
-        splitChunks: {
-            chunks: 'all',
-            maxInitialRequests: 25,
-            maxAsyncRequests: 30,
-            minSize: 20000,
-            maxSize: 244000,
-            cacheGroups: {
-                // React 核心库
-                react: {
-                    test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
-                    name: 'static/js/react',
-                    chunks: 'all',
-                    priority: 40,
-                    enforce: true,
-                },
-                // Recharts 图表库（异步加载）
-                recharts: {
-                    test: /[\\/]node_modules[\\/](recharts|d3-[^/]+)[\\/]/,
-                    name: 'static/js/recharts',
-                    chunks: 'async',
-                    priority: 30,
-                    enforce: true,
-                },
-                // 其他第三方库
-                vendors: {
-                    test: /[\\/]node_modules[\\/]/,
-                    name: 'static/js/vendors',
-                    chunks: 'all',
-                    priority: 20,
-                    minChunks: 2,
-                },
-                // 公共代码
-                common: {
-                    name: 'static/js/common',
-                    minChunks: 2,
-                    priority: 10,
-                    reuseExistingChunk: true,
-                },
-            },
+    // 模块解析配置
+    resolve: {
+        extensions: ['.js', '.jsx'],
+        alias: {
+            '@': PATHS.src,
         },
-        // 运行时代码
-        runtimeChunk: {
-            name: 'static/js/runtime',
-        },
-        moduleIds: 'deterministic',
-        chunkIds: 'deterministic',
     },
 
-    // 模块处理规则
+    // 模块规则
     module: {
         rules: [
-            // JavaScript 和 JSX 文件处理
             {
                 test: /\.(js|jsx)$/,
                 exclude: /node_modules/,
@@ -122,30 +53,25 @@ module.exports = {
                         presets: [
                             ['@babel/preset-env', {
                                 targets: {
-                                    browsers: [
-                                        'last 2 versions',
-                                        '> 1%',
-                                        'not dead'
-                                    ]
+                                    browsers: ['last 2 versions', '> 1%', 'not dead'],
                                 },
                                 modules: false,
                                 useBuiltIns: 'usage',
                                 corejs: 3,
                             }],
                             ['@babel/preset-react', {
-                                runtime: 'automatic'
-                            }]
+                                runtime: 'automatic',
+                            }],
                         ],
                     },
                 },
             },
-            // 静态资源处理
             {
                 test: /\.(png|jpg|jpeg|gif|svg)$/,
                 type: 'asset',
                 parser: {
                     dataUrlCondition: {
-                        maxSize: 10 * 1024, // 10kb 以下的文件内联为 base64
+                        maxSize: 10 * 1024, // 10KB
                     },
                 },
             },
@@ -156,10 +82,10 @@ module.exports = {
     plugins: [
         // 生成 HTML 文件
         new HtmlWebpackPlugin({
-            template: getAbsolutePath('./public/index.html'),
+            template: path.join(PATHS.public, 'index.html'),
             filename: 'index.html',
             inject: true,
-            minify: {
+            minify: isProduction ? {
                 removeComments: true,
                 collapseWhitespace: true,
                 removeRedundantAttributes: true,
@@ -170,52 +96,64 @@ module.exports = {
                 minifyJS: true,
                 minifyCSS: true,
                 minifyURLs: true,
-            },
+            } : false,
         }),
-        // 复制公共资源
+
+        // 复制静态资源
         new CopyWebpackPlugin({
             patterns: [
                 {
-                    from: getAbsolutePath('./public'),
-                    to: getAbsolutePath('./dist'),
+                    from: PATHS.public,
+                    to: PATHS.dist,
                     globOptions: {
-                        ignore: ['**/index.html'], // 排除 index.html
+                        ignore: ['**/index.html'],
                     },
+                    noErrorOnMissing: true, // 防止找不到文件报错
                 },
             ],
         }),
     ],
 
-    // 解析配置
-    resolve: {
-        extensions: ['.js', '.jsx'],
-        modules: [getAbsolutePath('src'), 'node_modules'],
-        alias: {
-            '@': getAbsolutePath('src'),
-            'components': getAbsolutePath('src/components'),
+    // 优化配置
+    optimization: {
+        minimize: isProduction,
+        minimizer: [
+            new TerserPlugin({
+                terserOptions: {
+                    compress: {
+                        drop_console: isProduction,
+                        drop_debugger: isProduction,
+                    },
+                    format: {
+                        comments: false,
+                    },
+                },
+                extractComments: false,
+            }),
+        ],
+        splitChunks: {
+            chunks: 'all',
+            name: false,
         },
     },
 
-    // 模式配置
-    mode: 'production',
-
-    // 性能配置
+    // 性能提示
     performance: {
+        hints: isProduction ? 'warning' : false,
         maxEntrypointSize: 512000,
         maxAssetSize: 512000,
-        hints: 'warning',
-        // 排除需要忽略的文件
-        assetFilter: function (assetFilename) {
-            return !assetFilename.endsWith('.map');
-        },
     },
 
-    // 统计信息配置
+    // 开发工具
+    devtool: isDevelopment ? 'eval-source-map' : false,
+
+    // 统计信息
     stats: {
-        builtAt: true,
-        timings: true,
+        modules: false,
+        children: false,
+        chunks: false,
+        chunkModules: false,
+        reasons: isDevelopment,
         errorDetails: true,
-        colors: true,
-        assets: true,
     },
 };
