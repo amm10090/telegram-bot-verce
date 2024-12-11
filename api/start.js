@@ -1,11 +1,29 @@
 import { MongoClient } from 'mongodb';
 
+// 日志工具函数
+const logger = {
+    info: (message, data = {}) => {
+        console.log(message, {
+            时间戳: new Date().toISOString(),
+            ...data
+        });
+    },
+    error: (message, error) => {
+        console.error(message, {
+            错误信息: error.message,
+            堆栈信息: error.stack,
+            时间戳: new Date().toISOString()
+        });
+    }
+};
+
 export default async function handler(request, response) {
     if (request.method !== 'GET') {
-        return response.status(405).json({ error: 'Method not allowed' });
+        return response.status(405).json({ error: '不支持的请求方法' });
     }
 
     try {
+        logger.info('开始获取统计数据');
         const client = await MongoClient.connect(process.env.MONGODB_URI);
         const db = client.db('bot_monitoring');
 
@@ -57,36 +75,37 @@ export default async function handler(request, response) {
             .countDocuments({ timestamp: { $gte: fiveMinutesAgo } });
 
         const systemStatus = {
-            status: recentMessages > 0 ? 'active' : 'idle',
+            status: recentMessages > 0 ? '活跃' : '空闲',
             uptimeHours: process.uptime() / 3600
         };
 
         // 关闭数据库连接
         await client.close();
+        logger.info('统计数据获取完成');
 
         // 返回所有数据
         return response.status(200).json({
             dailyStats: dailyStats || {
-                totalMessages: 0,
-                uniqueUsers: 0,
-                commands: 0
+                总消息数: 0,
+                活跃用户数: 0,
+                命令使用数: 0
             },
             systemStatus,
             recentFeedback,
             systemLogs: systemLogs.map(log => ({
-                timestamp: log.timestamp,
-                message: log.message
+                时间戳: log.timestamp,
+                消息: log.message
             })),
             messageHistory: messageHistory.map(item => ({
-                hour: item._id,
-                count: item.count
+                小时: item._id,
+                数量: item.count
             }))
         });
 
     } catch (error) {
-        console.error('Stats API Error:', error);
+        logger.error('统计API错误', error);
         return response.status(500).json({
-            error: 'Internal server error',
+            error: '服务器内部错误',
             message: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
