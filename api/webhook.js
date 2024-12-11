@@ -57,8 +57,7 @@ class DatabaseManager {
             retryWrites: true,
             w: 'majority',
             directConnection: false,
-            tlsInsecure: false,
-            tlsCAFile: undefined,
+
             serverSelectionTimeoutMS: 5000,
             connectTimeoutMS: 10000,
             replicaSet: 'atlas-3x8mx9-shard-0',
