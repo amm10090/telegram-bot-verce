@@ -1,15 +1,28 @@
-// src/index.js
-import React from 'react';
+import React, { Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-import Dashboard from './Dashboard';
 
-// 获取根元素
+// 使用React.lazy动态导入Dashboard组件
+const Dashboard = React.lazy(() => import('./Dashboard'));
+
+// 添加加载状态显示
+const LoadingFallback = () => (
+    <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh'
+    }}>
+        加载中...
+    </div>
+);
+
 const container = document.getElementById('root');
 const root = createRoot(container);
 
-// 渲染应用
 root.render(
     <React.StrictMode>
-        <Dashboard />
+        <Suspense fallback={<LoadingFallback />}>
+            <Dashboard />
+        </Suspense>
     </React.StrictMode>
 );
