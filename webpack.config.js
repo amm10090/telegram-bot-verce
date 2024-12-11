@@ -1,10 +1,12 @@
 const path = require('path');
 
 module.exports = {
+    mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     entry: './src/index.js',
     output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: 'bundle.js'
+        path: path.resolve(__dirname, 'public/static'),
+        filename: 'bundle.js',
+        publicPath: '/static/'
     },
     module: {
         rules: [
@@ -22,5 +24,8 @@ module.exports = {
     },
     resolve: {
         extensions: ['.js', '.jsx']
+    },
+    performance: {
+        hints: false
     }
 };

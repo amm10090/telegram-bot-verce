@@ -39,8 +39,12 @@
             "destination": "/api/start.js"
         },
         {
-            "source": "/(.*)",
-            "destination": "/index.html"
+            "source": "/static/(.*)",
+            "destination": "/dist/static/$1"
+        },
+        {
+            "source": "/((?!api/).*)",
+            "destination": "/dist/index.html"
         }
     ],
     "headers": [
