@@ -1,108 +1,225 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Telegram Bot 管理面板</title>
-		<link
-			href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css"
-			rel="stylesheet" />
+		<!-- 使用 Tailwind CSS 来实现响应式设计 -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+		<!-- 添加图表库 -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
 	</head>
-	<body class="bg-gray-100 min-h-screen">
+	<body class="bg-gray-100">
 		<div class="container mx-auto px-4 py-8">
-			<!-- 头部标题 -->
-			<header class="text-center mb-8">
+			<!-- 顶部标题区域 -->
+			<div class="text-center mb-8">
 				<h1 class="text-3xl font-bold text-gray-800 mb-2">
 					Telegram Bot 管理面板
 				</h1>
 				<p class="text-gray-600">实时监控和管理您的 Bot</p>
-			</header>
+			</div>
 
-			<!-- 状态卡片 -->
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+			<!-- 状态卡片区域 -->
+			<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+				<!-- Bot 状态卡片 -->
 				<div class="bg-white rounded-lg shadow p-6">
 					<h2 class="text-xl font-semibold mb-2">Bot 状态</h2>
-					<p class="text-green-500 font-medium">● 正在运行</p>
+					<div class="flex items-center">
+						<span id="botStatus" class="flex items-center">
+							<span class="h-3 w-3 rounded-full bg-green-500 mr-2"></span>
+							正在运行
+						</span>
+					</div>
+					<p id="uptime" class="text-sm text-gray-500 mt-2">运行时间: 0小时</p>
 				</div>
+
+				<!-- 今日消息数卡片 -->
 				<div class="bg-white rounded-lg shadow p-6">
 					<h2 class="text-xl font-semibold mb-2">今日消息数</h2>
-					<p class="text-2xl font-bold text-blue-600">128</p>
+					<div id="messageCount" class="text-3xl font-bold text-blue-600">
+						0
+					</div>
+					<p id="commandCount" class="text-sm text-gray-500 mt-2">
+						命令使用: 0
+					</p>
 				</div>
+
+				<!-- 活跃用户数卡片 -->
 				<div class="bg-white rounded-lg shadow p-6">
 					<h2 class="text-xl font-semibold mb-2">活跃用户数</h2>
-					<p class="text-2xl font-bold text-purple-600">45</p>
+					<div id="activeUsers" class="text-3xl font-bold text-green-600">
+						0
+					</div>
+					<p id="totalUsers" class="text-sm text-gray-500 mt-2">总用户: 0</p>
+				</div>
+
+				<!-- 系统状态卡片 -->
+				<div class="bg-white rounded-lg shadow p-6">
+					<h2 class="text-xl font-semibold mb-2">系统状态</h2>
+					<div id="systemLoad" class="text-3xl font-bold text-purple-600">
+						正常
+					</div>
+					<p id="lastUpdate" class="text-sm text-gray-500 mt-2">
+						最后更新: 刚刚
+					</p>
 				</div>
 			</div>
 
-			<!-- 功能区域 -->
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<!-- 菜单设置 -->
+			<!-- 图表和数据区域 -->
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+				<!-- 消息趋势图表 -->
 				<div class="bg-white rounded-lg shadow p-6">
-					<h2 class="text-xl font-semibold mb-4">菜单设置</h2>
-					<div class="space-y-4">
-						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-2">
-								帮助文档内容
-							</label>
-							<textarea
-								class="w-full px-3 py-2 border rounded-md"
-								rows="4"
-								placeholder="输入帮助文档内容..."></textarea>
-						</div>
-						<button
-							class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
-							保存设置
-						</button>
-					</div>
+					<h2 class="text-xl font-semibold mb-4">消息趋势</h2>
+					<canvas id="messageChart"></canvas>
 				</div>
 
-				<!-- 用户反馈 -->
+				<!-- 用户反馈列表 -->
 				<div class="bg-white rounded-lg shadow p-6">
 					<h2 class="text-xl font-semibold mb-4">最近用户反馈</h2>
-					<div class="space-y-4">
-						<div class="border-l-4 border-blue-500 pl-4">
-							<p class="text-gray-700">Bot 回复很快，很好用！</p>
-							<p class="text-sm text-gray-500">用户 ID: 12345678</p>
-						</div>
-						<div class="border-l-4 border-blue-500 pl-4">
-							<p class="text-gray-700">菜单功能很实用。</p>
-							<p class="text-sm text-gray-500">用户 ID: 87654321</p>
-						</div>
+					<div id="feedbackList" class="space-y-4">
+						<!-- 反馈内容将通过 JavaScript 动态插入 -->
 					</div>
 				</div>
 			</div>
 
-			<!-- 系统日志 -->
-			<div class="mt-8 bg-white rounded-lg shadow p-6">
+			<!-- 系统日志区域 -->
+			<div class="bg-white rounded-lg shadow p-6">
 				<h2 class="text-xl font-semibold mb-4">系统日志</h2>
 				<div class="bg-gray-100 p-4 rounded-md">
-					<pre class="text-sm text-gray-700 whitespace-pre-wrap">
-[2024-12-10 10:30:15] Bot 启动成功
-[2024-12-10 10:31:22] 新用户加入：user123
-[2024-12-10 10:35:45] 处理 /start 命令
-[2024-12-10 10:40:12] 更新菜单设置</pre
-					>
+					<pre
+						id="systemLogs"
+						class="text-sm text-gray-700 whitespace-pre-wrap h-64 overflow-y-auto">
+                    <!-- 日志内容将通过 JavaScript 动态插入 -->
+                </pre>
 				</div>
 			</div>
 		</div>
 
 		<script>
-			// 页面加载完成后初始化
-			document.addEventListener('DOMContentLoaded', function () {
-				// 模拟实时数据更新
-				setInterval(() => {
-					updateStats();
-				}, 5000);
+			// 全局变量存储图表实例
+			let messageChart;
+
+			// 初始化页面
+			document.addEventListener('DOMContentLoaded', () => {
+				initializeChart();
+				startDataPolling();
 			});
 
-			function updateStats() {
-				// 这里可以添加与后端通信的代码
-				// 目前使用模拟数据
-				const messageCount = Math.floor(Math.random() * 200);
-				const activeUsers = Math.floor(Math.random() * 100);
+			// 初始化消息趋势图表
+			function initializeChart() {
+				const ctx = document.getElementById('messageChart').getContext('2d');
+				messageChart = new Chart(ctx, {
+					type: 'line',
+					data: {
+						labels: [],
+						datasets: [
+							{
+								label: '消息数量',
+								data: [],
+								borderColor: 'rgb(59, 130, 246)',
+								tension: 0.1,
+							},
+						],
+					},
+					options: {
+						responsive: true,
+						scales: {
+							y: {
+								beginAtZero: true,
+							},
+						},
+					},
+				});
+			}
 
-				document.querySelector('.text-blue-600').textContent = messageCount;
-				document.querySelector('.text-purple-600').textContent = activeUsers;
+			// 定期获取最新数据
+			function startDataPolling() {
+				fetchDashboardData();
+				// 每60秒更新一次数据
+				setInterval(fetchDashboardData, 60000);
+			}
+
+			// 获取仪表盘数据
+			async function fetchDashboardData() {
+				try {
+					const response = await fetch('/api/stats');
+					const data = await response.json();
+					updateDashboard(data);
+				} catch (error) {
+					console.error('获取数据失败:', error);
+				}
+			}
+
+			// 更新仪表盘显示
+			function updateDashboard(data) {
+				// 更新消息统计
+				document.getElementById('messageCount').textContent =
+					data.dailyStats.totalMessages;
+				document.getElementById(
+					'commandCount'
+				).textContent = `命令使用: ${data.dailyStats.commands}`;
+				document.getElementById('activeUsers').textContent =
+					data.dailyStats.uniqueUsers;
+
+				// 更新运行状态
+				const uptimeHours = Math.floor(data.systemStatus.uptimeHours);
+				document.getElementById(
+					'uptime'
+				).textContent = `运行时间: ${uptimeHours}小时`;
+				document.getElementById(
+					'lastUpdate'
+				).textContent = `最后更新: ${new Date().toLocaleTimeString()}`;
+
+				// 更新用户反馈
+				updateFeedbackList(data.recentFeedback);
+
+				// 更新系统日志
+				updateSystemLogs(data.systemLogs);
+
+				// 更新图表数据
+				updateChart(data.messageHistory);
+			}
+
+			// 更新用户反馈列表
+			function updateFeedbackList(feedback) {
+				const feedbackList = document.getElementById('feedbackList');
+				feedbackList.innerHTML = feedback
+					.map(
+						(item) => `
+                <div class="border-l-4 border-blue-500 pl-4">
+                    <p class="text-sm">${item.comment}</p>
+                    <div class="text-xs text-gray-500 mt-1">
+                        用户 ID: ${item.userId}
+                        <span class="ml-2">${new Date(
+													item.timestamp
+												).toLocaleString()}</span>
+                    </div>
+                </div>
+            `
+					)
+					.join('');
+			}
+
+			// 更新系统日志
+			function updateSystemLogs(logs) {
+				const systemLogs = document.getElementById('systemLogs');
+				systemLogs.innerHTML = logs
+					.map(
+						(log) =>
+							`[${new Date(log.timestamp).toLocaleString()}] ${log.message}`
+					)
+					.join('\n');
+				// 自动滚动到最新日志
+				systemLogs.scrollTop = systemLogs.scrollHeight;
+			}
+
+			// 更新消息趋势图表
+			function updateChart(messageHistory) {
+				messageChart.data.labels = messageHistory.map((item) => item.time);
+				messageChart.data.datasets[0].data = messageHistory.map(
+					(item) => item.count
+				);
+				messageChart.update();
 			}
 		</script>
 	</body>
