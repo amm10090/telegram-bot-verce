@@ -10,8 +10,15 @@
             "use": "@vercel/node"
         },
         {
-            "src": "public/**",
-            "use": "@vercel/static"
+            "src": "api/start.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "package.json",
+            "use": "@vercel/static-build",
+            "config": {
+                "distDir": "dist"
+            }
         }
     ],
     "rewrites": [
@@ -28,12 +35,12 @@
             "destination": "/api/test.js"
         },
         {
-            "source": "/",
-            "destination": "/public/index.html"
+            "source": "/api/start",
+            "destination": "/api/start.js"
         },
         {
-            "source": "/static/:path*",
-            "destination": "/public/static/:path*"
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ],
     "headers": [
