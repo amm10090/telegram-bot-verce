@@ -2,75 +2,123 @@
 import { Telegraf } from 'telegraf';
 import { MongoClient } from 'mongodb';
 
-// 数据库管理类：负责处理所有与 MongoDB 相关的操作
+// 数据库连接管理类
+// 使用单例模式确保整个应用共享同一个数据库连接
 class DatabaseManager {
     constructor() {
         this.client = null;
         this.db = null;
+        this.retryCount = 0;
+        this.maxRetries = 3;
+        this.connectionOptions = {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            serverSelectionTimeoutMS: 5000,
+            connectTimeoutMS: 5000,
+            maxPoolSize: 10
+        };
     }
 
-    // 建立数据库连接，使用单例模式确保连接复用
     async connect() {
-        if (!this.client) {
-            try {
-                this.client = await MongoClient.connect(process.env.MONGODB_URI);
-                this.db = this.client.db('bot_monitoring');
-                console.log('Successfully connected to MongoDB');
-            } catch (error) {
-                console.error('MongoDB connection error:', error);
-                throw error;
-            }
+        // 如果已经存在数据库连接，直接返回
+        if (this.db) {
+            return this.db;
         }
-        return this.db;
+
+        try {
+            // 建立新的数据库连接
+            if (!this.client) {
+                this.client = await MongoClient.connect(
+                    process.env.MONGODB_URI,
+                    this.connectionOptions
+                );
+                console.log('Successfully connected to MongoDB');
+            }
+            this.db = this.client.db('bot_monitoring');
+            this.retryCount = 0; // 重置重试计数
+            return this.db;
+        } catch (error) {
+            // 实现重试机制
+            if (this.retryCount < this.maxRetries) {
+                this.retryCount++;
+                console.log(`Retrying database connection (${this.retryCount}/${this.maxRetries})`);
+                // 等待短暂时间后重试
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return this.connect();
+            }
+            console.error('Failed to connect to MongoDB after retries:', error);
+            throw error;
+        }
     }
 
-    // 获取指定的集合
     async getCollection(name) {
         const db = await this.connect();
         return db.collection(name);
     }
+
+    // 关闭数据库连接
+    async close() {
+        if (this.client) {
+            await this.client.close();
+            this.client = null;
+            this.db = null;
+        }
+    }
 }
 
-// Bot 监控类：处理所有监控和统计相关的功能
+// Bot 监控类
+// 处理所有与监控和统计相关的功能
 class BotMonitor {
     constructor(dbManager) {
         this.dbManager = dbManager;
         this.messageCache = new Map();
         this.statsUpdateInterval = null;
+        this.isUpdating = false;
     }
 
     // 记录消息到数据库和缓存
     async logMessage(ctx) {
         try {
-            const messages = await this.dbManager.getCollection('messages');
-            const messageData = {
-                timestamp: new Date(),
-                userId: ctx.from?.id,
-                chatId: ctx.chat?.id,
-                messageType: ctx.message?.text ? 'text' : 'other',
-                command: ctx.message?.text?.startsWith('/') ? ctx.message.text.split(' ')[0] : null,
-                metadata: {
-                    username: ctx.from?.username,
-                    firstName: ctx.from?.first_name,
-                    lastName: ctx.from?.last_name
-                }
-            };
+            // 设置操作超时保护
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Database operation timeout')), 5000)
+            );
 
-            await messages.insertOne(messageData);
-            this.updateMessageCache(messageData);
+            const operationPromise = (async () => {
+                const messages = await this.dbManager.getCollection('messages');
+                const messageData = {
+                    timestamp: new Date(),
+                    userId: ctx.from?.id,
+                    chatId: ctx.chat?.id,
+                    messageType: ctx.message?.text ? 'text' : 'other',
+                    command: ctx.message?.text?.startsWith('/') ? ctx.message.text.split(' ')[0] : null,
+                    metadata: {
+                        username: ctx.from?.username,
+                        firstName: ctx.from?.first_name,
+                        lastName: ctx.from?.last_name
+                    }
+                };
+
+                await messages.insertOne(messageData);
+                this.updateMessageCache(messageData);
+            })();
+
+            await Promise.race([operationPromise, timeoutPromise]);
         } catch (error) {
             console.error('Error logging message:', error);
+            // 错误不影响bot正常运行
         }
     }
 
-    // 更新内存中的消息统计缓存
+    // 更新消息缓存
     updateMessageCache(messageData) {
         const today = new Date().toISOString().split('T')[0];
         if (!this.messageCache.has(today)) {
             this.messageCache.set(today, {
                 totalMessages: 0,
                 uniqueUsers: new Set(),
-                commands: 0
+                commands: 0,
+                lastUpdate: new Date()
             });
         }
 
@@ -80,10 +128,42 @@ class BotMonitor {
         if (messageData.command) {
             stats.commands++;
         }
+        stats.lastUpdate = new Date();
+    }
+
+    // 获取每日统计数据
+    async getDailyStats() {
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const dailyStats = await this.dbManager.getCollection('daily_stats');
+            const stats = await dailyStats.findOne({ date: today });
+
+            return {
+                totalMessages: stats?.totalMessages || 0,
+                uniqueUsers: stats?.uniqueUsers || 0,
+                commands: stats?.commands || 0,
+                lastUpdate: stats?.lastUpdate || new Date()
+            };
+        } catch (error) {
+            console.error('Error getting daily stats:', error);
+            return {
+                totalMessages: 0,
+                uniqueUsers: 0,
+                commands: 0,
+                lastUpdate: new Date()
+            };
+        }
     }
 
     // 更新每日统计数据到数据库
     async updateDailyStats() {
+        if (this.isUpdating) {
+            return;
+        }
+
+        this.isUpdating = true;
         try {
             const today = new Date().toISOString().split('T')[0];
             const stats = this.messageCache.get(today);
@@ -91,13 +171,13 @@ class BotMonitor {
             if (stats) {
                 const dailyStats = await this.dbManager.getCollection('daily_stats');
                 await dailyStats.updateOne(
-                    { date: today },
+                    { date: new Date(today) },
                     {
                         $set: {
                             totalMessages: stats.totalMessages,
                             uniqueUsers: Array.from(stats.uniqueUsers).length,
                             commands: stats.commands,
-                            lastUpdated: new Date()
+                            lastUpdate: new Date()
                         }
                     },
                     { upsert: true }
@@ -105,6 +185,8 @@ class BotMonitor {
             }
         } catch (error) {
             console.error('Error updating daily stats:', error);
+        } finally {
+            this.isUpdating = false;
         }
     }
 
@@ -128,7 +210,7 @@ class BotMonitor {
     }
 }
 
-// 定义主键盘布局
+// Bot 配置和命令处理
 const MAIN_KEYBOARD = {
     reply_markup: {
         keyboard: [
@@ -139,7 +221,6 @@ const MAIN_KEYBOARD = {
     }
 };
 
-// 定义帮助文档内容
 const HELP_CONTENT = `
 欢迎使用我们的服务！以下是主要功能介绍：
 
@@ -164,7 +245,7 @@ const HELP_CONTENT = `
 - 获取详细报告
 `;
 
-// 创建全局实例
+// 全局实例
 let botInstance = null;
 const dbManager = new DatabaseManager();
 const monitor = new BotMonitor(dbManager);
@@ -178,7 +259,7 @@ const getBot = () => {
     return botInstance;
 };
 
-// 配置 Bot 命令和处理函数
+// 配置 Bot 命令
 function configureBotCommands(bot) {
     // 中间件：记录所有消息
     bot.use(async (ctx, next) => {
@@ -189,12 +270,6 @@ function configureBotCommands(bot) {
     // 处理 /start 命令
     bot.command('start', async (ctx) => {
         try {
-            console.log('Processing /start command:', {
-                userId: ctx.from?.id,
-                username: ctx.from?.username,
-                timestamp: new Date().toISOString()
-            });
-
             const welcomeMessage = `
 👋 欢迎使用我们的服务！
 
@@ -217,10 +292,6 @@ function configureBotCommands(bot) {
     // 处理帮助文档按钮
     bot.hears('📚 帮助文档', async (ctx) => {
         try {
-            console.log('Accessing help document:', {
-                userId: ctx.from?.id,
-                timestamp: new Date().toISOString()
-            });
             await ctx.reply(HELP_CONTENT, MAIN_KEYBOARD);
         } catch (error) {
             console.error('Help document error:', error);
@@ -232,10 +303,6 @@ function configureBotCommands(bot) {
     // 处理搜索功能
     bot.hears('🔍 搜索', async (ctx) => {
         try {
-            console.log('Initiating search:', {
-                userId: ctx.from?.id,
-                timestamp: new Date().toISOString()
-            });
             await ctx.reply('请输入要搜索的关键词：', {
                 reply_markup: {
                     keyboard: [['取消搜索']],
@@ -252,10 +319,6 @@ function configureBotCommands(bot) {
     // 处理设置按钮
     bot.hears('⚙️ 设置', async (ctx) => {
         try {
-            console.log('Accessing settings:', {
-                userId: ctx.from?.id,
-                timestamp: new Date().toISOString()
-            });
             const settingsMessage = `
 设置选项：
 
@@ -277,10 +340,6 @@ function configureBotCommands(bot) {
     // 处理统计数据按钮
     bot.hears('📊 统计数据', async (ctx) => {
         try {
-            console.log('Accessing statistics:', {
-                userId: ctx.from?.id,
-                timestamp: new Date().toISOString()
-            });
             const stats = await monitor.getDailyStats();
             const statsMessage = `
 📊 今日统计
@@ -308,7 +367,7 @@ function configureBotCommands(bot) {
         }
     });
 
-    // 处理错误情况
+    // 全局错误处理
     bot.catch(async (error, ctx) => {
         console.error('Global error:', error);
         await monitor.logError(error, ctx);
@@ -332,13 +391,17 @@ async function handleError(ctx, error) {
 
 // Vercel Serverless 函数处理程序
 export default async function handler(request, response) {
+    // 设置较长的超时时间
+    response.setTimeout(30000);
+
     console.log('Incoming webhook request:', {
         timestamp: new Date().toISOString(),
-        method: request.method
+        method: request.method,
+        path: request.url
     });
 
     // 设置 CORS 头部
-    response.setHeader('Access-Control-Allow-Methods', 'POST');
+    response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     // 处理预检请求
@@ -346,14 +409,14 @@ export default async function handler(request, response) {
         return response.status(200).end();
     }
 
-    try {
-        // 验证请求方法
-        if (request.method !== 'POST') {
-            return response.status(405).json({
-                error: 'Method not allowed'
-            });
-        }
+    // 只允许 POST 请求
+    if (request.method !== 'POST') {
+        return response.status(405).json({
+            error: 'Method not allowed'
+        });
+    }
 
+    try {
         // 验证请求体
         const update = request.body;
         if (!update) {
@@ -362,14 +425,21 @@ export default async function handler(request, response) {
             });
         }
 
-        // 处理更新
-        const bot = getBot();
-        await bot.handleUpdate(update);
+        // 处理更新，设置超时保护
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Bot update timeout')), 8000)
+        );
 
-        // 设置定时更新统计数据
+        const bot = getBot();
+        const updatePromise = bot.handleUpdate(update);
+
+        // 等待处理完成或超时
+        await Promise.race([updatePromise, timeoutPromise]);
+
+        // 异步更新统计数据
         if (!monitor.statsUpdateInterval) {
             monitor.statsUpdateInterval = setInterval(() => {
-                monitor.updateDailyStats();
+                monitor.updateDailyStats().catch(console.error);
             }, parseInt(process.env.MONITOR_UPDATE_INTERVAL || '60') * 1000);
         }
 
@@ -381,11 +451,91 @@ export default async function handler(request, response) {
             timestamp: new Date().toISOString()
         });
 
+        // 根据环境返回适当的错误信息
         return response.status(500).json({
             ok: false,
             error: process.env.NODE_ENV === 'production'
                 ? 'Internal server error'
-                : error.message
+                : error.message,
+            details: process.env.NODE_ENV === 'development' ? {
+                timestamp: new Date().toISOString(),
+                path: request.url,
+                method: request.method
+            } : undefined
         });
+    } finally {
+        // 在完成所有操作后执行清理工作
+        try {
+            // 检查是否需要清理消息缓存
+            const now = new Date();
+            for (const [date, stats] of monitor.messageCache.entries()) {
+                const cacheDate = new Date(date);
+                // 清理超过24小时的缓存数据
+                if (now - cacheDate > 24 * 60 * 60 * 1000) {
+                    monitor.messageCache.delete(date);
+                }
+            }
+
+            // 如果服务器即将关闭，确保更新最后的统计数据
+            if (process.env.VERCEL_REGION === 'dev1') {
+                await monitor.updateDailyStats();
+                clearInterval(monitor.statsUpdateInterval);
+                monitor.statsUpdateInterval = null;
+            }
+        } catch (cleanupError) {
+            // 记录清理过程中的错误，但不影响响应
+            console.error('Cleanup error:', {
+                message: cleanupError.message,
+                timestamp: new Date().toISOString()
+            });
+        }
     }
+}
+
+// 导出监控实例供其他模块使用
+export const botMonitor = monitor;
+
+// 导出数据库管理器实例供其他模块使用
+export const databaseManager = dbManager;
+
+// 提供一个清理函数用于优雅关闭
+export async function cleanup() {
+    try {
+        // 清除统计更新定时器
+        if (monitor.statsUpdateInterval) {
+            clearInterval(monitor.statsUpdateInterval);
+            monitor.statsUpdateInterval = null;
+        }
+
+        // 确保最后的统计数据被保存
+        await monitor.updateDailyStats();
+
+        // 关闭数据库连接
+        await dbManager.close();
+
+        // 重置所有实例
+        botInstance = null;
+        monitor.messageCache.clear();
+
+        console.log('Cleanup completed successfully');
+    } catch (error) {
+        console.error('Error during cleanup:', error);
+        throw error; // 重新抛出错误以便上层处理
+    }
+}
+
+// 添加进程退出时的清理处理
+if (process.env.NODE_ENV !== 'production') {
+    // 开发环境下添加进程退出处理
+    process.on('SIGTERM', async () => {
+        console.log('SIGTERM received, cleaning up...');
+        await cleanup();
+        process.exit(0);
+    });
+
+    process.on('SIGINT', async () => {
+        console.log('SIGINT received, cleaning up...');
+        await cleanup();
+        process.exit(0);
+    });
 }
