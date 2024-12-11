@@ -1,25 +1,145 @@
-// api/webhook.js
-
+// webhook.js
 import { Telegraf } from 'telegraf';
+import { MongoClient } from 'mongodb';
 
-// 环境变量验证 - 确保机器人能够正常运行的必要条件
-const BOT_TOKEN = process.env.BOT_TOKEN;
-if (!BOT_TOKEN) {
-    throw new Error('BOT_TOKEN environment variable is required');
+// 数据库管理类：负责处理所有与 MongoDB 相关的操作
+class DatabaseManager {
+    constructor() {
+        this.client = null;
+        this.db = null;
+    }
+
+    // 建立数据库连接，使用单例模式确保连接复用
+    async connect() {
+        if (!this.client) {
+            try {
+                this.client = await MongoClient.connect(process.env.MONGODB_URI);
+                this.db = this.client.db('bot_monitoring');
+                console.log('Successfully connected to MongoDB');
+            } catch (error) {
+                console.error('MongoDB connection error:', error);
+                throw error;
+            }
+        }
+        return this.db;
+    }
+
+    // 获取指定的集合
+    async getCollection(name) {
+        const db = await this.connect();
+        return db.collection(name);
+    }
 }
 
-// 使用单例模式管理 bot 实例
-// 这确保了在多个请求之间复用同一个实例，提高性能并维持状态一致性
-let botInstance = null;
-const getBot = () => {
-    if (!botInstance) {
-        botInstance = new Telegraf(BOT_TOKEN);
-        configureBotCommands(botInstance);
+// Bot 监控类：处理所有监控和统计相关的功能
+class BotMonitor {
+    constructor(dbManager) {
+        this.dbManager = dbManager;
+        this.messageCache = new Map();
+        this.statsUpdateInterval = null;
     }
-    return botInstance;
+
+    // 记录消息到数据库和缓存
+    async logMessage(ctx) {
+        try {
+            const messages = await this.dbManager.getCollection('messages');
+            const messageData = {
+                timestamp: new Date(),
+                userId: ctx.from?.id,
+                chatId: ctx.chat?.id,
+                messageType: ctx.message?.text ? 'text' : 'other',
+                command: ctx.message?.text?.startsWith('/') ? ctx.message.text.split(' ')[0] : null,
+                metadata: {
+                    username: ctx.from?.username,
+                    firstName: ctx.from?.first_name,
+                    lastName: ctx.from?.last_name
+                }
+            };
+
+            await messages.insertOne(messageData);
+            this.updateMessageCache(messageData);
+        } catch (error) {
+            console.error('Error logging message:', error);
+        }
+    }
+
+    // 更新内存中的消息统计缓存
+    updateMessageCache(messageData) {
+        const today = new Date().toISOString().split('T')[0];
+        if (!this.messageCache.has(today)) {
+            this.messageCache.set(today, {
+                totalMessages: 0,
+                uniqueUsers: new Set(),
+                commands: 0
+            });
+        }
+
+        const stats = this.messageCache.get(today);
+        stats.totalMessages++;
+        stats.uniqueUsers.add(messageData.userId);
+        if (messageData.command) {
+            stats.commands++;
+        }
+    }
+
+    // 更新每日统计数据到数据库
+    async updateDailyStats() {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const stats = this.messageCache.get(today);
+
+            if (stats) {
+                const dailyStats = await this.dbManager.getCollection('daily_stats');
+                await dailyStats.updateOne(
+                    { date: today },
+                    {
+                        $set: {
+                            totalMessages: stats.totalMessages,
+                            uniqueUsers: Array.from(stats.uniqueUsers).length,
+                            commands: stats.commands,
+                            lastUpdated: new Date()
+                        }
+                    },
+                    { upsert: true }
+                );
+            }
+        } catch (error) {
+            console.error('Error updating daily stats:', error);
+        }
+    }
+
+    // 记录错误信息
+    async logError(error, ctx) {
+        try {
+            const errors = await this.dbManager.getCollection('errors');
+            await errors.insertOne({
+                timestamp: new Date(),
+                error: error.message,
+                stack: error.stack,
+                context: {
+                    userId: ctx?.from?.id,
+                    chatId: ctx?.chat?.id,
+                    command: ctx?.message?.text
+                }
+            });
+        } catch (err) {
+            console.error('Error logging error:', err);
+        }
+    }
+}
+
+// 定义主键盘布局
+const MAIN_KEYBOARD = {
+    reply_markup: {
+        keyboard: [
+            ['📚 帮助文档', '🔍 搜索'],
+            ['⚙️ 设置', '📊 统计数据']
+        ],
+        resize_keyboard: true
+    }
 };
 
-// 定义帮助文档内容 - 为用户提供清晰的功能指引
+// 定义帮助文档内容
 const HELP_CONTENT = `
 欢迎使用我们的服务！以下是主要功能介绍：
 
@@ -44,24 +164,29 @@ const HELP_CONTENT = `
 - 获取详细报告
 `;
 
-// 设置自定义键盘布局 - 提供用户友好的交互界面
-const MAIN_KEYBOARD = {
-    reply_markup: {
-        keyboard: [
-            ['📚 帮助文档', '🔍 搜索'],
-            ['⚙️ 设置', '📊 统计数据']
-        ],
-        resize_keyboard: true
+// 创建全局实例
+let botInstance = null;
+const dbManager = new DatabaseManager();
+const monitor = new BotMonitor(dbManager);
+
+// Bot 实例获取函数
+const getBot = () => {
+    if (!botInstance) {
+        botInstance = new Telegraf(process.env.BOT_TOKEN);
+        configureBotCommands(botInstance);
     }
+    return botInstance;
 };
 
-// 用户状态管理 - 使用 Map 实现内存缓存
-// 注意：在 Serverless 环境中，这个状态在函数调用之间不会保持
-const userStates = new Map();
-
-// 配置机器人命令和处理函数
+// 配置 Bot 命令和处理函数
 function configureBotCommands(bot) {
-    // 处理 /start 命令 - 用户初次接触机器人时的入口
+    // 中间件：记录所有消息
+    bot.use(async (ctx, next) => {
+        await monitor.logMessage(ctx);
+        await next();
+    });
+
+    // 处理 /start 命令
     bot.command('start', async (ctx) => {
         try {
             console.log('Processing /start command:', {
@@ -82,18 +207,9 @@ function configureBotCommands(bot) {
 如需帮助，随时点击"帮助文档"按钮。
 `;
             await ctx.reply(welcomeMessage, MAIN_KEYBOARD);
-
-            // 记录用户开始使用的时间
-            userStates.set(ctx.from.id, {
-                startTime: new Date(),
-                lastActivity: new Date()
-            });
         } catch (error) {
-            console.error('Start command error:', {
-                error: error.message,
-                userId: ctx.from?.id,
-                timestamp: new Date().toISOString()
-            });
+            console.error('Start command error:', error);
+            await monitor.logError(error, ctx);
             await handleError(ctx, error);
         }
     });
@@ -106,9 +222,9 @@ function configureBotCommands(bot) {
                 timestamp: new Date().toISOString()
             });
             await ctx.reply(HELP_CONTENT, MAIN_KEYBOARD);
-            updateUserActivity(ctx.from.id);
         } catch (error) {
             console.error('Help document error:', error);
+            await monitor.logError(error, ctx);
             await handleError(ctx, error);
         }
     });
@@ -120,12 +236,6 @@ function configureBotCommands(bot) {
                 userId: ctx.from?.id,
                 timestamp: new Date().toISOString()
             });
-            userStates.set(ctx.from.id, {
-                ...getUserState(ctx.from.id),
-                searchMode: true,
-                lastActivity: new Date()
-            });
-
             await ctx.reply('请输入要搜索的关键词：', {
                 reply_markup: {
                     keyboard: [['取消搜索']],
@@ -134,6 +244,7 @@ function configureBotCommands(bot) {
             });
         } catch (error) {
             console.error('Search function error:', error);
+            await monitor.logError(error, ctx);
             await handleError(ctx, error);
         }
     });
@@ -156,9 +267,9 @@ function configureBotCommands(bot) {
 请回复数字选择对应设置：
 `;
             await ctx.reply(settingsMessage, MAIN_KEYBOARD);
-            updateUserActivity(ctx.from.id);
         } catch (error) {
             console.error('Settings error:', error);
+            await monitor.logError(error, ctx);
             await handleError(ctx, error);
         }
     });
@@ -170,24 +281,18 @@ function configureBotCommands(bot) {
                 userId: ctx.from?.id,
                 timestamp: new Date().toISOString()
             });
-            const userState = getUserState(ctx.from.id);
-            const usageTime = userState?.startTime
-                ? Math.floor((new Date() - userState.startTime) / 1000 / 60)
-                : 0;
-
+            const stats = await monitor.getDailyStats();
             const statsMessage = `
-📊 使用统计
+📊 今日统计
 
-会话时长：${usageTime} 分钟
-活跃度：${calculateActivityScore(userState)}%
-命令使用次数：${userState?.commandCount || 0}
-
-详细统计报告生成中...
+总消息数：${stats.totalMessages || 0}
+活跃用户：${stats.uniqueUsers || 0}
+命令使用：${stats.commands || 0}
 `;
             await ctx.reply(statsMessage, MAIN_KEYBOARD);
-            updateUserActivity(ctx.from.id);
         } catch (error) {
             console.error('Statistics error:', error);
+            await monitor.logError(error, ctx);
             await handleError(ctx, error);
         }
     });
@@ -195,80 +300,23 @@ function configureBotCommands(bot) {
     // 处理取消搜索
     bot.hears('取消搜索', async (ctx) => {
         try {
-            console.log('Cancelling search:', {
-                userId: ctx.from?.id,
-                timestamp: new Date().toISOString()
-            });
-            const userState = getUserState(ctx.from.id);
-            if (userState?.searchMode) {
-                userState.searchMode = false;
-                userStates.set(ctx.from.id, userState);
-                await ctx.reply('已取消搜索。', MAIN_KEYBOARD);
-            }
-            updateUserActivity(ctx.from.id);
+            await ctx.reply('已取消搜索。', MAIN_KEYBOARD);
         } catch (error) {
             console.error('Cancel search error:', error);
+            await monitor.logError(error, ctx);
             await handleError(ctx, error);
         }
     });
 
-    // 处理普通文本消息
-    bot.on('text', async (ctx) => {
-        try {
-            console.log('Received text message:', {
-                userId: ctx.from?.id,
-                messageText: ctx.message?.text,
-                timestamp: new Date().toISOString()
-            });
-            const userState = getUserState(ctx.from.id);
-
-            if (userState?.searchMode) {
-                const searchTerm = ctx.message.text;
-                await ctx.reply(`正在搜索："${searchTerm}"\n\n搜索结果将很快显示...`, MAIN_KEYBOARD);
-                userState.searchMode = false;
-                userStates.set(ctx.from.id, userState);
-            }
-
-            updateUserActivity(ctx.from.id);
-        } catch (error) {
-            console.error('Text handling error:', error);
-            await handleError(ctx, error);
-        }
-    });
-
-    // 全局错误处理
+    // 处理错误情况
     bot.catch(async (error, ctx) => {
-        console.error('Global error:', {
-            error: error.message,
-            userId: ctx.from?.id,
-            timestamp: new Date().toISOString()
-        });
+        console.error('Global error:', error);
+        await monitor.logError(error, ctx);
         await handleError(ctx, error);
     });
 }
 
-// 辅助函数 - 用于管理用户状态和计算活跃度
-function getUserState(userId) {
-    return userStates.get(userId) || {
-        startTime: new Date(),
-        lastActivity: new Date(),
-        commandCount: 0
-    };
-}
-
-function updateUserActivity(userId) {
-    const state = getUserState(userId);
-    state.lastActivity = new Date();
-    state.commandCount = (state.commandCount || 0) + 1;
-    userStates.set(userId, state);
-}
-
-function calculateActivityScore(userState) {
-    if (!userState) return 0;
-    const hoursSinceLastActivity = (new Date() - userState.lastActivity) / 1000 / 60 / 60;
-    return Math.max(0, Math.min(100, 100 - (hoursSinceLastActivity * 5)));
-}
-
+// 错误处理函数
 async function handleError(ctx, error) {
     const errorMessage = '抱歉，处理您的请求时出现错误。请稍后重试。';
     try {
@@ -284,13 +332,9 @@ async function handleError(ctx, error) {
 
 // Vercel Serverless 函数处理程序
 export default async function handler(request, response) {
-    // 添加请求日志记录
     console.log('Incoming webhook request:', {
         timestamp: new Date().toISOString(),
-        method: request.method,
-        headers: request.headers,
-        url: request.url,
-        body: JSON.stringify(request.body, null, 2)
+        method: request.method
     });
 
     // 设置 CORS 头部
@@ -299,55 +343,44 @@ export default async function handler(request, response) {
 
     // 处理预检请求
     if (request.method === 'OPTIONS') {
-        console.log('Handling OPTIONS request');
         return response.status(200).end();
     }
 
     try {
-        // 请求方法验证
+        // 验证请求方法
         if (request.method !== 'POST') {
-            console.log('Rejected non-POST request:', request.method);
             return response.status(405).json({
-                error: 'Method not allowed',
-                allowedMethods: ['POST']
+                error: 'Method not allowed'
             });
         }
 
-        // 获取和验证请求体
+        // 验证请求体
         const update = request.body;
         if (!update) {
-            console.log('Empty request body received');
             return response.status(400).json({
                 error: 'Request body is required'
             });
         }
 
-        console.log('Processing Telegram update:', {
-            updateId: update.update_id,
-            messageId: update.message?.message_id,
-            chatId: update.message?.chat?.id,
-            text: update.message?.text
-        });
-
-        // 获取 bot 实例并处理更新
+        // 处理更新
         const bot = getBot();
-        console.log('Bot instance retrieved successfully');
-
         await bot.handleUpdate(update);
-        console.log('Update handled successfully');
 
-        // 返回成功响应
+        // 设置定时更新统计数据
+        if (!monitor.statsUpdateInterval) {
+            monitor.statsUpdateInterval = setInterval(() => {
+                monitor.updateDailyStats();
+            }, parseInt(process.env.MONITOR_UPDATE_INTERVAL || '60') * 1000);
+        }
+
         return response.status(200).json({ ok: true });
     } catch (error) {
-        // 详细的错误日志记录
         console.error('Webhook handler error:', {
             message: error.message,
             stack: error.stack,
-            timestamp: new Date().toISOString(),
-            requestBody: request.body
+            timestamp: new Date().toISOString()
         });
 
-        // 返回适当的错误响应
         return response.status(500).json({
             ok: false,
             error: process.env.NODE_ENV === 'production'
