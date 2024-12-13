@@ -1,18 +1,23 @@
 // monitoring.js - Telegram Bot 监控系统核心模块
 import { MongoClient } from 'mongodb';
+import fetch from 'node-fetch';  // 用于调用 Vercel API
 
-// 时区工具类 - 处理所有与时区相关的操作
+/**
+ * 时区处理工具类
+ * 处理所有与时区转换相关的操作，统一使用中国时区(UTC+8)
+ */
 const TimeZoneUtil = {
     // 中国时区偏移量（小时）
     CHINA_TIMEZONE_OFFSET: 8,
 
-    // 将任意时间转换为中国时区时间
+    // 转换任意时间到中国时区
     toChinaTime(date) {
+        if (!date) return null;
         const utcDate = new Date(date);
         return new Date(utcDate.getTime() + (this.CHINA_TIMEZONE_OFFSET * 60 * 60 * 1000));
     },
 
-    // 获取中国时区的当天零点时间（用于数据库查询）
+    // 获取中国时区的今天开始时间
     getChinaToday() {
         const now = this.toChinaTime(new Date());
         now.setHours(0, 0, 0, 0);
@@ -20,17 +25,29 @@ const TimeZoneUtil = {
         return new Date(now.getTime() - (this.CHINA_TIMEZONE_OFFSET * 60 * 60 * 1000));
     },
 
-    // 格式化时间为易读的中国时间格式
+    // 格式化为易读的中国时间格式
     formatChinaTime(date) {
         if (!date) return null;
         const chinaTime = this.toChinaTime(date);
         return chinaTime.toISOString().replace('T', ' ').substring(0, 19);
+    },
+
+    // 获取查询时间范围（考虑时区）
+    getQueryTimeRange(baseDate) {
+        // 转换为 UTC 时间范围
+        const start = new Date(baseDate);
+        start.setHours(start.getHours() - this.CHINA_TIMEZONE_OFFSET);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 1);
+        return { start, end };
     }
 };
 
-// 日志工具 - 统一的日志记录格式
+/**
+ * 日志工具类
+ * 统一处理日志格式和输出
+ */
 const logger = {
-    // 记录普通信息
     info: (message, data = {}) => {
         console.log(message, typeof data === 'object' ? {
             时间戳: TimeZoneUtil.formatChinaTime(new Date()),
@@ -40,7 +57,6 @@ const logger = {
             }), {})
         } : data);
     },
-    // 记录错误信息
     error: (message, error) => {
         console.error(message, {
             错误信息: error.message,
@@ -50,7 +66,10 @@ const logger = {
     }
 };
 
-// 键名翻译函数 - 将英文键名转换为中文
+/**
+ * 键名翻译函数
+ * 统一的键名中英转换
+ */
 function translateKey(key) {
     const translations = {
         timestamp: '时间戳',
@@ -77,34 +96,41 @@ function translateKey(key) {
         totalMessages: '总消息数',
         activeUsers: '活跃用户数',
         commandsUsed: '命令使用数',
-        updateTime: '更新时间'
+        updateTime: '更新时间',
+        deployment: '部署',
+        vercelLogs: 'Vercel日志'
     };
     return translations[key] || key;
 }
 
 /**
- * Bot监控类 - 处理所有监控相关功能
+ * Bot 监控系统核心类
  */
 class BotMonitor {
     constructor() {
-        // 初始化成员变量
+        // 基础配置
         this.mongoUrl = process.env.MONGODB_URI;
+        this.vercelProjectId = process.env.VERCEL_PROJECT_ID;
+        this.vercelToken = process.env.VERCEL_TOKEN;
+
+        // 运行时变量
         this.client = null;
         this.db = null;
         this.startTime = TimeZoneUtil.toChinaTime(new Date());
         this.messageCache = new Map();
         this.statsUpdateInterval = null;
 
-        // 执行初始化
+        // 初始化系统
         this.initialize();
     }
 
     /**
-     * 初始化数据库连接和必要的配置
+     * 系统初始化
+     * 建立数据库连接并设置必要的索引
      */
     async initialize() {
         try {
-            // 建立数据库连接
+            // 连接数据库
             this.client = await MongoClient.connect(this.mongoUrl, {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
@@ -115,10 +141,7 @@ class BotMonitor {
 
             this.db = this.client.db('bot_monitoring');
 
-            // 提取数据库用户信息
-            const mongoUser = this.mongoUrl.split('@')[0].split('://')[1].split(':')[0];
-
-            // 创建必要的索引
+            // 创建索引
             await Promise.all([
                 this.db.collection('messages').createIndex({ timestamp: -1 }),
                 this.db.collection('messages').createIndex({ userId: 1 }),
@@ -127,7 +150,7 @@ class BotMonitor {
                 this.db.collection('system_logs').createIndex({ timestamp: -1 })
             ]);
 
-            // 记录初始化成功
+            const mongoUser = this.mongoUrl.split('@')[0].split('://')[1].split(':')[0];
             logger.info('监控系统初始化成功', { mongoUser });
 
             // 记录启动事件
@@ -142,27 +165,32 @@ class BotMonitor {
     }
 
     /**
-     * 判断是否为用户消息（非机器人消息）
-     * @param {Object} message Telegram消息对象
+     * 判断是否为用户消息
+     * 严格区分用户消息和机器人消息
      */
     isUserMessage(message) {
-        // 检查基本条件：消息存在且发送者不是机器人
+        // 基础检查
         if (!message.from || message.from.is_bot) {
             return false;
         }
 
-        // 检查是否为命令消息
-        if (message.text && message.text.startsWith('/')) {
-            return true;
+        // 处理命令消息
+        if (message.text?.startsWith('/')) {
+            return !message.from.is_bot; // 确保是用户发出的命令
         }
 
-        // 检查是否为普通用户消息
-        return message.from.id && !message.from.is_bot;
+        // 处理普通消息
+        if (message.text) {
+            return message.from.id && !message.from.is_bot;
+        }
+
+        // 其他类型消息默认不统计
+        return false;
     }
 
     /**
-     * 记录消息统计信息
-     * @param {Object} message Telegram消息对象
+     * 记录消息统计
+     * 只统计用户发送的消息
      */
     async logMessage(message) {
         try {
@@ -175,7 +203,7 @@ class BotMonitor {
                 return;
             }
 
-            // 构建消息统计数据
+            // 构建消息数据
             const chinaTime = TimeZoneUtil.toChinaTime(new Date());
             const messageStats = {
                 timestamp: chinaTime,
@@ -195,9 +223,9 @@ class BotMonitor {
             await this.db.collection('messages').insertOne(messageStats);
             await this.updateDailyStats();
 
-            // 记录日志
             logger.info('用户消息已记录', {
                 userId: message.from.id,
+                type: messageStats.messageType,
                 timestamp: TimeZoneUtil.formatChinaTime(chinaTime)
             });
         } catch (error) {
@@ -208,16 +236,18 @@ class BotMonitor {
 
     /**
      * 更新每日统计数据
+     * 使用正确的时区计算
      */
     async updateDailyStats() {
-        const today = TimeZoneUtil.getChinaToday();
-
         try {
-            // 使用聚合管道计算统计数据
+            // 获取查询时间范围
+            const { start, end } = TimeZoneUtil.getQueryTimeRange(new Date());
+
+            // 聚合计算统计数据
             const stats = await this.db.collection('messages').aggregate([
                 {
                     $match: {
-                        timestamp: { $gte: today },
+                        timestamp: { $gte: start, $lt: end },
                         isUserMessage: true
                     }
                 },
@@ -227,17 +257,15 @@ class BotMonitor {
                         totalMessages: { $sum: 1 },
                         uniqueUsers: { $addToSet: "$userId" },
                         commands: {
-                            $sum: {
-                                $cond: [{ $ne: ["$command", null] }, 1, 0]
-                            }
+                            $sum: { $cond: [{ $ne: ["$command", null] }, 1, 0] }
                         }
                     }
                 }
             ]).toArray();
 
-            // 构建统计数据对象
+            // 构建统计数据
             const dailyStats = {
-                date: today,
+                date: start,
                 totalMessages: stats[0]?.totalMessages || 0,
                 activeUsers: stats[0]?.uniqueUsers?.length || 0,
                 commandsUsed: stats[0]?.commands || 0,
@@ -246,12 +274,11 @@ class BotMonitor {
 
             // 更新数据库
             await this.db.collection('daily_stats').updateOne(
-                { date: today },
+                { date: start },
                 { $set: dailyStats },
                 { upsert: true }
             );
 
-            // 记录日志
             logger.info('每日统计已更新', {
                 totalMessages: dailyStats.totalMessages,
                 activeUsers: dailyStats.activeUsers,
@@ -267,53 +294,52 @@ class BotMonitor {
     }
 
     /**
-     * 获取消息趋势数据（24小时）
+     * 获取消息趋势数据
+     * 按小时统计用户消息数量
      */
     async getMessageTrend() {
         try {
-            const today = TimeZoneUtil.getChinaToday();
+            const { start, end } = TimeZoneUtil.getQueryTimeRange(new Date());
 
-            // 构建聚合管道
-            const pipeline = [
+            // 聚合计算小时统计
+            const trend = await this.db.collection('messages').aggregate([
                 {
                     $match: {
-                        timestamp: { $gte: today },
+                        timestamp: { $gte: start, $lt: end },
                         isUserMessage: true
                     }
                 },
                 {
                     $addFields: {
-                        // 转换时间到中国时区
-                        chinaHour: {
-                            $hour: {
-                                $add: ['$timestamp', TimeZoneUtil.CHINA_TIMEZONE_OFFSET * 60 * 60 * 1000]
-                            }
+                        // 转换为中国时区的小时
+                        hour: {
+                            $add: [
+                                { $hour: "$timestamp" },
+                                TimeZoneUtil.CHINA_TIMEZONE_OFFSET
+                            ]
                         }
                     }
                 },
                 {
                     $group: {
-                        _id: '$chinaHour',
+                        _id: "$hour",
                         count: { $sum: 1 },
-                        uniqueUsers: { $addToSet: '$userId' }
+                        uniqueUsers: { $addToSet: "$userId" }
                     }
                 },
                 {
-                    $sort: { '_id': 1 }
+                    $sort: { "_id": 1 }
                 }
-            ];
-
-            // 执行聚合查询
-            const trend = await this.db.collection('messages').aggregate(pipeline).toArray();
+            ]).toArray();
 
             // 填充完整24小时数据
-            const fullTrend = Array.from({ length: 24 }, (_, hour) => {
-                const hourData = trend.find(t => t._id === hour);
+            const fullTrend = Array.from({ length: 24 }, (_, i) => {
+                const hourData = trend.find(t => t._id === i);
                 return {
-                    hour,
+                    hour: i,
                     count: hourData?.count || 0,
                     uniqueUsers: hourData?.uniqueUsers?.length || 0,
-                    time: `${String(hour).padStart(2, '0')}:00`
+                    time: `${String(i).padStart(2, '0')}:00`
                 };
             });
 
@@ -325,7 +351,7 @@ class BotMonitor {
     }
 
     /**
-     * 获取系统状态信息
+     * 获取系统状态
      */
     async getSystemStatus() {
         try {
@@ -338,10 +364,8 @@ class BotMonitor {
                 isUserMessage: true
             });
 
-            // 获取数据库连接信息
+            // 获取数据库信息
             const mongoUser = this.mongoUrl.split('@')[0].split('://')[1].split(':')[0];
-
-            // 计算运行时间
             const uptimeHours = (now - this.startTime) / (1000 * 60 * 60);
 
             // 构建状态对象
@@ -365,18 +389,60 @@ class BotMonitor {
     }
 
     /**
+     * 获取 Vercel 项目日志
+     */
+    async getVercelLogs(limit = 50) {
+        try {
+            // 检查配置
+            if (!this.vercelProjectId || !this.vercelToken) {
+                throw new Error('缺少 Vercel 配置');
+            }
+
+            // 调用 Vercel API
+            const response = await fetch(
+                `https://api.vercel.com/v2/projects/${this.vercelProjectId}/events?limit=${limit}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${this.vercelToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Vercel API 请求失败: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // 格式化日志数据为统一格式
+            return data.events.map(event => ({
+                timestamp: TimeZoneUtil.formatChinaTime(new Date(event.createdAt)),
+                type: event.type,
+                message: event.message || event.text,
+                status: event.status,
+                deployment: event.deploymentId,
+                details: event.payload || {}
+            }));
+        } catch (error) {
+            logger.error('获取 Vercel 日志失败', error);
+            return [];
+        }
+    }
+
+    /**
      * 获取用户统计信息
-     * @param {string|number} userId 用户ID
+     * 统计特定用户的活动数据
      */
     async getUserStats(userId) {
         try {
-            const today = TimeZoneUtil.getChinaToday();
+            const { start, end } = TimeZoneUtil.getQueryTimeRange(new Date());
 
-            // 聚合计算用户统计数据
+            // 聚合计算用户统计
             const stats = await this.db.collection('messages').aggregate([
                 {
                     $match: {
-                        timestamp: { $gte: today },
+                        timestamp: { $gte: start, $lt: end },
                         userId: userId,
                         isUserMessage: true
                     }
@@ -412,9 +478,9 @@ class BotMonitor {
     }
 
     /**
-        * 检查并重新连接数据库
-        * 在连接断开时自动重连
-        */
+     * 检查并重新连接数据库
+     * 在连接断开时自动重连
+     */
     async reconnectIfNeeded() {
         if (!this.client?.topology?.isConnected()) {
             logger.info('尝试重新连接数据库');
@@ -424,66 +490,6 @@ class BotMonitor {
             } catch (error) {
                 logger.error('数据库重新连接失败', error);
             }
-        }
-    }
-
-    /**
-     * 记录系统事件
-     * @param {string} message 事件消息
-     * @param {string} type 事件类型
-     * @param {string} severity 严重程度
-     * @param {Object} details 详细信息
-     */
-    async logSystemEvent(message, type = 'info', severity = 'low', details = {}) {
-        try {
-            // 构建日志条目
-            const logEntry = {
-                timestamp: TimeZoneUtil.toChinaTime(new Date()),
-                type,
-                message,
-                severity,
-                details: {
-                    ...details,
-                    uptime: Math.round((Date.now() - this.startTime) / 1000)
-                }
-            };
-
-            // 写入数据库
-            await this.db.collection('system_logs').insertOne(logEntry);
-            logger.info('系统事件已记录', { type, message });
-        } catch (error) {
-            logger.error('记录系统事件失败', error);
-        }
-    }
-
-    /**
-     * 获取系统日志
-     * @param {number} limit 返回的日志数量限制
-     * @param {string} severity 日志严重程度过滤
-     */
-    async getSystemLogs(limit = 50, severity = null) {
-        try {
-            // 构建查询条件
-            const query = severity ? { severity } : {};
-
-            // 查询日志
-            const logs = await this.db.collection('system_logs')
-                .find(query)
-                .sort({ timestamp: -1 })
-                .limit(limit)
-                .toArray();
-
-            // 格式化时间戳
-            return logs.map(log => ({
-                timestamp: TimeZoneUtil.formatChinaTime(log.timestamp),
-                type: log.type,
-                message: log.message,
-                severity: log.severity,
-                details: log.details
-            }));
-        } catch (error) {
-            logger.error('获取系统日志失败', error);
-            return [];
         }
     }
 
@@ -504,7 +510,7 @@ class BotMonitor {
 
     /**
      * 安全关闭监控系统
-     * 清理资源并关闭数据库连接
+     * 清理资源并关闭连接
      */
     async shutdown() {
         try {
@@ -513,13 +519,12 @@ class BotMonitor {
                 uptime: Math.round((Date.now() - this.startTime) / 1000)
             });
 
-            // 清理定时器
+            // 清理资源
             if (this.statsUpdateInterval) {
                 clearInterval(this.statsUpdateInterval);
                 this.statsUpdateInterval = null;
             }
 
-            // 清理缓存数据
             this.messageCache.clear();
 
             // 关闭数据库连接
