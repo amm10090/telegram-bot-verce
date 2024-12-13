@@ -1,46 +1,36 @@
-// monitoring.js - Bot监控系统核心模块
+// monitoring.js - Telegram Bot 监控系统核心模块
 import { MongoClient } from 'mongodb';
 
-/**
- * 时区工具类
- * 处理所有与时区相关的操作，统一使用中国时区(UTC+8)
- */
+// 时区工具类 - 处理所有与时区相关的操作
 const TimeZoneUtil = {
-    // 中国时区偏移（小时）
+    // 中国时区偏移量（小时）
     CHINA_TIMEZONE_OFFSET: 8,
 
-    // 获取中国时区的当前时间
-    getChinaTime() {
-        const now = new Date();
-        return new Date(now.getTime() + (this.CHINA_TIMEZONE_OFFSET * 60 - now.getTimezoneOffset()) * 60000);
+    // 将任意时间转换为中国时区时间
+    toChinaTime(date) {
+        const utcDate = new Date(date);
+        return new Date(utcDate.getTime() + (this.CHINA_TIMEZONE_OFFSET * 60 * 60 * 1000));
     },
 
-    // 获取中国时区的今日零点时间
+    // 获取中国时区的当天零点时间（用于数据库查询）
     getChinaToday() {
-        const chinaTime = this.getChinaTime();
-        chinaTime.setHours(0, 0, 0, 0);
-        return chinaTime;
+        const now = this.toChinaTime(new Date());
+        now.setHours(0, 0, 0, 0);
+        // 转换回 UTC 时间用于数据库查询
+        return new Date(now.getTime() - (this.CHINA_TIMEZONE_OFFSET * 60 * 60 * 1000));
     },
 
-    // 格式化时间为中国时区格式
+    // 格式化时间为易读的中国时间格式
     formatChinaTime(date) {
         if (!date) return null;
-        const chinaTime = new Date(date.getTime() + (this.CHINA_TIMEZONE_OFFSET * 60 - date.getTimezoneOffset()) * 60000);
+        const chinaTime = this.toChinaTime(date);
         return chinaTime.toISOString().replace('T', ' ').substring(0, 19);
-    },
-
-    // 获取中国时区的小时数
-    getChinaHour(date) {
-        const chinaTime = new Date(date.getTime() + (this.CHINA_TIMEZONE_OFFSET * 60 - date.getTimezoneOffset()) * 60000);
-        return chinaTime.getHours();
     }
 };
 
-/**
- * 日志工具函数 - 统一处理日志格式和语言
- * 所有时间戳都转换为中国时区
- */
+// 日志工具 - 统一的日志记录格式
 const logger = {
+    // 记录普通信息
     info: (message, data = {}) => {
         console.log(message, typeof data === 'object' ? {
             时间戳: TimeZoneUtil.formatChinaTime(new Date()),
@@ -50,6 +40,7 @@ const logger = {
             }), {})
         } : data);
     },
+    // 记录错误信息
     error: (message, error) => {
         console.error(message, {
             错误信息: error.message,
@@ -59,10 +50,7 @@ const logger = {
     }
 };
 
-/**
- * 键名翻译函数
- * 将英文键名转换为中文，便于日志阅读和理解
- */
+// 键名翻译函数 - 将英文键名转换为中文
 function translateKey(key) {
     const translations = {
         timestamp: '时间戳',
@@ -85,41 +73,38 @@ function translateKey(key) {
         commandCount: '命令数量',
         lastActive: '最后活跃时间',
         botMessage: '机器人消息',
-        userMessage: '用户消息'
+        userMessage: '用户消息',
+        totalMessages: '总消息数',
+        activeUsers: '活跃用户数',
+        commandsUsed: '命令使用数',
+        updateTime: '更新时间'
     };
     return translations[key] || key;
 }
 
 /**
- * Bot监控类
- * 负责处理所有监控和统计相关的功能
+ * Bot监控类 - 处理所有监控相关功能
  */
 class BotMonitor {
     constructor() {
+        // 初始化成员变量
         this.mongoUrl = process.env.MONGODB_URI;
         this.client = null;
         this.db = null;
-        this.startTime = TimeZoneUtil.getChinaTime();
+        this.startTime = TimeZoneUtil.toChinaTime(new Date());
         this.messageCache = new Map();
         this.statsUpdateInterval = null;
+
+        // 执行初始化
         this.initialize();
     }
 
     /**
-     * 判断是否为用户消息（非机器人消息）
-     * @param {Object} message Telegram消息对象
-     * @returns {boolean} 是否为用户消息
-     */
-    isUserMessage(message) {
-        return message.from && !message.from.is_bot;
-    }
-
-    /**
-     * 初始化数据库连接
-     * 建立MongoDB连接并配置必要的索引
+     * 初始化数据库连接和必要的配置
      */
     async initialize() {
         try {
+            // 建立数据库连接
             this.client = await MongoClient.connect(this.mongoUrl, {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
@@ -130,16 +115,19 @@ class BotMonitor {
 
             this.db = this.client.db('bot_monitoring');
 
+            // 提取数据库用户信息
+            const mongoUser = this.mongoUrl.split('@')[0].split('://')[1].split(':')[0];
+
             // 创建必要的索引
             await Promise.all([
                 this.db.collection('messages').createIndex({ timestamp: -1 }),
                 this.db.collection('messages').createIndex({ userId: 1 }),
-                this.db.collection('messages').createIndex({ "from.is_bot": 1 }),
+                this.db.collection('messages').createIndex({ isUserMessage: 1 }),
                 this.db.collection('daily_stats').createIndex({ date: 1 }, { unique: true }),
                 this.db.collection('system_logs').createIndex({ timestamp: -1 })
             ]);
 
-            const mongoUser = this.mongoUrl.split('@')[0].split('://')[1].split(':')[0];
+            // 记录初始化成功
             logger.info('监控系统初始化成功', { mongoUser });
 
             // 记录启动事件
@@ -154,37 +142,63 @@ class BotMonitor {
     }
 
     /**
-     * 记录消息统计
-     * 只统计用户发送的消息，排除机器人消息
+     * 判断是否为用户消息（非机器人消息）
+     * @param {Object} message Telegram消息对象
+     */
+    isUserMessage(message) {
+        // 检查基本条件：消息存在且发送者不是机器人
+        if (!message.from || message.from.is_bot) {
+            return false;
+        }
+
+        // 检查是否为命令消息
+        if (message.text && message.text.startsWith('/')) {
+            return true;
+        }
+
+        // 检查是否为普通用户消息
+        return message.from.id && !message.from.is_bot;
+    }
+
+    /**
+     * 记录消息统计信息
+     * @param {Object} message Telegram消息对象
      */
     async logMessage(message) {
         try {
-            // 检查是否为用户消息
+            // 过滤非用户消息
             if (!this.isUserMessage(message)) {
-                return; // 如果是机器人消息，直接返回
+                logger.info('跳过非用户消息', {
+                    fromBot: message.from?.is_bot,
+                    messageType: message.text ? 'text' : 'other'
+                });
+                return;
             }
 
+            // 构建消息统计数据
+            const chinaTime = TimeZoneUtil.toChinaTime(new Date());
             const messageStats = {
-                timestamp: TimeZoneUtil.getChinaTime(),
+                timestamp: chinaTime,
                 userId: message.from.id,
                 chatId: message.chat.id,
                 messageType: message.text ? 'text' : 'other',
                 command: message.text?.startsWith('/') ? message.text.split(' ')[0] : null,
-                from: {
-                    is_bot: message.from.is_bot,
+                isUserMessage: true,
+                metadata: {
                     username: message.from.username,
                     firstName: message.from.first_name,
                     lastName: message.from.last_name
                 }
             };
 
+            // 保存到数据库
             await this.db.collection('messages').insertOne(messageStats);
             await this.updateDailyStats();
 
+            // 记录日志
             logger.info('用户消息已记录', {
                 userId: message.from.id,
-                messageType: messageStats.messageType,
-                timestamp: TimeZoneUtil.formatChinaTime(messageStats.timestamp)
+                timestamp: TimeZoneUtil.formatChinaTime(chinaTime)
             });
         } catch (error) {
             logger.error('记录消息统计失败', error);
@@ -194,17 +208,17 @@ class BotMonitor {
 
     /**
      * 更新每日统计数据
-     * 只统计用户消息，使用中国时区
      */
     async updateDailyStats() {
         const today = TimeZoneUtil.getChinaToday();
 
         try {
+            // 使用聚合管道计算统计数据
             const stats = await this.db.collection('messages').aggregate([
                 {
                     $match: {
                         timestamp: { $gte: today },
-                        "from.is_bot": false // 只统计用户消息
+                        isUserMessage: true
                     }
                 },
                 {
@@ -221,86 +235,86 @@ class BotMonitor {
                 }
             ]).toArray();
 
+            // 构建统计数据对象
             const dailyStats = {
                 date: today,
                 totalMessages: stats[0]?.totalMessages || 0,
                 activeUsers: stats[0]?.uniqueUsers?.length || 0,
                 commandsUsed: stats[0]?.commands || 0,
-                lastUpdated: TimeZoneUtil.getChinaTime()
+                lastUpdated: TimeZoneUtil.toChinaTime(new Date())
             };
 
+            // 更新数据库
             await this.db.collection('daily_stats').updateOne(
                 { date: today },
                 { $set: dailyStats },
                 { upsert: true }
             );
 
-            logger.info('每日统计数据已更新', {
-                ...dailyStats,
-                lastUpdated: TimeZoneUtil.formatChinaTime(dailyStats.lastUpdated)
+            // 记录日志
+            logger.info('每日统计已更新', {
+                totalMessages: dailyStats.totalMessages,
+                activeUsers: dailyStats.activeUsers,
+                commandsUsed: dailyStats.commandsUsed,
+                updateTime: TimeZoneUtil.formatChinaTime(dailyStats.lastUpdated)
             });
 
             return dailyStats;
         } catch (error) {
-            logger.error('更新每日统计数据失败', error);
+            logger.error('更新每日统计失败', error);
             return null;
         }
     }
 
     /**
-     * 获取消息趋势
-     * 按中国时区的小时统计消息数量
+     * 获取消息趋势数据（24小时）
      */
     async getMessageTrend() {
         try {
             const today = TimeZoneUtil.getChinaToday();
 
-            const trend = await this.db.collection('messages').aggregate([
+            // 构建聚合管道
+            const pipeline = [
                 {
                     $match: {
                         timestamp: { $gte: today },
-                        "from.is_bot": false // 只统计用户消息
+                        isUserMessage: true
                     }
                 },
                 {
-                    $project: {
-                        hour: {
+                    $addFields: {
+                        // 转换时间到中国时区
+                        chinaHour: {
                             $hour: {
-                                $add: [
-                                    "$timestamp",
-                                    TimeZoneUtil.CHINA_TIMEZONE_OFFSET * 3600000 // 调整为中国时区
-                                ]
+                                $add: ['$timestamp', TimeZoneUtil.CHINA_TIMEZONE_OFFSET * 60 * 60 * 1000]
                             }
-                        },
-                        userId: 1
+                        }
                     }
                 },
                 {
                     $group: {
-                        _id: "$hour",
+                        _id: '$chinaHour',
                         count: { $sum: 1 },
-                        uniqueUsers: { $addToSet: "$userId" }
+                        uniqueUsers: { $addToSet: '$userId' }
                     }
                 },
                 {
-                    $sort: { "_id": 1 }
+                    $sort: { '_id': 1 }
                 }
-            ]).toArray();
+            ];
 
-            // 填充24小时数据
-            const fullTrend = Array.from({ length: 24 }, (_, i) => {
-                const hourData = trend.find(t => t._id === i);
+            // 执行聚合查询
+            const trend = await this.db.collection('messages').aggregate(pipeline).toArray();
+
+            // 填充完整24小时数据
+            const fullTrend = Array.from({ length: 24 }, (_, hour) => {
+                const hourData = trend.find(t => t._id === hour);
                 return {
-                    hour: i,
+                    hour,
                     count: hourData?.count || 0,
                     uniqueUsers: hourData?.uniqueUsers?.length || 0,
-                    time: `${String(i).padStart(2, '0')}:00`
+                    time: `${String(hour).padStart(2, '0')}:00`
                 };
-            });
-
-            logger.info('消息趋势数据已获取', {
-                totalHours: fullTrend.length,
-                totalMessages: fullTrend.reduce((sum, hour) => sum + hour.count, 0)
             });
 
             return fullTrend;
@@ -311,29 +325,33 @@ class BotMonitor {
     }
 
     /**
-     * 获取系统状态
-     * 所有时间使用中国时区
+     * 获取系统状态信息
      */
     async getSystemStatus() {
         try {
-            const now = TimeZoneUtil.getChinaTime();
+            const now = TimeZoneUtil.toChinaTime(new Date());
             const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
 
+            // 获取最近活动数据
             const recentMessages = await this.db.collection('messages').countDocuments({
                 timestamp: { $gte: fiveMinutesAgo },
-                "from.is_bot": false // 只统计用户消息
+                isUserMessage: true
             });
 
+            // 获取数据库连接信息
             const mongoUser = this.mongoUrl.split('@')[0].split('://')[1].split(':')[0];
+
+            // 计算运行时间
             const uptimeHours = (now - this.startTime) / (1000 * 60 * 60);
 
+            // 构建状态对象
             const status = {
                 status: recentMessages > 0 ? 'active' : 'idle',
                 lastActivity: await this.db.collection('messages')
-                    .findOne({ "from.is_bot": false }, { sort: { timestamp: -1 } })
+                    .findOne({ isUserMessage: true }, { sort: { timestamp: -1 } })
                     .then(doc => doc ? TimeZoneUtil.formatChinaTime(doc.timestamp) : null),
                 uptimeHours: Math.round(uptimeHours * 100) / 100,
-                mongoUser,
+                mongoUser: mongoUser,
                 mongoStatus: this.client?.topology?.isConnected() ? 'connected' : 'disconnected',
                 lastUpdate: TimeZoneUtil.formatChinaTime(now)
             };
@@ -347,104 +365,20 @@ class BotMonitor {
     }
 
     /**
-     * 检查并重新连接数据库
-     */
-    async reconnectIfNeeded() {
-        if (!this.client?.topology?.isConnected()) {
-            logger.info('尝试重新连接数据库');
-            try {
-                await this.initialize();
-                logger.info('数据库重新连接成功');
-            } catch (error) {
-                logger.error('数据库重新连接失败', error);
-            }
-        }
-    }
-
-    /**
-     * 获取系统日志
-     */
-    async getSystemLogs(limit = 50) {
-        try {
-            const logs = await this.db.collection('system_logs')
-                .find()
-                .sort({ timestamp: -1 })
-                .limit(limit)
-                .toArray();
-
-            return logs.map(log => ({
-                timestamp: TimeZoneUtil.formatChinaTime(log.timestamp),
-                type: log.type,
-                message: log.message,
-                severity: log.severity,
-                details: log.details
-            }));
-        } catch (error) {
-            logger.error('获取系统日志失败', error);
-            return [];
-        }
-    }
-
-    /**
-     * 记录系统事件
-     */
-    async logSystemEvent(message, type = 'info', severity = 'low', details = {}) {
-        try {
-            const logEntry = {
-                timestamp: TimeZoneUtil.getChinaTime(),
-                type,
-                message,
-                severity,
-                details
-            };
-
-            await this.db.collection('system_logs').insertOne(logEntry);
-            logger.info('系统事件已记录', { type, message });
-        } catch (error) {
-            logger.error('记录系统事件失败', error);
-        }
-    }
-
-    /**
-     * 清理资源并关闭
-     */
-    async shutdown() {
-        try {
-            await this.logSystemEvent('监控系统关闭', 'shutdown', 'info');
-            if (this.client) {
-                await this.client.close();
-                this.client = null;
-                this.db = null;
-            }
-
-            // 清理缓存和定时器
-            this.messageCache.clear();
-            if (this.statsUpdateInterval) {
-                clearInterval(this.statsUpdateInterval);
-                this.statsUpdateInterval = null;
-            }
-
-            logger.info('监控系统已关闭');
-        } catch (error) {
-            logger.error('关闭监控系统时出错', error);
-            throw error;
-        }
-    }
-
-    /**
      * 获取用户统计信息
-     * 只统计指定用户的非机器人消息
+     * @param {string|number} userId 用户ID
      */
     async getUserStats(userId) {
         try {
             const today = TimeZoneUtil.getChinaToday();
 
+            // 聚合计算用户统计数据
             const stats = await this.db.collection('messages').aggregate([
                 {
                     $match: {
                         timestamp: { $gte: today },
                         userId: userId,
-                        "from.is_bot": false
+                        isUserMessage: true
                     }
                 },
                 {
@@ -465,7 +399,7 @@ class BotMonitor {
                 lastActive: null
             };
 
-            // 格式化最后活跃时间为中国时区
+            // 格式化时间
             if (userStats.lastActive) {
                 userStats.lastActive = TimeZoneUtil.formatChinaTime(userStats.lastActive);
             }
@@ -474,6 +408,131 @@ class BotMonitor {
         } catch (error) {
             logger.error('获取用户统计失败', error);
             return null;
+        }
+    }
+
+    /**
+        * 检查并重新连接数据库
+        * 在连接断开时自动重连
+        */
+    async reconnectIfNeeded() {
+        if (!this.client?.topology?.isConnected()) {
+            logger.info('尝试重新连接数据库');
+            try {
+                await this.initialize();
+                logger.info('数据库重新连接成功');
+            } catch (error) {
+                logger.error('数据库重新连接失败', error);
+            }
+        }
+    }
+
+    /**
+     * 记录系统事件
+     * @param {string} message 事件消息
+     * @param {string} type 事件类型
+     * @param {string} severity 严重程度
+     * @param {Object} details 详细信息
+     */
+    async logSystemEvent(message, type = 'info', severity = 'low', details = {}) {
+        try {
+            // 构建日志条目
+            const logEntry = {
+                timestamp: TimeZoneUtil.toChinaTime(new Date()),
+                type,
+                message,
+                severity,
+                details: {
+                    ...details,
+                    uptime: Math.round((Date.now() - this.startTime) / 1000)
+                }
+            };
+
+            // 写入数据库
+            await this.db.collection('system_logs').insertOne(logEntry);
+            logger.info('系统事件已记录', { type, message });
+        } catch (error) {
+            logger.error('记录系统事件失败', error);
+        }
+    }
+
+    /**
+     * 获取系统日志
+     * @param {number} limit 返回的日志数量限制
+     * @param {string} severity 日志严重程度过滤
+     */
+    async getSystemLogs(limit = 50, severity = null) {
+        try {
+            // 构建查询条件
+            const query = severity ? { severity } : {};
+
+            // 查询日志
+            const logs = await this.db.collection('system_logs')
+                .find(query)
+                .sort({ timestamp: -1 })
+                .limit(limit)
+                .toArray();
+
+            // 格式化时间戳
+            return logs.map(log => ({
+                timestamp: TimeZoneUtil.formatChinaTime(log.timestamp),
+                type: log.type,
+                message: log.message,
+                severity: log.severity,
+                details: log.details
+            }));
+        } catch (error) {
+            logger.error('获取系统日志失败', error);
+            return [];
+        }
+    }
+
+    /**
+     * 清理过期缓存数据
+     * 删除24小时前的缓存记录
+     */
+    cleanupCache() {
+        const now = new Date();
+        for (const [date, stats] of this.messageCache.entries()) {
+            const cacheDate = new Date(date);
+            if (now - cacheDate > 24 * 60 * 60 * 1000) {
+                this.messageCache.delete(date);
+                logger.info('已清理过期缓存', { date });
+            }
+        }
+    }
+
+    /**
+     * 安全关闭监控系统
+     * 清理资源并关闭数据库连接
+     */
+    async shutdown() {
+        try {
+            // 记录关闭事件
+            await this.logSystemEvent('监控系统关闭', 'shutdown', 'info', {
+                uptime: Math.round((Date.now() - this.startTime) / 1000)
+            });
+
+            // 清理定时器
+            if (this.statsUpdateInterval) {
+                clearInterval(this.statsUpdateInterval);
+                this.statsUpdateInterval = null;
+            }
+
+            // 清理缓存数据
+            this.messageCache.clear();
+
+            // 关闭数据库连接
+            if (this.client) {
+                await this.client.close();
+                this.client = null;
+                this.db = null;
+            }
+
+            logger.info('监控系统已安全关闭');
+        } catch (error) {
+            logger.error('关闭监控系统时出错', error);
+            throw error;
         }
     }
 }
