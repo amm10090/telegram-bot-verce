@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
-import { Activity, Users, MessageCircle, Radio, AlertCircle } from 'lucide-react';
+import { Activity, Users, MessageCircle, Radio, AlertCircle, GitBranch, Clock, Database, Memory } from 'lucide-react';
 
 const Dashboard = () => {
-  // 定义状态管理
+  // 扩展状态管理，添加部署和性能数据
   const [data, setData] = useState({
     botStatus: { 
       status: '正在运行', 
@@ -21,7 +21,19 @@ const Dashboard = () => {
       lastUpdate: new Date().toLocaleString() 
     },
     messageHistory: [],
-    systemLogs: []
+    systemLogs: [],
+    deployment: {
+      id: '',
+      status: '',
+      branch: '',
+      environment: '',
+      createdAt: '',
+      url: ''
+    },
+    performance: {
+      memoryUsage: 0,
+      uptime: 0
+    }
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +65,6 @@ const Dashboard = () => {
           status: result.systemStatus?.status === '活跃' ? '正常' : '异常',
           lastUpdate: result.systemStatus?.lastUpdate || new Date().toLocaleString()
         },
-        // 处理消息历史数据,确保24小时数据完整
         messageHistory: Array.from({ length: 24 }, (_, i) => {
           const hourData = result.messageHistory?.find(item => item.小时 === i);
           return {
@@ -62,11 +73,23 @@ const Dashboard = () => {
             time: `${String(i).padStart(2, '0')}:00`
           };
         }),
-        // 处理系统日志
         systemLogs: (result.systemLogs || []).map(log => ({
           timestamp: new Date(log.时间戳).toLocaleString(),
-          message: log.消息
-        }))
+          message: log.消息,
+          type: log.type || 'info'
+        })),
+        deployment: result.deployment || {
+          id: '未知',
+          status: '未知',
+          branch: '未知',
+          environment: 'production',
+          createdAt: new Date().toLocaleString(),
+          url: '#'
+        },
+        performance: result.performance || {
+          memoryUsage: 0,
+          uptime: 0
+        }
       });
       setError(null);
     } catch (err) {
@@ -77,15 +100,13 @@ const Dashboard = () => {
     }
   };
 
-  // 组件加载时启动数据获取
   useEffect(() => {
     fetchData();
-    // 设置30秒自动刷新
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // 样式定义
+  // 基础样式定义
   const cardStyle = {
     background: 'white',
     borderRadius: '8px',
@@ -117,6 +138,18 @@ const Dashboard = () => {
     marginRight: '8px',
     display: 'inline-block'
   });
+
+  // 部署状态样式
+  const deploymentStatusStyle = (status) => {
+    const colors = {
+      'READY': '#22c55e',
+      'ERROR': '#ef4444',
+      'BUILDING': '#f59e0b',
+      'QUEUED': '#6366f1',
+      'default': '#6b7280'
+    };
+    return { color: colors[status] || colors.default };
+  };
 
   return (
     <div style={containerStyle}>
@@ -209,6 +242,64 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* 部署信息卡片 */}
+      <div style={cardStyle}>
+        <h3 style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+          <GitBranch style={{ marginRight: '8px' }} /> 部署信息
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div>
+            <div style={{ marginBottom: '8px' }}>
+              <span style={{ fontSize: '14px', color: '#666' }}>分支：</span>
+              <span style={{ fontWeight: 'bold' }}>{data.deployment.branch}</span>
+            </div>
+            <div style={{ marginBottom: '8px' }}>
+              <span style={{ fontSize: '14px', color: '#666' }}>环境：</span>
+              <span>{data.deployment.environment}</span>
+            </div>
+            <div>
+              <span style={{ fontSize: '14px', color: '#666' }}>部署时间：</span>
+              <span>{data.deployment.createdAt}</span>
+            </div>
+          </div>
+          <div>
+            <div style={{ marginBottom: '8px' }}>
+              <span style={{ fontSize: '14px', color: '#666' }}>状态：</span>
+              <span style={deploymentStatusStyle(data.deployment.status)}>
+                {data.deployment.status}
+              </span>
+            </div>
+            <div>
+              <span style={{ fontSize: '14px', color: '#666' }}>部署ID：</span>
+              <span style={{ fontFamily: 'monospace' }}>
+                {data.deployment.id.substring(0, 8)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 性能指标卡片 */}
+      <div style={cardStyle}>
+        <h3 style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+          <Memory style={{ marginRight: '8px' }} /> 性能指标
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div style={{ textAlign: 'center', padding: '16px', background: '#f9fafb', borderRadius: '8px' }}>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#3b82f6' }}>
+              {data.performance.memoryUsage} MB
+            </div>
+            <div style={{ fontSize: '14px', color: '#666' }}>内存使用</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '16px', background: '#f9fafb', borderRadius: '8px' }}>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#22c55e' }}>
+              {data.performance.uptime} 小时
+            </div>
+            <div style={{ fontSize: '14px', color: '#666' }}>运行时间</div>
+          </div>
+        </div>
+      </div>
+
       {/* 消息趋势图表 */}
       <div style={cardStyle}>
         <h3 style={{ marginBottom: '16px' }}>消息趋势</h3>
@@ -263,7 +354,22 @@ const Dashboard = () => {
                 <span style={{ color: '#666', display: 'block', marginBottom: '4px' }}>
                   {log.timestamp}
                 </span>
-                <span style={{ color: '#1f2937' }}>{log.message}</span>
+                <span style={{ 
+color: log.type === 'error' ? '#dc2626' : 
+                         log.type === 'warning' ? '#f59e0b' : '#1f2937'
+                }}>
+                  {log.message}
+                </span>
+                {log.details && (
+                  <div style={{ 
+                    marginTop: '4px',
+                    fontSize: '12px',
+                    color: '#666',
+                    fontFamily: 'monospace'
+                  }}>
+                    {JSON.stringify(log.details, null, 2)}
+                  </div>
+                )}
               </div>
             ))
           ) : (
@@ -272,6 +378,16 @@ const Dashboard = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* 最后一次更新时间提示 */}
+      <div style={{ 
+        textAlign: 'center', 
+        color: '#666',
+        fontSize: '12px',
+        marginTop: '20px' 
+      }}>
+        数据更新时间：{data.systemStatus.lastUpdate}
       </div>
     </div>
   );
