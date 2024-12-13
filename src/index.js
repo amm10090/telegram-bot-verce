@@ -1,9 +1,10 @@
 // index.js
 import React, { Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-import ErrorBoundary from './ErrorBoundary';
+import ErrorBoundary from './ErrorBoundary.jsx';
 
-const Dashboard = React.lazy(() => import('./Dashboard'));
+// 使用 React.lazy 动态导入 Dashboard 组件
+const Dashboard = React.lazy(() => import('./Dashboard.jsx'));
 
 // 全局加载状态组件
 const GlobalLoadingState = () => (
@@ -19,9 +20,11 @@ const GlobalLoadingState = () => (
     </div>
 );
 
+// 获取根元素并创建 React 根实例
 const container = document.getElementById('root');
 const root = createRoot(container);
 
+// 渲染应用
 root.render(
     <React.StrictMode>
         <ErrorBoundary>

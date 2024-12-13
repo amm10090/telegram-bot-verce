@@ -28,9 +28,8 @@ const config = {
         clean: true,
     },
 
-    // 更新模块解析配置
     resolve: {
-        extensions: ['.js', '.jsx', '.json'], // 添加可能的扩展名
+        extensions: ['.js', '.jsx', '.json'],
         alias: {
             '@': PATHS.src,
         },
@@ -59,15 +58,6 @@ const config = {
                                 runtime: 'automatic',
                             }],
                         ],
-                    },
-                },
-            },
-            {
-                test: /\.(png|jpg|jpeg|gif|svg)$/,
-                type: 'asset',
-                parser: {
-                    dataUrlCondition: {
-                        maxSize: 10 * 1024,
                     },
                 },
             },
@@ -141,8 +131,6 @@ const config = {
         children: false,
         chunks: false,
         chunkModules: false,
-        reasons: isDevelopment,
-        errorDetails: true,
     },
 };
 
