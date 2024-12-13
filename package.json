@@ -2,6 +2,7 @@
   "name": "telegram-bot-vercel",
   "version": "1.0.0",
   "description": "基于 Vercel 部署的 Telegram 机器人",
+  "type": "module",
   "main": "webhook.js",
   "scripts": {
     "start": "node webhook.js",
@@ -29,5 +30,8 @@
     "webpack": "^5.97.1",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
