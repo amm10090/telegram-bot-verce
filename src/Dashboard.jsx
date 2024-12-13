@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { Activity, Users, MessageCircle, Radio, AlertCircle, GitBranch, Clock, Database, Memory } from 'lucide-react';
-
 const Dashboard = () => {
   // 扩展状态管理，添加部署和性能数据
-  const [data, setData] = useState({
+const [data, setData] = useState({
     botStatus: { 
-      status: '正在运行', 
-      uptimeHours: 0,
-      mongoUser: '', 
-      mongoStatus: '' 
+        status: '等待连接', // 修改初始状态
+        uptimeHours: 0,
+        mongoUser: '加载中', 
+        mongoStatus: '等待连接' 
     },
     dailyStats: { 
       totalMessages: 0, 
