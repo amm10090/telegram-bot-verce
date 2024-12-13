@@ -1,3 +1,5 @@
+// start.js
+
 import { MongoClient } from 'mongodb';
 
 // 日志工具函数
@@ -33,8 +35,30 @@ export default async function handler(request, response) {
 
         // 并行获取所有需要的数据
         const [dailyStats, recentFeedback, systemLogs, messageHistory] = await Promise.all([
-            // 获取今日统计
-            db.collection('daily_stats').findOne({ date: today }),
+            // 获取今日统计 - 使用聚合管道
+            db.collection('messages').aggregate([
+                {
+                    $match: {
+                        timestamp: { $gte: today }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalMessages: { $sum: 1 },
+                        uniqueUsers: { $addToSet: "$userId" },
+                        commandsUsed: {
+                            $sum: {
+                                $cond: [{ $ne: ["$command", null] }, 1, 0]
+                            }
+                        }
+                    }
+                }
+            ]).toArray().then(results => results[0] || {
+                totalMessages: 0,
+                uniqueUsers: [],
+                commandsUsed: 0
+            }),
 
             // 获取最近反馈
             db.collection('feedback')
@@ -74,21 +98,36 @@ export default async function handler(request, response) {
         const recentMessages = await db.collection('messages')
             .countDocuments({ timestamp: { $gte: fiveMinutesAgo } });
 
+        // 获取MongoDB用户信息
+        const mongoUser = process.env.MONGODB_URI.split('@')[0].split('://')[1].split(':')[0];
+
         const systemStatus = {
             status: recentMessages > 0 ? '活跃' : '空闲',
-            uptimeHours: process.uptime() / 3600
+            uptimeHours: process.uptime() / 3600,
+            mongoUser: mongoUser,
+            mongoStatus: client.topology.isConnected() ? '已连接' : '未连接',
+            lastUpdate: new Date().toISOString()
         };
 
         // 关闭数据库连接
         await client.close();
         logger.info('统计数据获取完成');
 
+        // 填充空小时数据
+        const fullMessageHistory = Array.from({ length: 24 }, (_, i) => {
+            const hourData = messageHistory.find(m => m._id === i);
+            return {
+                小时: i,
+                数量: hourData?.count || 0
+            };
+        });
+
         // 返回所有数据
         return response.status(200).json({
-            dailyStats: dailyStats || {
-                总消息数: 0,
-                活跃用户数: 0,
-                命令使用数: 0
+            dailyStats: {
+                总消息数: dailyStats.totalMessages,
+                活跃用户数: dailyStats.uniqueUsers.length,
+                命令使用数: dailyStats.commandsUsed
             },
             systemStatus,
             recentFeedback,
@@ -96,10 +135,7 @@ export default async function handler(request, response) {
                 时间戳: log.timestamp,
                 消息: log.message
             })),
-            messageHistory: messageHistory.map(item => ({
-                小时: item._id,
-                数量: item.count
-            }))
+            messageHistory: fullMessageHistory
         });
 
     } catch (error) {
