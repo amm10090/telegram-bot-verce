@@ -5,30 +5,21 @@ import HtmlWebpackPlugin from 'html-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 
-// 由于使用ESM，需要手动构建 __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 环境变量
 const isProduction = process.env.NODE_ENV === 'production';
 const isDevelopment = !isProduction;
 
-// 路径配置
 const PATHS = {
     src: path.resolve(__dirname, './src'),
     public: path.resolve(__dirname, './public'),
     dist: path.resolve(__dirname, './dist'),
 };
 
-// webpack 配置
 const config = {
-    // 设置模式
     mode: isProduction ? 'production' : 'development',
-
-    // 入口配置
     entry: path.join(PATHS.src, 'index.js'),
-
-    // 输出配置
     output: {
         path: PATHS.dist,
         filename: 'static/js/[name].[contenthash:8].js',
@@ -37,15 +28,14 @@ const config = {
         clean: true,
     },
 
-    // 模块解析配置
+    // 更新模块解析配置
     resolve: {
-        extensions: ['.js', '.jsx'],
+        extensions: ['.js', '.jsx', '.json'], // 添加可能的扩展名
         alias: {
             '@': PATHS.src,
         },
     },
 
-    // 模块规则
     module: {
         rules: [
             {
@@ -77,16 +67,14 @@ const config = {
                 type: 'asset',
                 parser: {
                     dataUrlCondition: {
-                        maxSize: 10 * 1024, // 10KB
+                        maxSize: 10 * 1024,
                     },
                 },
             },
         ],
     },
 
-    // 插件配置
     plugins: [
-        // 生成 HTML 文件
         new HtmlWebpackPlugin({
             template: path.join(PATHS.public, 'index.html'),
             filename: 'index.html',
@@ -104,8 +92,6 @@ const config = {
                 minifyURLs: true,
             } : false,
         }),
-
-        // 复制静态资源
         new CopyWebpackPlugin({
             patterns: [
                 {
@@ -120,7 +106,6 @@ const config = {
         }),
     ],
 
-    // 优化配置
     optimization: {
         minimize: isProduction,
         minimizer: [
@@ -143,17 +128,14 @@ const config = {
         },
     },
 
-    // 性能提示
     performance: {
         hints: isProduction ? 'warning' : false,
         maxEntrypointSize: 512000,
         maxAssetSize: 512000,
     },
 
-    // 开发工具
     devtool: isDevelopment ? 'eval-source-map' : false,
 
-    // 统计信息
     stats: {
         modules: false,
         children: false,
