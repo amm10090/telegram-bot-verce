@@ -1,7 +1,7 @@
 // Dashboard.jsx - Telegram Bot 管理面板主组件
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
-import { Activity, Users, MessageCircle, Radio, AlertCircle, GitBranch, Clock, Database, Memory } from 'lucide-react';
+import { Activity, Users, MessageCircle, Radio, AlertCircle, GitBranch, Clock, Database, MonitorIcon } from 'lucide-react';
 
 // 加载状态组件 - 显示数据加载过程中的提示和动画
 const LoadingState = () => (
@@ -374,7 +374,7 @@ const Dashboard = () => {
             {/* 性能指标卡片 */}
             <div style={styles.card}>
                 <h3 style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-                    <Memory style={{ marginRight: '8px' }} /> 性能指标
+                    <MonitorIcon style={{ marginRight: '8px' }} /> 性能指标
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     {/* 内存使用指标 */}

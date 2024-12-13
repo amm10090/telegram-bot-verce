@@ -12,7 +12,6 @@ class ErrorBoundary extends React.Component {
     }
 
     componentDidCatch(error, errorInfo) {
-        // 这里可以将错误信息发送到日志服务
         console.error('组件渲染错误:', error, errorInfo);
     }
 
@@ -53,3 +52,6 @@ class ErrorBoundary extends React.Component {
         return this.props.children;
     }
 }
+
+// 确保正确导出组件
+export default ErrorBoundary;
