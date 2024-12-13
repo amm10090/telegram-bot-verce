@@ -116,36 +116,38 @@ class BotMonitor {
         this.maxRetries = 3;
     }
 
-    async logMessage(ctx) {
+    // 修改 monitoring.js 中的 logMessage 函数
+    async logMessage(message) {
         try {
-            const operationPromise = (async () => {
-                const messages = await this.dbManager.getCollection('messages');
-                const messageData = {
-                    timestamp: new Date(),
-                    userId: ctx.from?.id,
-                    chatId: ctx.chat?.id,
-                    messageType: ctx.message?.text ? 'text' : 'other',
-                    command: ctx.message?.text?.startsWith('/') ? ctx.message.text.split(' ')[0] : null,
-                    metadata: {
-                        username: ctx.from?.username,
-                        firstName: ctx.from?.first_name,
-                        lastName: ctx.from?.last_name
-                    }
-                };
+            // 添加消息去重逻辑
+            const messageId = message.message_id || message.update_id;
+            const existingMessage = await this.db.collection('messages').findOne({ messageId });
 
-                await messages.insertOne(messageData, { maxTimeMS: this.operationTimeout });
-                this.updateMessageCache(messageData);
-            })();
+            if (existingMessage) {
+                logger.info('跳过重复消息', { messageId });
+                return;
+            }
 
-            await Promise.race([
-                operationPromise,
-                new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('操作超时')), this.operationTimeout)
-                )
-            ]);
+            // 构建消息数据
+            const messageStats = {
+                messageId,
+                timestamp: new Date(),
+                userId: message.from?.id,
+                chatId: message.chat?.id,
+                messageType: message.text ? 'text' : 'other',
+                command: message.text?.startsWith('/') ? message.text.split(' ')[0] : null,
+                isUserMessage: true,
+                metadata: {
+                    username: message.from?.username,
+                    firstName: message.from?.first_name,
+                    lastName: message.from?.last_name
+                }
+            };
+
+            await this.db.collection('messages').insertOne(messageStats);
+            await this.updateDailyStats();
         } catch (error) {
-            logger.error('消息记录错误', error);
-            await this.retryOperation(() => this.logMessage(ctx));
+            logger.error('记录消息统计失败', error);
         }
     }
 
