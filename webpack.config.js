@@ -1,7 +1,13 @@
-const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const TerserPlugin = require('terser-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
+// webpack.config.js
+import path from 'path';
+import { fileURLToPath } from 'url';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import TerserPlugin from 'terser-webpack-plugin';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
+
+// 由于使用ESM，需要手动构建 __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // 环境变量
 const isProduction = process.env.NODE_ENV === 'production';
@@ -15,7 +21,7 @@ const PATHS = {
 };
 
 // webpack 配置
-module.exports = {
+const config = {
     // 设置模式
     mode: isProduction ? 'production' : 'development',
 
@@ -108,7 +114,7 @@ module.exports = {
                     globOptions: {
                         ignore: ['**/index.html'],
                     },
-                    noErrorOnMissing: true, // 防止找不到文件报错
+                    noErrorOnMissing: true,
                 },
             ],
         }),
@@ -157,3 +163,5 @@ module.exports = {
         errorDetails: true,
     },
 };
+
+export default config;
