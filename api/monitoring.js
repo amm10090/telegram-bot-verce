@@ -112,6 +112,13 @@ class BotMonitor {
 
         // 初始化系统
         this.initialize();
+        // 添加性能监控
+        this.performanceMetrics = {
+            startTime: Date.now(),
+            messageCount: 0,
+            errorCount: 0,
+            lastUpdateTime: null
+        };
     }
 
     /**
@@ -527,6 +534,20 @@ class BotMonitor {
             logger.error('获取最新部署状态失败', error);
             return null;
         }
+    }
+    // 添加性能统计方法
+    async recordMetrics() {
+        const currentTime = Date.now();
+        const uptime = (currentTime - this.performanceMetrics.startTime) / 1000;
+
+        await this.db.collection('performance_metrics').insertOne({
+            timestamp: new Date(),
+            uptime,
+            messageCount: this.performanceMetrics.messageCount,
+            errorCount: this.performanceMetrics.errorCount,
+            memoryUsage: process.memoryUsage(),
+            lastUpdateTime: this.performanceMetrics.lastUpdateTime
+        });
     }
 
     /**

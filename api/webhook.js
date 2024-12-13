@@ -114,17 +114,36 @@ class BotMonitor {
         this.operationTimeout = 3000;
         this.retryCount = 0;
         this.maxRetries = 3;
+        this.db = null;
+        this.initializeDB();
+
     }
+    async initializeDB() {
+        try {
+            this.db = await this.dbManager.connect();
+            console.log('数据库连接初始化成功');
+        } catch (error) {
+            console.error('数据库初始化失败:', error);
+        }
+    }
+
+
 
     // 修改 monitoring.js 中的 logMessage 函数
     async logMessage(message) {
         try {
+            // 确保数据库已初始化
+            if (!this.db) {
+                await this.initializeDB();
+            }
+
             // 添加消息去重逻辑
             const messageId = message.message_id || message.update_id;
-            const existingMessage = await this.db.collection('messages').findOne({ messageId });
+            const messagesCollection = this.db.collection('messages');
 
+            const existingMessage = await messagesCollection.findOne({ messageId });
             if (existingMessage) {
-                logger.info('跳过重复消息', { messageId });
+                console.log('跳过重复消息:', messageId);
                 return;
             }
 
@@ -144,10 +163,17 @@ class BotMonitor {
                 }
             };
 
-            await this.db.collection('messages').insertOne(messageStats);
+            await messagesCollection.insertOne(messageStats);
             await this.updateDailyStats();
+
         } catch (error) {
-            logger.error('记录消息统计失败', error);
+            console.error('记录消息统计失败:', error);
+            // 添加重试逻辑
+            if (this.retryCount < this.maxRetries) {
+                this.retryCount++;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                await this.logMessage(message);
+            }
         }
     }
 
