@@ -1,24 +1,20 @@
 // handlers/commands.js
-import { logger } from '../services/logger';
-import { statisticsService } from '../services/statistics';
-import { MessageType, ValidationError } from '../core/types';
+import { logger } from '../services/logger.js';
+import { statisticsService } from '../services/statistics.js';
+import { MessageType, ValidationError } from '../api/types.js';
 
 class CommandHandler {
     constructor() {
-        // 初始化命令映射
         this.commands = new Map();
-        // 设置基础命令
         this.setupBaseCommands();
     }
 
-    // 设置基础命令
     setupBaseCommands() {
         this.registerCommand('help', this.handleHelp);
         this.registerCommand('stats', this.handleStats);
         this.registerCommand('status', this.handleStatus);
     }
 
-    // 注册新命令
     registerCommand(command, handler) {
         if (typeof handler !== 'function') {
             throw new ValidationError('命令处理器必须是函数');
@@ -27,14 +23,11 @@ class CommandHandler {
         logger.info(`注册新命令: ${command}`);
     }
 
-    // 处理命令
     async handleCommand(ctx) {
         try {
-            // 获取命令名称
             const text = ctx.message.text;
             const commandName = text.split(' ')[0].substring(1).toLowerCase();
 
-            // 查找命令处理器
             const handler = this.commands.get(commandName);
 
             if (!handler) {
@@ -42,10 +35,8 @@ class CommandHandler {
                 return;
             }
 
-            // 记录命令使用
             statisticsService.recordMessage(ctx.message, ctx.from.id, MessageType.COMMAND);
 
-            // 执行命令处理器
             await handler.call(this, ctx);
 
         } catch (error) {
@@ -57,7 +48,6 @@ class CommandHandler {
         }
     }
 
-    // 帮助命令处理器
     async handleHelp(ctx) {
         const helpText = `
 可用命令列表：
@@ -71,7 +61,6 @@ class CommandHandler {
         await ctx.reply(helpText);
     }
 
-    // 统计命令处理器
     async handleStats(ctx) {
         try {
             const stats = await statisticsService.getDailyStats();
@@ -95,7 +84,6 @@ ${Object.entries(stats.消息类型分布)
         }
     }
 
-    // 状态命令处理器
     async handleStatus(ctx) {
         try {
             const uptime = process.uptime();
@@ -117,12 +105,10 @@ ${Object.entries(stats.消息类型分布)
         }
     }
 
-    // 获取所有可用命令
     getCommands() {
         return Array.from(this.commands.keys());
     }
 
-    // 移除命令
     removeCommand(command) {
         if (this.commands.delete(command)) {
             logger.info(`移除命令: ${command}`);
@@ -132,6 +118,5 @@ ${Object.entries(stats.消息类型分布)
     }
 }
 
-// 创建并导出命令处理器实例
 const commandHandler = new CommandHandler();
 export { commandHandler };
