@@ -1,11 +1,9 @@
-import { BotCore } from './core/bot';
-import { DatabaseManager } from './core/database';
-import { MessageHandler } from './handlers/messages';
-import { ErrorHandler } from './handlers/errors';
-import { logger } from './services/logger';
-
-const bot = new BotCore();
-const dbManager = new DatabaseManager();
+// api/webhook.js
+import { botCore } from './bot.js';
+import { dbManager } from './database.js';
+import { logger } from './services/logger.js';
+import { MessageHandler } from './handlers/messages.js';
+import { ErrorHandler } from './handlers/errors.js';
 
 export default async function handler(request, response) {
     if (request.method === 'OPTIONS') {
@@ -18,10 +16,10 @@ export default async function handler(request, response) {
 
             // 初始化核心服务
             await dbManager.connect();
-            await bot.initialize();
+            await botCore.initialize();
 
             // 处理消息
-            await MessageHandler.handleUpdate(update, bot);
+            await MessageHandler.handleUpdate(update, botCore);
 
             return response.status(200).json({ ok: true });
         }

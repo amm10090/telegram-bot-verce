@@ -1,6 +1,6 @@
 // utils/validation.js
 import { logger } from '../services/logger';
-import { ValidationError } from '../core/types';
+import { ValidationError } from '../types.js';
 
 class ValidationUtil {
     constructor() {

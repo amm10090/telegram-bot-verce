@@ -3,7 +3,7 @@ import { logger } from '../services/logger';
 import { statisticsService } from '../services/statistics';
 import { monitoringService } from '../services/monitoring';
 import { commandHandler } from './commands';
-import { MessageType, ValidationError } from '../core/types';
+import { MessageType, DataModels } from '../types.js';
 
 class MessageHandler {
     constructor() {

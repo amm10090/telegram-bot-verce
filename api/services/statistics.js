@@ -1,7 +1,7 @@
 // services/statistics.js
 import { logger } from './logger';
 import { dbManager } from '../core/database';
-import { MessageType, DataModels } from '../core/types';
+import { MessageType, DataModels } from '../types.js';
 
 class StatisticsService {
     constructor() {

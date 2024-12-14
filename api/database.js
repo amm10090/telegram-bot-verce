@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 import { logger } from '../services/logger';
-import { DatabaseError } from '../types/errors';
+import { DatabaseError } from './types.js';
 
 class DatabaseManager {
     constructor() {

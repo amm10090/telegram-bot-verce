@@ -1,7 +1,7 @@
 // handlers/errors.js
 import { logger } from '../services/logger';
 import { monitoringService } from '../services/monitoring';
-import { BotError, DatabaseError, ValidationError } from '../core/types';
+import { MessageType, DataModels } from '../types.js';
 
 class ErrorHandler {
     constructor() {
