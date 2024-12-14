@@ -1,5 +1,6 @@
+// api/database.js
 import { MongoClient } from 'mongodb';
-import { logger } from '../services/logger';
+import { logger } from '../services/logger.js';
 import { DatabaseError } from './types.js';
 
 class DatabaseManager {

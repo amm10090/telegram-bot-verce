@@ -1,7 +1,7 @@
 // api/webhook.js
 import { botCore } from './bot.js';
 import { dbManager } from './database.js';
-import { logger } from './services/logger.js';
+import { logger } from '../services/logger.js';
 import { MessageHandler } from './handlers/messages.js';
 import { ErrorHandler } from './handlers/errors.js';
 

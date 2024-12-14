@@ -1,6 +1,6 @@
 // api/bot.js
 import { Telegraf } from 'telegraf';
-import { logger } from './services/logger.js';
+import { logger } from '../services/logger.js';
 import { MAIN_KEYBOARD } from './config/keyboards.js';
 import { BotError } from './types.js';
 

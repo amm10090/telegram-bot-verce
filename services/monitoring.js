@@ -1,7 +1,7 @@
 // services/monitoring.js
-import { logger } from './logger';
-import { dbManager } from '../core/database';
-import { SystemConstants } from '../core/types';
+import { logger } from './logger.js';
+import { dbManager } from '../api/database.js';
+import { SystemConstants } from '../api/types.js';
 
 class MonitoringService {
     constructor() {

@@ -1,9 +1,9 @@
 // handlers/messages.js
-import { logger } from '../services/logger';
-import { statisticsService } from '../services/statistics';
-import { monitoringService } from '../services/monitoring';
+import { logger } from '../services/logger.js';
+import { statisticsService } from '../services/statistics.js';
+import { monitoringService } from '../services/monitoring.js';
 import { commandHandler } from './commands';
-import { MessageType, DataModels } from '../types.js';
+import { MessageType, ValidationError } from '../types.js';
 
 class MessageHandler {
     constructor() {
