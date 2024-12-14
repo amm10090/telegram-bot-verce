@@ -132,4 +132,6 @@ ${Object.entries(stats.消息类型分布)
     }
 }
 
-export const commandHandler = new CommandHandler();
+// 创建并导出命令处理器实例
+const commandHandler = new CommandHandler();
+export { commandHandler };

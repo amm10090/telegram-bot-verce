@@ -2,8 +2,8 @@
 import { logger } from '../services/logger.js';
 import { statisticsService } from '../services/statistics.js';
 import { monitoringService } from '../services/monitoring.js';
-import { commandHandler } from './commands';
-import { MessageType, ValidationError } from '../types.js';
+import { commandHandler } from './commands.js';
+import { MessageType, ValidationError } from '../api/types.js';
 
 class MessageHandler {
     constructor() {
@@ -79,7 +79,6 @@ class MessageHandler {
                 text: message.text
             });
 
-            // 这里可以添加更多的文本处理逻辑
             await bot.sendMessage(
                 message.chat.id,
                 '已收到您的消息：' + message.text
@@ -179,51 +178,8 @@ class MessageHandler {
             throw error;
         }
     }
-
-    // 检查消息频率限制
-    checkRateLimit(userId) {
-        const now = Date.now();
-        const userMessages = this.userMessageTimes.get(userId) || [];
-
-        // 清理超过时间窗口的消息记录
-        const windowStart = now - SystemConstants.MESSAGE_WINDOW;
-        const recentMessages = userMessages.filter(time => time > windowStart);
-
-        // 更新用户消息时间记录
-        this.userMessageTimes.set(userId, [...recentMessages, now]);
-
-        // 检查是否超过限制
-        return recentMessages.length < SystemConstants.MAX_MESSAGES_PER_WINDOW;
-    }
-
-    // 消息预处理
-    async preprocessMessage(message) {
-        // 移除多余空白字符
-        if (message.text) {
-            message.text = message.text.trim();
-        }
-
-        // 检查消息长度
-        if (message.text && message.text.length > SystemConstants.MAX_MESSAGE_LENGTH) {
-            throw new ValidationError('消息长度超出限制');
-        }
-
-        return message;
-    }
-
-    // 获取消息处理统计
-    getHandlerStats() {
-        const stats = {};
-        for (const [type, handler] of this.messageTypeHandlers) {
-            stats[type] = {
-                registered: true,
-                handlerName: handler.name
-            };
-        }
-        return stats;
-    }
 }
 
-// 创建并导出消息处理器实例
+// 创建并导出单例实例
 const messageHandler = new MessageHandler();
 export { messageHandler };
