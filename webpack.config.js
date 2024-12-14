@@ -93,8 +93,22 @@ module.exports = {
         runtimeChunk: {
             name: 'runtime'
         }
-    },
-    performance: {
-        hints: process.env.NODE_ENV === 'production' ? 'warning' : false
     }
-};
+}; 主要修改内容说明：
+
+移除了 ES 模块相关的导入语法：
+
+删除了 import 语句
+删除了 fileURLToPath 的使用
+使用 require() 替代 import
+
+
+导出方式改变：
+
+使用 module.exports 替代 export default
+
+
+    __dirname 的处理：
+
+直接使用 Node.js 内置的 __dirname 变量
+移除了 ES 模块相关的 __dirname 计算逻辑
