@@ -1,7 +1,7 @@
 // services/statistics.js
-import { logger } from './logger';
-import { dbManager } from '../core/database';
-import { MessageType, DataModels } from '../types.js';
+import { logger } from './logger.js';
+import { dbManager } from '../api/database.js';
+import { MessageType, DataModels } from '../api/types.js';
 
 class StatisticsService {
     constructor() {
@@ -23,12 +23,10 @@ class StatisticsService {
         }
 
         try {
-            // Ensure required collections exist
             const db = await dbManager.connect();
             await db.createCollection('statistics');
             await db.createCollection('user_analytics');
 
-            // Create indexes for better query performance
             await db.collection('statistics').createIndex({ date: 1 });
             await db.collection('user_analytics').createIndex({ userId: 1 });
 
@@ -41,19 +39,15 @@ class StatisticsService {
     }
 
     recordMessage(message, userId, messageType = MessageType.TEXT) {
-        // Update daily statistics
         this.dailyStats.messageCount++;
         this.dailyStats.activeUsers.add(userId);
 
-        // Update message type distribution
         const currentTypeCount = this.dailyStats.messageTypes.get(messageType) || 0;
         this.dailyStats.messageTypes.set(messageType, currentTypeCount + 1);
 
-        // Update hourly distribution
         const hour = new Date().getHours();
         this.dailyStats.hourlyDistribution[hour]++;
 
-        // If it's a command, update command count
         if (messageType === MessageType.COMMAND) {
             this.dailyStats.commandCount++;
         }
@@ -71,7 +65,6 @@ class StatisticsService {
                 timestamp: new Date()
             };
 
-            // Validate stats before saving
             DataModels.Stats.validate(stats);
 
             const collection = await dbManager.getCollection('statistics');
@@ -162,4 +155,5 @@ class StatisticsService {
     }
 }
 
-export const statisticsService = new StatisticsService();
+const statisticsService = new StatisticsService();
+export { statisticsService };
