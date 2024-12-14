@@ -2,7 +2,7 @@
 
 ## 项目简介
 
-这是一个基于 Vercel 平台开发的 Telegram 机器人项目，集成了实时监控系统和可视化管理面板。项目采用现代化的前端技术栈和 Serverless 架构，提供了稳定可靠的机器人服务和数据分析能力。
+本项目旨在开发一个基于 Vercel 平台的 Telegram 机器人服务，结合 实时监控系统 和 可视化管理面板，为用户提供稳定、可靠、现代化的机器人服务和数据分析能力。该项目采用 Serverless 架构和现代前端技术栈，实现高性能、低成本的运行模式，同时确保快速扩展和维护便捷
 
 ## 核心功能
 
@@ -31,23 +31,51 @@
 
 ## 项目结构
 
-```
 TELEGRAM-BOT-VERCE/
-├── api/                    # Serverless API目录
-│   ├── monitoring.js       # 监控系统核心逻辑
-│   ├── start.js           # 统计数据API
-│   ├── test.js            # 测试接口
-│   └── webhook.js         # Telegram webhook处理
-├── public/                 # 静态资源目录
-│   └── index.html         # 主页模板
-├── src/                    # 源代码目录
-│   ├── Dashboard.jsx      # 管理面板组件
-│   └── index.js           # 应用入口
-└── 配置文件
-    ├── package.json       # 项目依赖配置
-    ├── vercel.json        # Vercel部署配置
-    └── webpack.config.js  # Webpack构建配置
-```
+├── api/
+│ ├── monitoring.js # 监控系统核心模块
+│ ├── start.js # 统计数据 API
+│ ├── test.js # 测试接口
+│ └── webhook.js # Telegram webhook 处理
+│
+├── public/
+│ └── index.html # 主页模板
+│
+├── src/
+│ ├── Dashboard.jsx # 管理面板主组件
+│ ├── ErrorBoundary.jsx # 错误边界组件
+│ ├── ErrorState.jsx # 错误状态组件
+│ ├── index.js # 应用入口文件
+│ └── LoadingState.jsx # 加载状态组件
+│
+├── .babelrc # Babel 配置
+├── .gitignore # Git 忽略文件配置
+├── package-lock.json # 依赖版本锁定文件
+├── package.json # 项目依赖配置
+├── README.md # 项目说明文档
+├── vercel.json # Vercel 部署配置
+└── webpack.config.js # Webpack 构建配置
+
+主要目录说明：
+api/ - 后端 API 接口文件
+public/ - 静态资源文件
+src/ - 前端源代码文件
+根目录 - 项目配置文件
+
+技术栈：
+前端：
+
+- React 18
+- Recharts 图表库
+- Lucide React 图标库
+- Webpack 5 构建工具
+
+后端：
+
+- Vercel Serverless Functions
+- MongoDB 数据存储
+- Telegraf.js Bot 框架
+- Node.js 运行环境
 
 ## 环境要求
 

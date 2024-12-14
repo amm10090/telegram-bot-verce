@@ -1,0 +1,57 @@
+graph TD
+    Root["📁 TELEGRAM-BOT-VERCE"]
+    API["📁 api"]
+    Public["📁 public"]
+    Src["📁 src"]
+    Config["📁 配置文件"]
+
+    Root --> API
+    Root --> Public
+    Root --> Src
+    Root --> Config
+    
+    %% API files
+    API --> MonitoringJS["📄 monitoring.js"]
+    API --> StartJS["📄 start.js"]
+    API --> TestJS["📄 test.js"]
+    API --> WebhookJS["📄 webhook.js"]
+
+    %% Public files
+    Public --> IndexHTML["📄 index.html"]
+
+    %% Src files
+    Src --> DashboardJSX["📄 Dashboard.jsx"]
+    Src --> ErrorBoundaryJSX["📄 ErrorBoundary.jsx"]
+    Src --> ErrorStateJSX["📄 ErrorState.jsx"]
+    Src --> IndexJS["📄 index.js"]
+    Src --> LoadingStateJSX["📄 LoadingState.jsx"]
+
+    %% Config files
+    Config --> PackageJSON["📄 package.json"]
+    Config --> VercelJSON["📄 vercel.json"]
+    Config --> WebpackConfig["📄 webpack.config.js"]
+    Config --> README["📄 README.md"]
+
+    %% File descriptions
+    MonitoringJS["📄 monitoring.js<br/><small>监控系统核心逻辑</small>"]
+    StartJS["📄 start.js<br/><small>统计数据API</small>"]
+    TestJS["📄 test.js<br/><small>测试接口</small>"]
+    WebhookJS["📄 webhook.js<br/><small>Telegram webhook处理</small>"]
+    
+    DashboardJSX["📄 Dashboard.jsx<br/><small>管理面板主组件</small>"]
+    ErrorBoundaryJSX["📄 ErrorBoundary.jsx<br/><small>错误边界组件</small>"]
+    ErrorStateJSX["📄 ErrorState.jsx<br/><small>错误状态组件</small>"]
+    LoadingStateJSX["📄 LoadingState.jsx<br/><small>加载状态组件</small>"]
+    IndexJS["📄 index.js<br/><small>应用入口文件</small>"]
+
+    PackageJSON["📄 package.json<br/><small>项目依赖配置</small>"]
+    VercelJSON["📄 vercel.json<br/><small>Vercel部署配置</small>"]
+    WebpackConfig["📄 webpack.config.js<br/><small>Webpack构建配置</small>"]
+    README["📄 README.md<br/><small>项目说明文档</small>"]
+
+    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef folder fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
+    classDef file fill:#fff,stroke:#666,stroke-width:1px;
+    
+    class Root,API,Public,Src,Config folder;
+    class MonitoringJS,StartJS,TestJS,WebhookJS,IndexHTML,DashboardJSX,ErrorBoundaryJSX,ErrorStateJSX,IndexJS,LoadingStateJSX,PackageJSON,VercelJSON,WebpackConfig,README file;
