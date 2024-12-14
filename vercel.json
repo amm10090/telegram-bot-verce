@@ -16,7 +16,7 @@
             }
         },
         {
-            "src": "src/**/*",
+            "src": "package.json",
             "use": "@vercel/static-build",
             "config": {
                 "distDir": "dist",
@@ -24,48 +24,31 @@
             }
         }
     ],
-    "rewrites": [
+    "routes": [
         {
-            "source": "/api/webhook",
-            "destination": "/api/webhook.js"
+            "src": "/api/webhook",
+            "dest": "/api/webhook.js"
         },
         {
-            "source": "/dashboard",
-            "destination": "/index.html"
+            "src": "^/static/(.*)",
+            "dest": "/static/$1",
+            "headers": {
+                "cache-control": "public, max-age=31536000, immutable"
+            }
         },
         {
-            "source": "/(.*)",
-            "destination": "/index.html"
+            "src": "^/assets/(.*)",
+            "dest": "/assets/$1",
+            "headers": {
+                "cache-control": "public, max-age=31536000, immutable"
+            }
+        },
+        {
+            "src": ".*",
+            "dest": "/index.html"
         }
     ],
     "headers": [
-        {
-            "source": "/static/(.*)",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=31536000, immutable"
-                }
-            ]
-        },
-        {
-            "source": "/assets/(.*)",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=31536000, immutable"
-                }
-            ]
-        },
-        {
-            "source": "/favicon.ico",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=86400"
-                }
-            ]
-        },
         {
             "source": "/(.*)",
             "headers": [
@@ -91,7 +74,5 @@
                 }
             ]
         }
-    ],
-    "cleanUrls": true,
-    "trailingSlash": false
+    ]
 }
