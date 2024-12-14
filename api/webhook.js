@@ -2,8 +2,8 @@
 import { botCore } from './bot.js';
 import { dbManager } from './database.js';
 import { logger } from '../services/logger.js';
-import { MessageHandler } from './handlers/messages.js';
-import { ErrorHandler } from './handlers/errors.js';
+import { messageHandler } from '../handlers/messages.js';
+import { errorHandler } from '../handlers/errors.js';
 
 export default async function handler(request, response) {
     if (request.method === 'OPTIONS') {
@@ -19,14 +19,14 @@ export default async function handler(request, response) {
             await botCore.initialize();
 
             // 处理消息
-            await MessageHandler.handleUpdate(update, botCore);
+            await messageHandler.handleUpdate(update, botCore);
 
             return response.status(200).json({ ok: true });
         }
 
         return response.status(405).json({ error: '不支持的请求方法' });
     } catch (error) {
-        await ErrorHandler.handle(error);
+        await errorHandler.handle(error);
         logger.error('Webhook处理错误', error);
 
         return response.status(500).json({

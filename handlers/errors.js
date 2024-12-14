@@ -1,7 +1,7 @@
 // handlers/errors.js
 import { logger } from '../services/logger';
 import { monitoringService } from '../services/monitoring';
-import { MessageType, DataModels } from '../types.js';
+import { BotError, DatabaseError, ValidationError } from '../types.js';
 
 class ErrorHandler {
     constructor() {
@@ -115,4 +115,5 @@ class ErrorHandler {
     }
 }
 
-export const errorHandler = new ErrorHandler();
+const errorHandler = new ErrorHandler();
+export { errorHandler };

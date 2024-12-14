@@ -224,5 +224,6 @@ class MessageHandler {
     }
 }
 
-// 导出消息处理器实例
-export const messageHandler = new MessageHandler();
+// 创建并导出消息处理器实例
+const messageHandler = new MessageHandler();
+export { messageHandler };
