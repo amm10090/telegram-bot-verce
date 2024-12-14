@@ -1,5 +1,7 @@
 {
     "version": 2,
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
     "builds": [
         {
             "src": "api/webhook.js",
@@ -14,65 +16,29 @@
                     "config/**"
                 ]
             }
-        },
-        {
-            "src": "package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "dist",
-                "buildCommand": "npm run build"
-            }
         }
     ],
     "routes": [
         {
             "src": "/api/webhook",
-            "dest": "/api/webhook.js"
+            "dest": "/api/webhook.js",
+            "methods": [
+                "POST"
+            ]
         },
         {
-            "src": "^/static/(.*)",
+            "src": "/static/(.*)",
             "dest": "/static/$1",
             "headers": {
                 "cache-control": "public, max-age=31536000, immutable"
             }
         },
         {
-            "src": "^/assets/(.*)",
-            "dest": "/assets/$1",
-            "headers": {
-                "cache-control": "public, max-age=31536000, immutable"
-            }
-        },
-        {
-            "src": ".*",
+            "src": "/((?!api/).*)",
             "dest": "/index.html"
         }
     ],
-    "headers": [
-        {
-            "source": "/(.*)",
-            "headers": [
-                {
-                    "key": "X-Content-Type-Options",
-                    "value": "nosniff"
-                },
-                {
-                    "key": "X-Frame-Options",
-                    "value": "DENY"
-                },
-                {
-                    "key": "X-XSS-Protection",
-                    "value": "1; mode=block"
-                },
-                {
-                    "key": "Referrer-Policy",
-                    "value": "strict-origin-when-cross-origin"
-                },
-                {
-                    "key": "Permissions-Policy",
-                    "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
-                }
-            ]
-        }
-    ]
+    "env": {
+        "NODE_ENV": "production"
+    }
 }
