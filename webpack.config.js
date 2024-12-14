@@ -8,33 +8,24 @@ import CopyWebpackPlugin from 'copy-webpack-plugin';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const isProduction = process.env.NODE_ENV === 'production';
-const isDevelopment = !isProduction;
-
-const PATHS = {
-    src: path.resolve(__dirname, './src'),
-    public: path.resolve(__dirname, './public'),
-    dist: path.resolve(__dirname, './dist'),
-};
-
-const config = {
-    mode: isProduction ? 'production' : 'development',
-    entry: path.join(PATHS.src, 'index.js'),
+export default {
+    mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+    entry: './src/index.js',
     output: {
-        path: PATHS.dist,
+        path: path.resolve(__dirname, 'dist'),
         filename: 'static/js/[name].[contenthash:8].js',
         chunkFilename: 'static/js/[name].[contenthash:8].chunk.js',
         publicPath: '/',
-        clean: true,
+        clean: true
     },
-
     resolve: {
         extensions: ['.js', '.jsx', '.json'],
-        alias: {
-            '@': PATHS.src,
-        },
+        modules: ['node_modules'],
+        fallback: {
+            "path": false,
+            "fs": false
+        }
     },
-
     module: {
         rules: [
             {
@@ -43,33 +34,24 @@ const config = {
                 use: {
                     loader: 'babel-loader',
                     options: {
-                        cacheDirectory: true,
-                        cacheCompression: false,
                         presets: [
                             ['@babel/preset-env', {
                                 targets: {
-                                    browsers: ['last 2 versions', '> 1%', 'not dead'],
-                                },
-                                modules: false,
-                                useBuiltIns: 'usage',
-                                corejs: 3,
+                                    node: 'current'
+                                }
                             }],
-                            ['@babel/preset-react', {
-                                runtime: 'automatic',
-                            }],
-                        ],
-                    },
-                },
-            },
-        ],
+                            '@babel/preset-react'
+                        ]
+                    }
+                }
+            }
+        ]
     },
-
     plugins: [
         new HtmlWebpackPlugin({
-            template: path.join(PATHS.public, 'index.html'),
-            filename: 'index.html',
+            template: 'public/index.html',
             inject: true,
-            minify: isProduction ? {
+            minify: process.env.NODE_ENV === 'production' ? {
                 removeComments: true,
                 collapseWhitespace: true,
                 removeRedundantAttributes: true,
@@ -79,59 +61,15 @@ const config = {
                 keepClosingSlash: true,
                 minifyJS: true,
                 minifyCSS: true,
-                minifyURLs: true,
-            } : false,
-        }),
-        new CopyWebpackPlugin({
-            patterns: [
-                {
-                    from: PATHS.public,
-                    to: PATHS.dist,
-                    globOptions: {
-                        ignore: ['**/index.html'],
-                    },
-                    noErrorOnMissing: true,
-                },
-            ],
-        }),
+                minifyURLs: true
+            } : false
+        })
     ],
-
     optimization: {
-        minimize: isProduction,
-        minimizer: [
-            new TerserPlugin({
-                terserOptions: {
-                    compress: {
-                        drop_console: isProduction,
-                        drop_debugger: isProduction,
-                    },
-                    format: {
-                        comments: false,
-                    },
-                },
-                extractComments: false,
-            }),
-        ],
+        minimize: process.env.NODE_ENV === 'production',
+        minimizer: [new TerserPlugin()],
         splitChunks: {
-            chunks: 'all',
-            name: false,
-        },
-    },
-
-    performance: {
-        hints: isProduction ? 'warning' : false,
-        maxEntrypointSize: 512000,
-        maxAssetSize: 512000,
-    },
-
-    devtool: isDevelopment ? 'eval-source-map' : false,
-
-    stats: {
-        modules: false,
-        children: false,
-        chunks: false,
-        chunkModules: false,
-    },
+            chunks: 'all'
+        }
+    }
 };
-
-export default config;

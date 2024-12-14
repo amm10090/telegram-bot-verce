@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import ErrorBoundary from './ErrorBoundary';
-import Dashboard from './Dashboard';
+import ErrorBoundary from './ErrorBoundary.jsx';
+import Dashboard from './Dashboard.jsx';
 
 // 全局加载状态组件
 const LoadingScreen = () => (
@@ -13,7 +13,7 @@ const LoadingScreen = () => (
     </div>
 );
 
-// 异步加载主应用
+// 主应用组件
 const App = () => (
     <React.StrictMode>
         <ErrorBoundary>
