@@ -1,25 +1,22 @@
 {
     "version": 2,
-    "buildCommand": "npm run build",
-    "outputDirectory": "dist",
     "builds": [
         {
             "src": "api/webhook.js",
             "use": "@vercel/node",
             "config": {
-                "maxDuration": 10
+                "maxDuration": 10,
+                "includeFiles": [
+                    "api/**",
+                    "services/**",
+                    "handlers/**",
+                    "utils/**",
+                    "config/**"
+                ]
             }
         },
         {
-            "src": "api/test.js",
-            "use": "@vercel/node"
-        },
-        {
-            "src": "api/start.js",
-            "use": "@vercel/node"
-        },
-        {
-            "src": "package.json",
+            "src": "src/**/*",
             "use": "@vercel/static-build",
             "config": {
                 "distDir": "dist",
@@ -33,12 +30,8 @@
             "destination": "/api/webhook.js"
         },
         {
-            "source": "/api/test",
-            "destination": "/api/test.js"
-        },
-        {
-            "source": "/api/start",
-            "destination": "/api/start.js"
+            "source": "/dashboard",
+            "destination": "/index.html"
         },
         {
             "source": "/(.*)",
