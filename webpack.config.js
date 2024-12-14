@@ -3,9 +3,11 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
-module.exports = {
-    mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-    entry: './src/index.js',
+const isProduction = process.env.NODE_ENV === 'production';
+
+const config = {
+    mode: isProduction ? 'production' : 'development',
+    entry: path.join(__dirname, 'src', 'index.js'),
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'static/js/[name].[contenthash:8].js',
@@ -20,8 +22,8 @@ module.exports = {
             '@': path.resolve(__dirname, 'src')
         },
         fallback: {
-            "path": false,
-            "fs": false
+            path: false,
+            fs: false
         }
     },
     module: {
@@ -50,9 +52,9 @@ module.exports = {
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: 'public/index.html',
+            template: path.join(__dirname, 'public', 'index.html'),
             inject: true,
-            minify: process.env.NODE_ENV === 'production' ? {
+            minify: isProduction ? {
                 removeComments: true,
                 collapseWhitespace: true,
                 removeRedundantAttributes: true,
@@ -68,8 +70,8 @@ module.exports = {
         new CopyWebpackPlugin({
             patterns: [
                 {
-                    from: 'public',
-                    to: '.',
+                    from: path.join(__dirname, 'public'),
+                    to: path.join(__dirname, 'dist'),
                     globOptions: {
                         ignore: ['**/index.html']
                     }
@@ -78,14 +80,20 @@ module.exports = {
         })
     ],
     optimization: {
-        minimize: process.env.NODE_ENV === 'production',
-        minimizer: [new TerserPlugin({
-            terserOptions: {
-                compress: {
-                    drop_console: process.env.NODE_ENV === 'production'
-                }
-            }
-        })],
+        minimize: isProduction,
+        minimizer: [
+            new TerserPlugin({
+                terserOptions: {
+                    format: {
+                        comments: false
+                    },
+                    compress: {
+                        drop_console: isProduction
+                    }
+                },
+                extractComments: false
+            })
+        ],
         splitChunks: {
             chunks: 'all',
             name: false
@@ -93,22 +101,12 @@ module.exports = {
         runtimeChunk: {
             name: 'runtime'
         }
+    },
+    performance: {
+        hints: isProduction ? 'warning' : false,
+        maxEntrypointSize: 512000,
+        maxAssetSize: 512000
     }
-}; 主要修改内容说明：
+};
 
-移除了 ES 模块相关的导入语法：
-
-删除了 import 语句
-删除了 fileURLToPath 的使用
-使用 require() 替代 import
-
-
-导出方式改变：
-
-使用 module.exports 替代 export default
-
-
-    __dirname 的处理：
-
-直接使用 Node.js 内置的 __dirname 变量
-移除了 ES 模块相关的 __dirname 计算逻辑
+module.exports = config;
