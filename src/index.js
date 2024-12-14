@@ -1,36 +1,30 @@
-// index.js
-import React, { Suspense } from 'react';
+import React from 'react';
 import { createRoot } from 'react-dom/client';
-import ErrorBoundary from './ErrorBoundary.jsx';
-
-// 使用 React.lazy 动态导入 Dashboard 组件
-const Dashboard = React.lazy(() => import('./Dashboard.jsx'));
+import ErrorBoundary from './ErrorBoundary';
+import Dashboard from './Dashboard';
 
 // 全局加载状态组件
-const GlobalLoadingState = () => (
-    <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontSize: '16px',
-        color: '#666'
-    }}>
-        正在加载应用...
+const LoadingScreen = () => (
+    <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+            <div className="w-16 h-16 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-600">正在加载应用...</p>
+        </div>
     </div>
 );
 
-// 获取根元素并创建 React 根实例
-const container = document.getElementById('root');
-const root = createRoot(container);
-
-// 渲染应用
-root.render(
+// 异步加载主应用
+const App = () => (
     <React.StrictMode>
         <ErrorBoundary>
-            <Suspense fallback={<GlobalLoadingState />}>
+            <React.Suspense fallback={<LoadingScreen />}>
                 <Dashboard />
-            </Suspense>
+            </React.Suspense>
         </ErrorBoundary>
     </React.StrictMode>
 );
+
+// 渲染应用
+const container = document.getElementById('root');
+const root = createRoot(container);
+root.render(<App />);

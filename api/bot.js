@@ -57,7 +57,17 @@ class BotCore {
         if (!this.initialized) {
             await this.initialize();
         }
-        return this.bot.handleUpdate(update);
+
+        try {
+            // 添加消息类型检查
+            if (!update || (!update.message && !update.callback_query)) {
+                throw new ValidationError('无效的更新消息格式');
+            }
+            return await this.bot.handleUpdate(update);
+        } catch (error) {
+            logger.error('处理更新消息失败', error);
+            throw error;
+        }
     }
 
     registerCommand(command, handler) {
