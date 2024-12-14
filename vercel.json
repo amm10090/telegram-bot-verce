@@ -16,6 +16,13 @@
                     "config/**"
                 ]
             }
+        },
+        {
+            "src": "package.json",
+            "use": "@vercel/static-build",
+            "config": {
+                "distDir": "dist"
+            }
         }
     ],
     "routes": [
@@ -27,15 +34,21 @@
             ]
         },
         {
-            "src": "/static/(.*)",
+            "src": "^/static/(.*)",
             "dest": "/static/$1",
             "headers": {
                 "cache-control": "public, max-age=31536000, immutable"
             }
         },
         {
-            "src": "/((?!api/).*)",
-            "dest": "/index.html"
+            "handle": "filesystem"
+        },
+        {
+            "src": "^(?!/api).*",
+            "dest": "/index.html",
+            "headers": {
+                "cache-control": "public, max-age=0, must-revalidate"
+            }
         }
     ],
     "env": {

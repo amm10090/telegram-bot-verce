@@ -1,14 +1,9 @@
-// webpack.config.js
-import path from 'path';
-import { fileURLToPath } from 'url';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
-import TerserPlugin from 'terser-webpack-plugin';
-import CopyWebpackPlugin from 'copy-webpack-plugin';
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export default {
+module.exports = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     entry: './src/index.js',
     output: {
@@ -21,6 +16,9 @@ export default {
     resolve: {
         extensions: ['.js', '.jsx', '.json'],
         modules: ['node_modules'],
+        alias: {
+            '@': path.resolve(__dirname, 'src')
+        },
         fallback: {
             "path": false,
             "fs": false
@@ -37,10 +35,13 @@ export default {
                         presets: [
                             ['@babel/preset-env', {
                                 targets: {
-                                    node: 'current'
+                                    browsers: ['last 2 versions', 'not dead']
                                 }
                             }],
                             '@babel/preset-react'
+                        ],
+                        plugins: [
+                            '@babel/plugin-transform-runtime'
                         ]
                     }
                 }
@@ -63,13 +64,37 @@ export default {
                 minifyCSS: true,
                 minifyURLs: true
             } : false
+        }),
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: 'public',
+                    to: '.',
+                    globOptions: {
+                        ignore: ['**/index.html']
+                    }
+                }
+            ]
         })
     ],
     optimization: {
         minimize: process.env.NODE_ENV === 'production',
-        minimizer: [new TerserPlugin()],
+        minimizer: [new TerserPlugin({
+            terserOptions: {
+                compress: {
+                    drop_console: process.env.NODE_ENV === 'production'
+                }
+            }
+        })],
         splitChunks: {
-            chunks: 'all'
+            chunks: 'all',
+            name: false
+        },
+        runtimeChunk: {
+            name: 'runtime'
         }
+    },
+    performance: {
+        hints: process.env.NODE_ENV === 'production' ? 'warning' : false
     }
 };
