@@ -5,7 +5,7 @@ import { useIntl } from 'react-intl';
 import LanguageSwitcher from './LanguageSwitcher';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import { User, Bell, Sun, Moon } from 'lucide-react';
+import { Home, MessageCircle, Settings, User, Bell, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 // 定义组件的属性类型
