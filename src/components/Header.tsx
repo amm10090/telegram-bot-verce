@@ -1,35 +1,82 @@
+// src/components/Header.tsx
 import React from 'react';
 import { Menu, Bell, User } from 'lucide-react';
+import { useIntl } from 'react-intl';
+import ThemeToggle from './ThemeToggle';
+import LanguageSwitcher from './LanguageSwitcher';
 
-export default function Header({
-  sidebarOpen,
-  setSidebarOpen
-}: {
+interface HeaderProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
-}) {
+}
+
+export default function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
+  const intl = useIntl();
+
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-md">
-      <div className="flex items-center justify-between px-6 py-4">
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="text-gray-500 dark:text-gray-200 lg:hidden focus:outline-none"
-        >
-          <Menu className="h-6 w-6" />
-        </button>
-        
+    <header className="sticky top-0 z-40 border-b border-border bg-background">
+      <div className="container flex h-16 items-center justify-between px-4">
+        {/* 左侧区域：汉堡菜单和标题 */}
+        <div className="flex items-center">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="
+              lg:hidden
+              p-2 rounded-md
+              text-muted-foreground
+              hover:text-foreground
+              hover:bg-accent
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-ring
+            "
+            aria-label={intl.formatMessage({ id: 'nav.toggle' })}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          <h1 className="ml-4 text-lg font-medium text-foreground hidden md:block">
+            {intl.formatMessage({ id: 'dashboard.title' })}
+          </h1>
+        </div>
+
+        {/* 右侧工具栏 */}
         <div className="flex items-center space-x-4">
-          <button className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">
+          {/* 语言切换器 */}
+          <LanguageSwitcher />
+
+          {/* 主题切换按钮 */}
+          <ThemeToggle />
+
+          {/* 通知按钮 */}
+          <button 
+            className="
+              p-2 rounded-md
+              text-muted-foreground
+              hover:text-foreground
+              hover:bg-accent
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-ring
+            "
+            aria-label={intl.formatMessage({ id: 'notifications.toggle' })}
+          >
             <Bell className="h-5 w-5" />
           </button>
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-              <User className="h-5 w-5 text-gray-500 dark:text-gray-300" />
-            </div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-              User
-            </span>
-          </div>
+
+          {/* 用户头像按钮 */}
+          <button 
+            className="
+              flex items-center justify-center
+              h-8 w-8 rounded-full
+              bg-accent
+              hover:bg-accent/80
+              transition-colors
+            "
+            aria-label={intl.formatMessage({ id: 'profile.open' })}
+          >
+            <User className="h-5 w-5 text-foreground" />
+          </button>
         </div>
       </div>
     </header>

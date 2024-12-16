@@ -1,3 +1,4 @@
+// src/components/MainContent.tsx
 import React from 'react';
 import { useIntl } from 'react-intl';
 import DashboardMetrics from "./dashboard/dashboard-metrics";
@@ -9,32 +10,35 @@ export default function MainContent() {
   const intl = useIntl();
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-8">
-      {/* 页面标题区域 */}
-      <div className="flex flex-col space-y-2 mb-8">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
-          {intl.formatMessage({ id: 'dashboard.welcome.title' })}
-        </h2>
-        <p className="text-gray-600 dark:text-gray-300">
-          {intl.formatMessage({ id: 'dashboard.welcome.description' })}
-        </p>
-      </div>
+    <div className="min-h-screen bg-background">
+      {/* 添加一个外层容器来处理内容的间距
+          pt-[5rem] 确保内容不会被顶部导航栏遮挡
+          空间布局采用 space-y 而不是固定 margin，使布局更加灵活 */}
+      <div className="container mx-auto px-4 pt-[5rem] space-y-8">
+        {/* 欢迎区域 */}
+        <section className="space-y-2">
+          <h1 className="text-2xl font-semibold text-foreground">
+            {intl.formatMessage({ id: 'dashboard.welcome.title' })}
+          </h1>
+          <p className="text-muted-foreground">
+            {intl.formatMessage({ id: 'dashboard.welcome.description' })}
+          </p>
+        </section>
 
-      <div className="space-y-8">
-        {/* 关键指标部分 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-medium text-gray-800 dark:text-white">
+        {/* 关键指标区域 */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-medium text-foreground">
             {intl.formatMessage({ id: 'dashboard.section.keyMetrics' })}
-          </h3>
+          </h2>
           <DashboardMetrics />
-        </div>
+        </section>
 
-        {/* 图表和活动信息区域 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-medium text-gray-800 dark:text-white">
+        {/* 数据分析与活动区域 */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-medium text-foreground">
             {intl.formatMessage({ id: 'dashboard.section.analyticsActivity' })}
-          </h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
             <div className="lg:col-span-4">
               <MessageVolumeChart />
             </div>
@@ -42,15 +46,15 @@ export default function MainContent() {
               <ActivityFeed />
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* 机器人状态概览部分 */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-medium text-gray-800 dark:text-white">
+        {/* 机器人状态区域 */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-medium text-foreground">
             {intl.formatMessage({ id: 'dashboard.section.botStatus' })}
-          </h3>
+          </h2>
           <BotStatusOverview />
-        </div>
+        </section>
       </div>
     </div>
   );
