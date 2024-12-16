@@ -1,112 +1,59 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const TerserPlugin = require('terser-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
 
-const isProduction = process.env.NODE_ENV === 'production';
-
-const config = {
-    mode: isProduction ? 'production' : 'development',
-    entry: path.join(__dirname, 'src', 'index.js'),
+module.exports = {
+    mode: 'development',
+    entry: './src/pages/index.tsx',
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'static/js/[name].[contenthash:8].js',
-        chunkFilename: 'static/js/[name].[contenthash:8].chunk.js',
+        filename: 'bundle.js',
         publicPath: '/',
-        clean: true
     },
     resolve: {
-        extensions: ['.js', '.jsx', '.json'],
-        modules: ['node_modules'],
+        extensions: ['.tsx', '.ts', '.js', '.jsx'],
         alias: {
-            '@': path.resolve(__dirname, 'src')
+            '@': path.resolve(__dirname, 'src'),
         },
-        fallback: {
-            path: false,
-            fs: false
-        }
     },
     module: {
         rules: [
             {
-                test: /\.(js|jsx)$/,
+                test: /\.(ts|tsx)$/,
                 exclude: /node_modules/,
-                use: {
-                    loader: 'babel-loader',
-                    options: {
-                        presets: [
-                            ['@babel/preset-env', {
-                                targets: {
-                                    browsers: ['last 2 versions', 'not dead']
-                                }
-                            }],
-                            '@babel/preset-react'
-                        ],
-                        plugins: [
-                            '@babel/plugin-transform-runtime'
-                        ]
-                    }
+                use: 'ts-loader',
+            },
+            {
+                test: /\.css$/,
+                use: ['style-loader', 'css-loader', 'postcss-loader'],
+                options: {
+                    importLoaders: 1
                 }
-            }
-        ]
+            },
+            'postcss-loader'
+
+        ],
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: path.join(__dirname, 'public', 'index.html'),
-            inject: true,
-            minify: isProduction ? {
-                removeComments: true,
-                collapseWhitespace: true,
-                removeRedundantAttributes: true,
-                useShortDoctype: true,
-                removeEmptyAttributes: true,
-                removeStyleLinkTypeAttributes: true,
-                keepClosingSlash: true,
-                minifyJS: true,
-                minifyCSS: true,
-                minifyURLs: true
-            } : false
+            template: './public/index.html',
         }),
-        new CopyWebpackPlugin({
-            patterns: [
-                {
-                    from: path.join(__dirname, 'public'),
-                    to: path.join(__dirname, 'dist'),
-                    globOptions: {
-                        ignore: ['**/index.html']
-                    }
-                }
-            ]
-        })
-    ],
-    optimization: {
-        minimize: isProduction,
-        minimizer: [
-            new TerserPlugin({
-                terserOptions: {
-                    format: {
-                        comments: false
-                    },
-                    compress: {
-                        drop_console: isProduction
-                    }
-                },
-                extractComments: false
+        // 添加这个插件来模拟 process.env
+        new webpack.DefinePlugin({
+            'process.env': JSON.stringify({
+                NODE_ENV: process.env.NODE_ENV || 'development'
             })
-        ],
-        splitChunks: {
-            chunks: 'all',
-            name: false
+        }),
+        new webpack.ProvidePlugin({
+            process: 'process/browser',
+        }),
+    ],
+    devServer: {
+        static: {
+            directory: path.join(__dirname, 'public'),
         },
-        runtimeChunk: {
-            name: 'runtime'
-        }
+        port: 8082,
+        hot: true,
+        open: true,
     },
-    performance: {
-        hints: isProduction ? 'warning' : false,
-        maxEntrypointSize: 512000,
-        maxAssetSize: 512000
-    }
 };
-
-module.exports = config;
