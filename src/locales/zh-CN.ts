@@ -55,4 +55,50 @@ export default {
   "common.error": "错误",
   "common.retry": "重试",
   "common.noData": "暂无数据",
+// 导航相关
+  "nav.dashboard": "仪表盘",
+  "nav.bots": "机器人",
+  "nav.settings": "设置",
+  "nav.profile": "个人资料",
+  
+  // 应用标题
+  "app.title": "TG机器人管理器",
+  "app.description": "高效管理您的Telegram机器人",
+  
+  // 主题切换
+  "theme.light": "浅色模式",
+  "theme.dark": "深色模式",
+  "theme.system": "跟随系统",
+  
+  // 用户界面
+  "ui.search": "搜索...",
+  "ui.notifications": "通知",
+  "ui.profile": "个人资料",
+  "ui.logout": "退出登录",
+  "ui.settings": "设置",
+  
+  // 操作提示
+  "actions.save": "保存",
+  "actions.cancel": "取消",
+  "actions.delete": "删除",
+  "actions.edit": "编辑",
+  "actions.confirm": "确认",
+  
+  // 状态消息
+  "status.loading": "加载中...",
+  "status.error": "发生错误",
+  "status.success": "操作成功",
+  "status.empty": "暂无数据",
+  
+  // 确认对话框
+  "dialog.confirm.title": "确认",
+  "dialog.confirm.message": "确定要执行此操作吗？",
+  "dialog.confirm.ok": "确定",
+  "dialog.confirm.cancel": "取消",
+  
+  // 表格相关
+  "table.rowsPerPage": "每页行数：",
+  "table.of": "共",
+  "table.nextPage": "下一页",
+  "table.previousPage": "上一页",
 };

@@ -55,4 +55,50 @@ export default {
   "common.error": "Error",
   "common.retry": "Retry",
   "common.noData": "No data available",
+    // 导航相关
+  "nav.dashboard": "Dashboard",
+  "nav.bots": "Bots",
+  "nav.settings": "Settings",
+  "nav.profile": "Profile",
+  
+  // 应用标题
+  "app.title": "TG Bot Manager",
+  "app.description": "Manage your Telegram bots efficiently",
+  
+  // 主题切换
+  "theme.light": "Light Mode",
+  "theme.dark": "Dark Mode",
+  "theme.system": "System Theme",
+  
+  // 用户界面
+  "ui.search": "Search...",
+  "ui.notifications": "Notifications",
+  "ui.profile": "Profile",
+  "ui.logout": "Logout",
+  "ui.settings": "Settings",
+  
+  // 操作提示
+  "actions.save": "Save",
+  "actions.cancel": "Cancel",
+  "actions.delete": "Delete",
+  "actions.edit": "Edit",
+  "actions.confirm": "Confirm",
+  
+  // 状态消息
+  "status.loading": "Loading...",
+  "status.error": "Error occurred",
+  "status.success": "Operation successful",
+  "status.empty": "No data available",
+  
+  // 确认对话框
+  "dialog.confirm.title": "Confirmation",
+  "dialog.confirm.message": "Are you sure you want to proceed?",
+  "dialog.confirm.ok": "OK",
+  "dialog.confirm.cancel": "Cancel",
+  
+  // 表格相关
+  "table.rowsPerPage": "Rows per page:",
+  "table.of": "of",
+  "table.nextPage": "Next page",
+  "table.previousPage": "Previous page",
 };
