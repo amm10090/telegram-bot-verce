@@ -101,4 +101,13 @@ export default {
   "table.of": "of",
   "table.nextPage": "Next page",
   "table.previousPage": "Previous page",
+  //机器人页面
+  "bots.title": "Bot Management",
+"bots.description": "Manage and monitor your Telegram bots here.",
+"bots.table.name": "Name",
+"bots.table.status": "Status",
+"bots.table.createdAt": "Created At",
+"bots.table.actions": "Actions",
+"bots.table.noResults": "No bots found.",
+"bots.table.selected": "{count} of {total} bot(s) selected",
 };

@@ -18,27 +18,38 @@ module.exports = {
     },
     module: {
         rules: [
+            // TypeScript/TSX 处理规则
             {
                 test: /\.(ts|tsx)$/,
                 exclude: /node_modules/,
                 use: 'ts-loader',
             },
+            // CSS 处理规则
             {
                 test: /\.css$/,
-                use: ['style-loader', 'css-loader', 'postcss-loader'],
-                options: {
-                    importLoaders: 1
-                }
+                use: [
+                    'style-loader',
+                    'css-loader',
+                    {
+                        loader: 'postcss-loader',
+                        options: {
+                            postcssOptions: {
+                                plugins: [
+                                    'tailwindcss',
+                                    'autoprefixer',
+                                ],
+                            },
+                        },
+                    },
+                ],
             },
-            'postcss-loader'
-
         ],
     },
     plugins: [
         new HtmlWebpackPlugin({
             template: './public/index.html',
         }),
-        // 添加这个插件来模拟 process.env
+        // 添加环境变量支持
         new webpack.DefinePlugin({
             'process.env': JSON.stringify({
                 NODE_ENV: process.env.NODE_ENV || 'development'
@@ -55,5 +66,6 @@ module.exports = {
         port: 8082,
         hot: true,
         open: true,
+        historyApiFallback: true,  // 添加这行以支持 React Router
     },
 };

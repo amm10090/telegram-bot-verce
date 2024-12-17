@@ -5,7 +5,10 @@ telegram-bot-verce
 │   └── index.html
 ├── src
 │   ├── app
+│   │   ├── bot
+│   │   │   └── bot-management-table.tsx
 │   │   └── dashboard
+│   │       └── page.tsx
 │   ├── components
 │   │   ├── dashboard
 │   │   │   ├── activity-feed.tsx
@@ -16,7 +19,11 @@ telegram-bot-verce
 │   │   │   ├── badge.tsx
 │   │   │   ├── button.tsx
 │   │   │   ├── card.tsx
-│   │   │   └── scroll-area.tsx
+│   │   │   ├── checkbox.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── scroll-area.tsx
+│   │   │   └── table.tsx
 │   │   ├── Header.tsx
 │   │   ├── LanguageSwitcher.tsx
 │   │   ├── Layout.tsx

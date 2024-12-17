@@ -101,4 +101,13 @@ export default {
   "table.of": "共",
   "table.nextPage": "下一页",
   "table.previousPage": "上一页",
+  //机器人页面
+  "bots.title": "机器人管理",
+"bots.description": "在这里管理和监控您的 Telegram 机器人。",
+"bots.table.name": "名称",
+"bots.table.status": "状态",
+"bots.table.createdAt": "创建时间",
+"bots.table.actions": "操作",
+"bots.table.noResults": "未找到机器人。",
+"bots.table.selected": "已选择 {count}/{total} 个机器人",
 };
