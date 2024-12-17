@@ -1,14 +1,37 @@
 // src/components/message-volume-chart.tsx
-"use client"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useIntl } from "react-intl"
-import React from "react"
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import React, { useState, useCallback, useMemo } from "react"
+import { 
+  Line, 
+  LineChart, 
+  ResponsiveContainer, 
+  Tooltip, 
+  XAxis, 
+  YAxis,
+  CartesianGrid,
+  Legend
+} from "recharts"
 
-// 模拟数据
-// 在实际应用中，这些数据通常来自API或props
-const data = [
+// 定义数据点的接口
+interface DataPoint {
+  month: string;
+  value: number;
+  trend?: number; // 环比增长率
+}
+
+// 扩展数据，添加环比增长信息
+const processData = (rawData: DataPoint[]): DataPoint[] => {
+  return rawData.map((item, index) => ({
+    ...item,
+    trend: index > 0 
+      ? ((item.value - rawData[index - 1].value) / rawData[index - 1].value) * 100
+      : 0
+  }));
+};
+
+// 示例数据
+const rawData = [
   { month: "jan", value: 2400 },
   { month: "feb", value: 1398 },
   { month: "mar", value: 9800 },
@@ -16,41 +39,74 @@ const data = [
   { month: "may", value: 4800 },
   { month: "jun", value: 3800 },
   { month: "jul", value: 4300 },
-]
+];
 
 export default function MessageVolumeChart() {
-  // 使用react-intl的hook获取国际化功能
   const intl = useIntl();
+  const [activeMonth, setActiveMonth] = useState<string | null>(null);
 
-  // 格式化月份名称：将月份代码转换为本地化的月份名称
-  const formatMonth = (month: string) => {
+  // 处理数据，添加环比增长信息
+  const data = useMemo(() => processData(rawData), []);
+
+  // 获取最大值和最小值用于设置y轴范围
+  const maxValue = Math.max(...data.map(d => d.value));
+  const minValue = Math.min(...data.map(d => d.value));
+  const valueRange = maxValue - minValue;
+
+  // 格式化月份名称
+  const formatMonth = useCallback((month: string) => {
     return intl.formatMessage({ id: `dashboard.chart.months.${month}` });
-  };
+  }, [intl]);
 
-  // 格式化数值：使用本地化设置格式化数字
-  const formatValue = (value: number) => {
-    return intl.formatNumber(value);
-  };
+  // 格式化数值
+  const formatValue = useCallback((value: number) => {
+    return intl.formatNumber(value, {
+      notation: value > 9999 ? 'compact' : 'standard',
+      maximumFractionDigits: 1
+    });
+  }, [intl]);
 
   // 自定义提示框组件
-  // active: 提示框是否激活
-  // payload: 当前数据点的信息
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const currentData = data.find(d => d.month === label);
+      const trend = currentData?.trend ?? 0;
+      
       return (
         <div className="
           bg-card 
-          text-card-foreground 
           border border-border 
-          shadow-lg 
           rounded-lg 
-          p-3 
-          text-sm
+          shadow-lg 
+          p-3
+          space-y-2
         ">
-          {intl.formatMessage(
-            { id: "dashboard.chart.tooltip.messages" },
-            { value: formatValue(payload[0].value) }
-          )}
+          <div className="text-sm font-medium">
+            {formatMonth(label)}
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <span className="text-muted-foreground">
+                {intl.formatMessage({ id: "dashboard.chart.tooltip.messages" })}:
+              </span>
+              <span className="font-medium">
+                {formatValue(payload[0].value)}
+              </span>
+            </div>
+            {trend !== 0 && (
+              <div className="flex items-center space-x-2">
+                <span className="text-muted-foreground">
+                  {intl.formatMessage({ id: "dashboard.chart.tooltip.trend" })}:
+                </span>
+                <span className={`
+                  font-medium
+                  ${trend > 0 ? 'text-green-500' : trend < 0 ? 'text-red-500' : 'text-muted-foreground'}
+                `}>
+                  {trend > 0 ? '+' : ''}{trend.toFixed(1)}%
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       );
     }
@@ -58,69 +114,115 @@ export default function MessageVolumeChart() {
   };
 
   return (
-    <Card className="bg-card col-span-4">
-      <CardHeader>
-        <CardTitle className="text-card-foreground">
+    <Card className="
+      col-span-full
+      lg:col-span-4
+      h-[400px]
+      bg-card
+    ">
+      <CardHeader className="
+        space-y-1
+        px-6 py-4
+      ">
+        <CardTitle className="
+          text-xl font-semibold
+          tracking-tight
+        ">
           {intl.formatMessage({ id: "dashboard.chart.messageVolume" })}
         </CardTitle>
+        <p className="
+          text-sm
+          text-muted-foreground
+        ">
+          {intl.formatMessage({ id: "dashboard.chart.description" })}
+        </p>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="h-[300px] w-full">
-          <ResponsiveContainer>
-            <LineChart data={data}>
-              {/* X轴配置 */}
-              <XAxis 
-                dataKey="month" 
-                stroke="currentColor" // 使用当前文本颜色
-                opacity={0.5} // 降低轴线透明度提高可读性
-                fontSize={12}
-                tickLine={false} // 隐藏刻度线
-                axisLine={false} // 隐藏轴线
-                tickFormatter={formatMonth} // 格式化刻度标签
-                className="text-muted-foreground" // 使用主题的次要文本颜色
-              />
-              {/* Y轴配置 */}
-              <YAxis 
-                stroke="currentColor"
-                opacity={0.5}
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={formatValue}
-                className="text-muted-foreground"
-              />
-              {/* 提示框配置 */}
-              <Tooltip 
-                content={<CustomTooltip />}
-                cursor={{ 
-                  stroke: 'hsl(var(--primary))',
-                  strokeWidth: 1,
-                  strokeDasharray: '5 5',
-                  opacity: 0.3
-                }}
-              />
-              {/* 数据线配置 */}
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke="hsl(var(--primary))" // 使用主题的主要颜色
-                strokeWidth={2}
-                dot={{ // 数据点样式
-                  fill: 'hsl(var(--card))',
-                  strokeWidth: 2,
-                  stroke: 'hsl(var(--primary))',
-                  r: 4
-                }}
-                activeDot={{ // 激活状态的数据点样式
-                  fill: 'hsl(var(--primary))',
-                  stroke: 'hsl(var(--card))',
-                  strokeWidth: 2,
-                  r: 6
-                }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+
+      <CardContent className="
+        px-6 pb-6
+        h-[calc(100%-5rem)]  /* 减去 header 的高度 */
+      ">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={data}
+            margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+            onMouseMove={(e) => {
+              if (e.activeLabel) {
+                setActiveMonth(e.activeLabel);
+              }
+            }}
+            onMouseLeave={() => setActiveMonth(null)}
+          >
+            {/* 网格线 */}
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="hsl(var(--border))"
+              opacity={0.3}
+            />
+
+            {/* X轴配置 */}
+            <XAxis 
+              dataKey="month" 
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={formatMonth}
+              dy={10}
+            />
+
+            {/* Y轴配置 */}
+            <YAxis 
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={formatValue}
+              domain={[
+                minValue - valueRange * 0.1, // 下限留出10%空间
+                maxValue + valueRange * 0.1  // 上限留出10%空间
+              ]}
+            />
+
+            {/* 提示框 */}
+            <Tooltip 
+              content={<CustomTooltip />}
+              cursor={{
+                stroke: 'hsl(var(--primary))',
+                strokeWidth: 1,
+                strokeDasharray: '5 5',
+                opacity: 0.3
+              }}
+            />
+
+            {/* 图例 */}
+            <Legend 
+              verticalAlign="top"
+              height={36}
+            />
+
+            {/* 数据线 */}
+            <Line 
+              type="monotone" 
+              dataKey="value"
+              name={intl.formatMessage({ id: "dashboard.chart.legend.messages" })}
+              stroke="hsl(var(--primary))"
+              strokeWidth={2}
+              dot={{
+                fill: 'hsl(var(--background))',
+                strokeWidth: 2,
+                r: 4,
+                stroke: 'hsl(var(--primary))'
+              }}
+              activeDot={{
+                fill: 'hsl(var(--primary))',
+                stroke: 'hsl(var(--background))',
+                strokeWidth: 2,
+                r: 6
+              }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );

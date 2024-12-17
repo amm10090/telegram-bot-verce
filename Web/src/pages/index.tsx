@@ -1,52 +1,94 @@
 // src/index.tsx
-import React from 'react';
+import React, { Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider } from 'next-themes';
-import { BrowserRouter } from 'react-router-dom';  // 添加这行
+import { BrowserRouter } from 'react-router-dom';
 import Layout from '../components/Layout';
 import MainContent from '../components/MainContent';
 import { LocaleProvider } from '../contexts/LocaleContext';
 import '../styles/globals.css';
 
 /**
- * 主应用组件
- * 这里设置了应用的基础结构和全局提供者的配置
- * 提供者的顺序很重要：
- * 1. ThemeProvider：最外层，提供主题支持
- * 2. BrowserRouter：提供路由功能
- * 3. LocaleProvider：提供国际化支持
- * 4. Layout：提供应用的整体布局框架
+ * 错误边界组件
+ * 用于捕获子组件树中的 JavaScript 错误，记录错误并显示备用 UI
  */
-function App() {
-  return (
-    // ThemeProvider 仍然在最外层，处理主题
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem={true}
-      disableTransitionOnChange
-      storageKey="tg-bot-theme"
-      themes={['light', 'dark']}
-    >
-      {/* BrowserRouter 提供路由功能 */}
-      <BrowserRouter>
-        {/* LocaleProvider 处理国际化 */}
-        <LocaleProvider>
-          {/* Layout 组件包含整体页面结构 */}
-          <Layout maxWidth="xl" defaultSidebarState={false}>
-            {/* MainContent 负责内容区域的路由管理 */}
-            <MainContent />
-          </Layout>
-        </LocaleProvider>
-      </BrowserRouter>
-    </ThemeProvider>
-  );
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">抱歉，出现了一些问题</h1>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-md bg-primary px-4 py-2 text-white"
+            >
+              刷新页面
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 /**
- * 应用渲染逻辑保持不变
- * React.StrictMode 帮助我们在开发时发现潜在问题
+ * 加载状态组件
+ * 在内容加载时显示的占位符
  */
+const LoadingFallback = () => (
+  <div className="flex min-h-screen items-center justify-center">
+    <div className="text-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      <p className="mt-2">加载中...</p>
+    </div>
+  </div>
+);
+
+/**
+ * 主应用组件
+ * 负责设置应用的基础结构和全局配置
+ */
+function App() {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback />}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem={true}
+          disableTransitionOnChange
+          storageKey="tg-bot-theme"
+          themes={['light', 'dark']}
+        >
+          <BrowserRouter>
+            <LocaleProvider>
+              <Layout maxWidth="2xl" defaultSidebarState={false}>
+                <MainContent />
+              </Layout>
+            </LocaleProvider>
+          </BrowserRouter>
+        </ThemeProvider>
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+// 应用渲染逻辑
 if (typeof window !== 'undefined') {
   const container = document.getElementById('root');
   if (container) {
@@ -56,6 +98,8 @@ if (typeof window !== 'undefined') {
         <App />
       </React.StrictMode>
     );
+  } else {
+    console.error('未找到根元素 #root');
   }
 }
 

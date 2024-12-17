@@ -6,7 +6,7 @@
     "dev": "webpack serve --mode development",
     "build": "webpack --mode production",
     "start": "webpack serve --mode production",
-    "tree": "treee -I \"node_modules|.git|.vscode\" -L 4 --dirs-first > project-structure.md"
+    "tree": "treee -I \"node_modules|.git|.vscode\" -L 5 --dirs-first > project-structure.md"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

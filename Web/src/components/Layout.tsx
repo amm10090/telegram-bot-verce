@@ -28,14 +28,6 @@ interface LayoutProps {
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
-/**
- * Layout 组件：应用程序的主要布局框架
- * 负责管理：
- * 1. 响应式侧边栏
- * 2. 顶部导航栏
- * 3. 内容区域布局
- * 4. 主题切换
- */
 export default function Layout({
   children,
   defaultSidebarState = true,
@@ -65,32 +57,33 @@ export default function Layout({
     }
   ];
 
-  // 检测是否为桌面视图的辅助函数
-  const isDesktop = useCallback(() => {
+  // 检测视窗大小的函数
+  const checkIsDesktop = useCallback(() => {
     return window.innerWidth >= 1024;
   }, []);
 
-  // 响应式处理和侧边栏状态管理
+  // 处理视窗大小变化
   useEffect(() => {
-    const handleResize = () => {
-      const desktop = isDesktop();
-      setIsDesktopView(desktop);
+    // 初始化检查
+    const updateViewState = () => {
+      const isDesktop = checkIsDesktop();
+      setIsDesktopView(isDesktop);
       
-      // 在桌面视图时保持侧边栏展开
-      if (desktop) {
-        setSidebarOpen(true);
+      // 只在视图模式发生变化时更新侧边栏状态
+      if (isDesktop !== isDesktopView) {
+        setSidebarOpen(isDesktop);
       }
     };
 
-    // 初始化时执行一次
-    handleResize();
+    // 首次执行
+    updateViewState();
 
-    // 监听窗口大小变化
-    window.addEventListener('resize', handleResize);
-    
-    // 清理监听器
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isDesktop]);
+    // 添加事件监听器
+    window.addEventListener('resize', updateViewState);
+
+    // 清理函数
+    return () => window.removeEventListener('resize', updateViewState);
+  }, [checkIsDesktop, isDesktopView]);
 
   // 处理侧边栏切换
   const toggleSidebar = useCallback(() => {
@@ -100,38 +93,46 @@ export default function Layout({
   }, [isDesktopView]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background">
       {/* 侧边栏 */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-40
-        flex w-64 flex-col
-        bg-card border-r border-border
-        shadow-lg
-        transition-transform duration-300 ease-in-out
-        ${!isDesktopView && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'}
-      `}>
+      <aside 
+        className={`
+          fixed inset-y-0 left-0 z-40
+          w-[240px] md:w-64 lg:w-72
+          flex flex-col
+          bg-card border-r border-border
+          transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isDesktopView ? 'lg:translate-x-0' : ''}
+        `}
+      >
         {/* 侧边栏头部 */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-border">
-          <span className="text-xl font-semibold text-foreground">
+        <div className="h-16 flex items-center px-4 md:px-6 border-b border-border">
+          <span className="text-lg md:text-xl font-semibold truncate">
             {intl.formatMessage({ id: 'app.title' })}
           </span>
         </div>
 
         {/* 导航菜单 */}
-        <nav className="flex-1 overflow-y-auto p-4">
+        <nav className="flex-1 overflow-y-auto p-3 md:p-4">
           <div className="space-y-1">
             {navigationItems.map((item) => (
               <Link
                 key={item.labelId}
                 href={item.path}
-                className="flex items-center px-4 py-2.5 rounded-md
+                className="
+                  flex items-center px-3 md:px-4 py-2 md:py-2.5
+                  text-sm md:text-base
                   text-muted-foreground
                   hover:text-foreground hover:bg-accent
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-                  transition-colors duration-200"
+                  rounded-md
+                  transition-colors duration-200
+                  focus-visible:outline-none focus-visible:ring-2
+                  focus-visible:ring-ring
+                "
               >
-                <item.icon className="h-5 w-5 mr-3" />
-                <span className="font-medium">
+                <item.icon className="h-5 w-5 mr-3 shrink-0" />
+                <span className="font-medium truncate">
                   {intl.formatMessage({ id: item.labelId })}
                 </span>
               </Link>
@@ -140,21 +141,23 @@ export default function Layout({
         </nav>
       </aside>
 
-      {/* 移动端遮罩层 */}
+      {/* 遮罩层 - 仅在移动端且侧边栏打开时显示 */}
       {!isDesktopView && sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
       )}
 
       {/* 主内容区域 */}
-      <div className={`
-        flex flex-col min-h-screen
-        transition-all duration-300
-        ${isDesktopView ? 'lg:ml-64' : 'lg:ml-0'}
-      `}>
+      <div 
+        className={`
+          flex flex-col min-h-screen
+          transition-all duration-300
+          ${isDesktopView ? 'lg:pl-[240px] xl:pl-72' : ''}
+        `}
+      >
         {/* 顶部导航栏 */}
         <header className={`
           fixed top-0 z-30 w-full

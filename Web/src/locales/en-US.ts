@@ -6,7 +6,7 @@ export default {
   "dashboard.section.keyMetrics": "Key Metrics",
   "dashboard.section.analyticsActivity": "Analytics & Activity",
   "dashboard.section.botStatus": "Bot Status",
-  
+
   // 指标相关
   "dashboard.metrics.totalUsers": "Total Users",
   "dashboard.metrics.messages": "Messages",
@@ -14,9 +14,14 @@ export default {
   "dashboard.metrics.errorRate": "Error Rate",
   "dashboard.metrics.users.description": "Active users in the last 30 days",
   "dashboard.metrics.messages.description": "Messages processed in the last 24 hours",
+  "dashboard.metrics.totalUsers.description": "Total users registered in the system",
+  "dashboard.metrics.activeBots.description": "Number of active bots in the system",
+  "dashboard.metrics.errorRate.description": "Percentage of failed requests in the last 24 hours",
+
+
   "dashboard.metrics.bots.description": "Bots currently online and responding",
   "dashboard.metrics.error.description": "Percentage of failed requests",
-  
+
   // 图表相关
   "dashboard.chart.messageVolume": "Message Volume Over Time",
   "dashboard.chart.months.jan": "January",
@@ -27,7 +32,7 @@ export default {
   "dashboard.chart.months.jun": "June",
   "dashboard.chart.months.jul": "July",
   "dashboard.chart.tooltip.messages": "Messages: {value}",
-  
+
   // 活动信息
   "dashboard.activity.title": "Activity Feed",
   "dashboard.activity.description": "Real-time updates from your bots",
@@ -41,7 +46,7 @@ export default {
   "dashboard.activity.event.newBot": "New bot '{name}' added to system",
   "dashboard.activity.event.milestone": "Bot {name} reached {count} users milestone",
   "dashboard.activity.event.systemUpdate": "System update completed",
-  
+
   // 机器人状态
   "dashboard.botStatus.title": "Bot Status Overview",
   "dashboard.botStatus.description": "Current status of your active bots",
@@ -49,53 +54,53 @@ export default {
   "dashboard.botStatus.status.offline": "Offline",
   "dashboard.botStatus.metrics.users": "{count} {count, plural, one {user} other {users}}",
   "dashboard.botStatus.metrics.messages": "{count} {count, plural, one {message} other {messages}}",
-  
+
   // 通用
   "common.loading": "Loading...",
   "common.error": "Error",
   "common.retry": "Retry",
   "common.noData": "No data available",
-    // 导航相关
+  // 导航相关
   "nav.dashboard": "Dashboard",
   "nav.bots": "Bots",
   "nav.settings": "Settings",
   "nav.profile": "Profile",
-  
+
   // 应用标题
   "app.title": "TG Bot Manager",
   "app.description": "Manage your Telegram bots efficiently",
-  
+
   // 主题切换
   "theme.light": "Light Mode",
   "theme.dark": "Dark Mode",
   "theme.system": "System Theme",
-  
+
   // 用户界面
   "ui.search": "Search...",
   "ui.notifications": "Notifications",
   "ui.profile": "Profile",
   "ui.logout": "Logout",
   "ui.settings": "Settings",
-  
+
   // 操作提示
   "actions.save": "Save",
   "actions.cancel": "Cancel",
   "actions.delete": "Delete",
   "actions.edit": "Edit",
   "actions.confirm": "Confirm",
-  
+
   // 状态消息
   "status.loading": "Loading...",
   "status.error": "Error occurred",
   "status.success": "Operation successful",
   "status.empty": "No data available",
-  
+
   // 确认对话框
   "dialog.confirm.title": "Confirmation",
   "dialog.confirm.message": "Are you sure you want to proceed?",
   "dialog.confirm.ok": "OK",
   "dialog.confirm.cancel": "Cancel",
-  
+
   // 表格相关
   "table.rowsPerPage": "Rows per page:",
   "table.of": "of",
@@ -103,14 +108,14 @@ export default {
   "table.previousPage": "Previous page",
   //机器人页面
   "bots.title": "Bot Management",
-"bots.description": "Manage and monitor your Telegram bots here.",
-"bots.table.name": "Name",
-"bots.table.status": "Status",
-"bots.table.createdAt": "Created At",
-"bots.table.actions": "Actions",
-"bots.table.noResults": "No bots found.",
-"bots.table.selected": "{count} of {total} bot(s) selected",
-// General Settings Page
+  "bots.description": "Manage and monitor your Telegram bots here.",
+  "bots.table.name": "Name",
+  "bots.table.status": "Status",
+  "bots.table.createdAt": "Created At",
+  "bots.table.actions": "Actions",
+  "bots.table.noResults": "No bots found.",
+  "bots.table.selected": "{count} of {total} bot(s) selected",
+  // General Settings Page
   'settings.title': 'Settings',
   'settings.description': 'Manage your account settings and preferences',
   'settings.form.title': 'Personal Settings',
@@ -126,31 +131,31 @@ export default {
   'profile.username.label': 'Username',
   'profile.username.placeholder': 'Enter username',
   'profile.username.description': 'This is your public display name',
-  
+
   'profile.email.label': 'Email',
   'profile.email.placeholder': 'email@example.com',
   'profile.email.description': "We'll use this email for important notifications",
-  
+
   'profile.bio.label': 'Bio',
   'profile.bio.placeholder': 'Tell us a little bit about yourself',
   'profile.bio.description': 'You can @mention other users and organizations',
-  
+
   'profile.button.update': 'Update profile',
   'profile.success.title': 'Profile updated successfully',
 
   // Notification Settings
   'notifications.communication.title': 'Communication Emails',
   'notifications.communication.description': 'Receive emails about your account activity',
-  
+
   'notifications.marketing.title': 'Marketing Emails',
   'notifications.marketing.description': 'Receive emails about new products and features',
-  
+
   'notifications.social.title': 'Social Notifications',
   'notifications.social.description': 'Receive notifications about friend requests and follows',
-  
+
   'notifications.security.title': 'Security Emails',
   'notifications.security.description': 'Receive emails about your account security',
-  
+
   'notifications.button.update': 'Update notifications',
   'notifications.success.title': 'Notification settings updated',
 
@@ -158,12 +163,12 @@ export default {
   'apiKeys.input.placeholder': 'Enter new API key name',
   'apiKeys.button.add': 'Add New Key',
   'apiKeys.button.delete': 'Delete',
-  
+
   'apiKeys.table.name': 'Name',
   'apiKeys.table.key': 'API Key',
   'apiKeys.table.createdAt': 'Created At',
   'apiKeys.table.actions': 'Actions',
-  
+
   'apiKeys.error.title': 'Error',
   'apiKeys.error.emptyName': 'Please enter an API key name',
   'apiKeys.success.title': 'Success',
@@ -176,16 +181,16 @@ export default {
   'system.theme.light': 'Light',
   'system.theme.dark': 'Dark',
   'system.theme.system': 'System',
-  
+
   'system.language.label': 'Language',
   'system.language.description': 'Select your preferred language',
-  
+
   'system.autoUpdate.label': 'Automatic Updates',
   'system.autoUpdate.description': 'Update application automatically when new versions are available',
-  
+
   'system.betaFeatures.label': 'Beta Features',
   'system.betaFeatures.description': 'Enable beta features for testing',
-  
+
   'system.button.save': 'Save preferences',
   'system.success.title': 'System settings updated',
 
@@ -195,13 +200,13 @@ export default {
   'security.confirmPassword.label': 'Confirm New Password',
   'security.password.minLength': 'Password must be at least 8 characters',
   'security.password.mismatch': 'Passwords do not match',
-  
+
   'security.twoFactor.label': 'Two-Factor Authentication',
   'security.twoFactor.description': 'Enable two-factor authentication for enhanced security',
-  
+
   'security.button.update': 'Update security settings',
   'security.success.title': 'Security settings updated',
-// Settings Sections
+  // Settings Sections
   'settings.section.profile': 'User Profile',
   'settings.section.security': 'Security Settings',
   'settings.section.integrations': 'Integrations & Notifications',
@@ -243,7 +248,7 @@ export default {
   'preferences.language.chinese': 'Chinese',// Page Header
   'settings.profile.title': 'Personal Information',
   'settings.profile.subtitle': 'Manage your account information and preferences',
-  
+
   // Profile Section
   'settings.profile.username': 'Username',
   'settings.profile.username.placeholder': 'Enter your username',
@@ -267,7 +272,7 @@ export default {
 
   // Integration Section
   'settings.integration.title': 'Integrations & Notifications',
-  
+
   // API Keys
   'settings.apiKeys.title': 'API Key Management',
   'settings.apiKeys.newKey.placeholder': 'Enter new API key name',
@@ -276,7 +281,7 @@ export default {
   'settings.apiKeys.table.key': 'API Key',
   'settings.apiKeys.table.created': 'Created At',
   'settings.apiKeys.table.actions': 'Actions',
-  
+
   // System Preferences
   'settings.system.title': 'System Preferences',
   'preferences.theme.label': 'Theme',
@@ -289,7 +294,45 @@ export default {
   'preferences.betaFeatures.label': 'Beta Features',
   'preferences.betaFeatures.description': 'Try out new features before they\'re released',
   'preferences.button.save': 'Save Preferences',
-    'settings.notifications.title':'Notification Settings',
+  'settings.notifications.title': 'Notification Settings',
 
+  // Dashboard Section Descriptions
+  "dashboard.section.keyMetrics.description": "Overview of your key performance indicators",
+  "dashboard.section.analyticsActivity.description": "Analysis and recent activities from your bots",
+  "dashboard.section.botStatus.description": "Current status of all your Telegram bots",
+
+  // Dashboard Metrics Trends
+  "dashboard.metrics.trend.up": "Up {value}% from last period",
+  "dashboard.metrics.trend.down": "Down {value}% from last period",
+  "dashboard.metrics.trend.stable": "No change from last period",
+
+  // Dashboard Time Periods
+  "dashboard.timePeriod.last30Days": "Last 30 Days",
+  "dashboard.timePeriod.last7Days": "Last 7 Days",
+  "dashboard.timePeriod.today": "Today",
+  "dashboard.timePeriod.custom": "Custom Range",
+
+  // Chart Legends and Labels
+  "dashboard.chart.legend.messages": "Message Volume",
+  "dashboard.chart.description": "Message volume trends over time",
+  "dashboard.chart.tooltip.trend": "Change: {value}%",
+  "dashboard.chart.noData": "No data available for selected period",
+
+  // Activity Feed Additional States
+  "dashboard.activity.empty": "No recent activity",
+  "dashboard.activity.loading": "Loading activities...",
+  "dashboard.activity.error": "Failed to load activities",
+  "dashboard.activity.retry": "Retry loading",
+
+  // Bot Status Additional Information
+  "dashboard.botStatus.metrics.uptime": "Uptime: {value}",
+  "dashboard.botStatus.metrics.responseTime": "Avg Response: {value}ms",
+  "dashboard.botStatus.metrics.lastActive": "Last Active: {value}",
+  "dashboard.botStatus.empty": "No bots available",
+
+  // Dashboard Actions
+  "dashboard.actions.refresh": "Refresh Data",
+  "dashboard.actions.export": "Export Report",
+  "dashboard.actions.filter": "Filter Data",
+  "dashboard.actions.viewDetails": "View Details"
 }
-
