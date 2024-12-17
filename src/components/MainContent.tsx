@@ -4,6 +4,7 @@ import { Routes, Route } from 'react-router-dom';
 import DashboardPage from '../app/dashboard/page';
 import BotManagementTable from '../app/bot/bot-management-table';
 import { useIntl } from 'react-intl';
+import SettingsPage from '@/app/settings/page';
 
 export default function MainContent() {
   const intl = useIntl();
@@ -27,9 +28,11 @@ export default function MainContent() {
             path="/bots" 
             element={<BotManagementTable />} 
           />
-          
-          {/* 未来可以在这里添加更多路由 */}
-          {/* <Route path="/settings" element={<SettingsPage />} /> */}
+                    {/* 设置页面 */}
+
+        <Route path="/settings" element={<SettingsPage />} /> 
+           {/* 未来可以在这里添加更多路由 */}
+
         </Routes>
       </div>
     </div>

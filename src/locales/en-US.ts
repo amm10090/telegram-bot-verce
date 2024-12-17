@@ -110,4 +110,186 @@ export default {
 "bots.table.actions": "Actions",
 "bots.table.noResults": "No bots found.",
 "bots.table.selected": "{count} of {total} bot(s) selected",
-};
+// General Settings Page
+  'settings.title': 'Settings',
+  'settings.description': 'Manage your account settings and preferences',
+  'settings.form.title': 'Personal Settings',
+
+  // Settings Tabs
+  'settings.tabs.profile': 'Profile',
+  'settings.tabs.notifications': 'Notifications',
+  'settings.tabs.apiKeys': 'API Keys',
+  'settings.tabs.system': 'System',
+  'settings.tabs.security': 'Security',
+
+  // Profile Settings
+  'profile.username.label': 'Username',
+  'profile.username.placeholder': 'Enter username',
+  'profile.username.description': 'This is your public display name',
+  
+  'profile.email.label': 'Email',
+  'profile.email.placeholder': 'email@example.com',
+  'profile.email.description': "We'll use this email for important notifications",
+  
+  'profile.bio.label': 'Bio',
+  'profile.bio.placeholder': 'Tell us a little bit about yourself',
+  'profile.bio.description': 'You can @mention other users and organizations',
+  
+  'profile.button.update': 'Update profile',
+  'profile.success.title': 'Profile updated successfully',
+
+  // Notification Settings
+  'notifications.communication.title': 'Communication Emails',
+  'notifications.communication.description': 'Receive emails about your account activity',
+  
+  'notifications.marketing.title': 'Marketing Emails',
+  'notifications.marketing.description': 'Receive emails about new products and features',
+  
+  'notifications.social.title': 'Social Notifications',
+  'notifications.social.description': 'Receive notifications about friend requests and follows',
+  
+  'notifications.security.title': 'Security Emails',
+  'notifications.security.description': 'Receive emails about your account security',
+  
+  'notifications.button.update': 'Update notifications',
+  'notifications.success.title': 'Notification settings updated',
+
+  // API Keys Management
+  'apiKeys.input.placeholder': 'Enter new API key name',
+  'apiKeys.button.add': 'Add New Key',
+  'apiKeys.button.delete': 'Delete',
+  
+  'apiKeys.table.name': 'Name',
+  'apiKeys.table.key': 'API Key',
+  'apiKeys.table.createdAt': 'Created At',
+  'apiKeys.table.actions': 'Actions',
+  
+  'apiKeys.error.title': 'Error',
+  'apiKeys.error.emptyName': 'Please enter an API key name',
+  'apiKeys.success.title': 'Success',
+  'apiKeys.success.created': 'New API key has been created',
+  'apiKeys.success.deleted': 'API key has been deleted',
+
+  // System Settings
+  'system.theme.label': 'Theme',
+  'system.theme.description': 'Select the application theme',
+  'system.theme.light': 'Light',
+  'system.theme.dark': 'Dark',
+  'system.theme.system': 'System',
+  
+  'system.language.label': 'Language',
+  'system.language.description': 'Select your preferred language',
+  
+  'system.autoUpdate.label': 'Automatic Updates',
+  'system.autoUpdate.description': 'Update application automatically when new versions are available',
+  
+  'system.betaFeatures.label': 'Beta Features',
+  'system.betaFeatures.description': 'Enable beta features for testing',
+  
+  'system.button.save': 'Save preferences',
+  'system.success.title': 'System settings updated',
+
+  // Security Settings
+  'security.currentPassword.label': 'Current Password',
+  'security.newPassword.label': 'New Password',
+  'security.confirmPassword.label': 'Confirm New Password',
+  'security.password.minLength': 'Password must be at least 8 characters',
+  'security.password.mismatch': 'Passwords do not match',
+  
+  'security.twoFactor.label': 'Two-Factor Authentication',
+  'security.twoFactor.description': 'Enable two-factor authentication for enhanced security',
+  
+  'security.button.update': 'Update security settings',
+  'security.success.title': 'Security settings updated',
+// Settings Sections
+  'settings.section.profile': 'User Profile',
+  'settings.section.security': 'Security Settings',
+  'settings.section.integrations': 'Integrations & Notifications',
+  'settings.section.system': 'System Preferences',
+
+  // Profile Section Additional Items
+  'profile.success.saved': 'Your profile has been saved successfully',
+  'profile.error.failed': 'Failed to update profile. Please try again',
+  'profile.title': 'Personal Information',
+  'profile.description': 'Update your personal details and preferences',
+
+  // Security Section Additional Items
+  'security.error.passwordMismatch': 'The new passwords you entered do not match',
+  'security.success.updated': 'Security settings have been updated successfully',
+  'security.error.failed': 'Failed to update security settings',
+  'security.error.currentPassword': 'Current password is incorrect',
+
+  // Notifications Section Additional Items
+  'notifications.title': 'Notification Settings',
+  'notifications.description': 'Manage how you receive notifications',
+  'notifications.toggle.description': 'Enable or disable different types of notifications',
+  'notifications.success.saved': 'Notification preferences saved successfully',
+  'notifications.error.failed': 'Failed to update notification settings',
+
+  // API Keys Section Additional Items
+  'apiKeys.title': 'API Key Management',
+  'apiKeys.description': 'Manage your API keys for third-party integrations',
+  'apiKeys.warning.security': 'Keep your API keys secure and never share them',
+  'apiKeys.copy.success': 'API key copied to clipboard',
+  'apiKeys.copy.button': 'Copy',
+  'apiKeys.confirm.delete': 'Are you sure you want to delete this API key?',
+
+  // System Preferences Additional Items
+  'preferences.theme.placeholder': 'Select theme',
+  'preferences.language.placeholder': 'Select language',
+  'preferences.success.saved': 'System preferences saved successfully',
+  'preferences.error.failed': 'Failed to update system preferences',
+  'preferences.language.english': 'English',
+  'preferences.language.chinese': 'Chinese',// Page Header
+  'settings.profile.title': 'Personal Information',
+  'settings.profile.subtitle': 'Manage your account information and preferences',
+  
+  // Profile Section
+  'settings.profile.username': 'Username',
+  'settings.profile.username.placeholder': 'Enter your username',
+  'settings.profile.username.description': 'This is your public display name',
+  'settings.profile.email': 'Email',
+  'settings.profile.email.placeholder': 'email@example.com',
+  'settings.profile.email.description': "We'll use this email for important notifications",
+  'settings.profile.bio': 'Bio',
+  'settings.profile.bio.placeholder': 'Tell us about yourself',
+  'settings.profile.bio.description': 'You can @mention other users and organizations',
+  'settings.profile.button.update': 'Update Profile',
+
+  // Security Section
+  'settings.security.title': 'Security Settings',
+  'settings.security.currentPassword': 'Current Password',
+  'settings.security.newPassword': 'New Password',
+  'settings.security.confirmPassword': 'Confirm New Password',
+  'settings.security.twoFactor': 'Two-Factor Authentication',
+  'settings.security.twoFactor.description': 'Add an extra layer of security to your account',
+  'settings.security.button.update': 'Update Security Settings',
+
+  // Integration Section
+  'settings.integration.title': 'Integrations & Notifications',
+  
+  // API Keys
+  'settings.apiKeys.title': 'API Key Management',
+  'settings.apiKeys.newKey.placeholder': 'Enter new API key name',
+  'settings.apiKeys.button.add': 'Add New Key',
+  'settings.apiKeys.table.name': 'Name',
+  'settings.apiKeys.table.key': 'API Key',
+  'settings.apiKeys.table.created': 'Created At',
+  'settings.apiKeys.table.actions': 'Actions',
+  
+  // System Preferences
+  'settings.system.title': 'System Preferences',
+  'preferences.theme.label': 'Theme',
+  'preferences.theme.description': 'Choose your preferred theme',
+  'preferences.theme.system': 'System Default',
+  'preferences.language.label': 'Language',
+  'preferences.language.description': 'Select your preferred language',
+  'preferences.autoUpdate.label': 'Automatic Updates',
+  'preferences.autoUpdate.description': 'Keep the application up to date automatically',
+  'preferences.betaFeatures.label': 'Beta Features',
+  'preferences.betaFeatures.description': 'Try out new features before they\'re released',
+  'preferences.button.save': 'Save Preferences',
+    'settings.notifications.title':'Notification Settings',
+
+}
+

@@ -1,6 +1,6 @@
-"use client"
-
+// src/components/settings/api-keys-management.tsx
 import { useState } from "react"
+import { useIntl } from 'react-intl'
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -11,8 +11,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { toast } from "@/components/ui/use-toast"
+import { Toast } from "@/components/ui/toast"  // 导入 Toast 组件
+import React from "react"
 
+// 定义 API 密钥的数据类型
 type ApiKey = {
   id: string
   name: string
@@ -20,25 +22,51 @@ type ApiKey = {
   createdAt: string
 }
 
+// 初始的示例数据
 const initialApiKeys: ApiKey[] = [
-  { id: "1", name: "Production API Key", key: "pk_live_123456789", createdAt: "2023-01-01" },
-  { id: "2", name: "Development API Key", key: "pk_test_987654321", createdAt: "2023-02-15" },
+  { 
+    id: "1", 
+    name: "Production API Key", 
+    key: "pk_live_123456789", 
+    createdAt: "2023-01-01" 
+  },
+  { 
+    id: "2", 
+    name: "Development API Key", 
+    key: "pk_test_987654321", 
+    createdAt: "2023-02-15" 
+  },
 ]
 
-export function ApiKeysManagement() {
+export default function ApiKeysManagement() {
+  // 状态管理
   const [apiKeys, setApiKeys] = useState<ApiKey[]>(initialApiKeys)
   const [newKeyName, setNewKeyName] = useState("")
+  const intl = useIntl()
+  
+  // Toast 相关状态
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState("")
+  const [toastType, setToastType] = useState<'success' | 'error'>('success')
 
+  // 显示通知的辅助函数
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    setToastMessage(message)
+    setToastType(type)
+    setShowToast(true)
+  }
+
+  // 添加新密钥的处理函数
   const addNewKey = () => {
     if (newKeyName.trim() === "") {
-      toast({
-        title: "Error",
-        description: "Please enter a name for the new API key.",
-        variant: "destructive",
-      })
+      showNotification(
+        intl.formatMessage({ id: 'apiKeys.error.emptyName' }),
+        'error'
+      )
       return
     }
 
+    // 创建新的 API 密钥
     const newKey: ApiKey = {
       id: (apiKeys.length + 1).toString(),
       name: newKeyName,
@@ -48,37 +76,43 @@ export function ApiKeysManagement() {
 
     setApiKeys([...apiKeys, newKey])
     setNewKeyName("")
-    toast({
-      title: "Success",
-      description: "New API key has been created.",
-    })
+    showNotification(
+      intl.formatMessage({ id: 'apiKeys.success.created' }),
+      'success'
+    )
   }
 
+  // 删除密钥的处理函数
   const deleteKey = (id: string) => {
     setApiKeys(apiKeys.filter(key => key.id !== id))
-    toast({
-      title: "Success",
-      description: "API key has been deleted.",
-    })
+    showNotification(
+      intl.formatMessage({ id: 'apiKeys.success.deleted' }),
+      'success'
+    )
   }
 
   return (
     <div className="space-y-6">
+      {/* 添加新密钥的表单 */}
       <div className="flex items-center space-x-2">
         <Input
-          placeholder="Enter new API key name"
+          placeholder={intl.formatMessage({ id: 'apiKeys.input.placeholder' })}
           value={newKeyName}
           onChange={(e) => setNewKeyName(e.target.value)}
         />
-        <Button onClick={addNewKey}>Add New Key</Button>
+        <Button onClick={addNewKey}>
+          {intl.formatMessage({ id: 'apiKeys.button.add' })}
+        </Button>
       </div>
+
+      {/* API密钥列表表格 */}
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>API Key</TableHead>
-            <TableHead>Created At</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>{intl.formatMessage({ id: 'apiKeys.table.name' })}</TableHead>
+            <TableHead>{intl.formatMessage({ id: 'apiKeys.table.key' })}</TableHead>
+            <TableHead>{intl.formatMessage({ id: 'apiKeys.table.createdAt' })}</TableHead>
+            <TableHead>{intl.formatMessage({ id: 'apiKeys.table.actions' })}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -88,13 +122,31 @@ export function ApiKeysManagement() {
               <TableCell>{key.key}</TableCell>
               <TableCell>{key.createdAt}</TableCell>
               <TableCell>
-                <Button variant="destructive" onClick={() => deleteKey(key.id)}>Delete</Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => deleteKey(key.id)}
+                >
+                  {intl.formatMessage({ id: 'apiKeys.button.delete' })}
+                </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      {/* Toast 通知组件 */}
+      <Toast 
+        open={showToast} 
+        onOpenChange={setShowToast}
+     variant={toastType === 'error' ? 'destructive' : 'default'}   
+   >
+        <div className={`
+          p-4 rounded-md
+          ${toastType === 'error' ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}
+        `}>
+          {toastMessage}
+        </div>
+      </Toast>
     </div>
   )
 }
-

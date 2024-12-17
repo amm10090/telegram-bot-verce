@@ -7,7 +7,9 @@ telegram-bot-verce
 │   ├── app
 │   │   ├── bot
 │   │   │   └── bot-management-table.tsx
-│   │   └── dashboard
+│   │   ├── dashboard
+│   │   │   └── page.tsx
+│   │   └── settings
 │   │       └── page.tsx
 │   ├── components
 │   │   ├── dashboard
@@ -15,15 +17,28 @@ telegram-bot-verce
 │   │   │   ├── bot-status-overview.tsx
 │   │   │   ├── dashboard-metrics.tsx
 │   │   │   └── message-volume-chart.tsx
+│   │   ├── settings
+│   │   │   ├── api-keys-management.tsx
+│   │   │   ├── notification-preferences.tsx
+│   │   │   ├── security-settings.tsx
+│   │   │   ├── settings-form.tsx
+│   │   │   ├── system-preferences.tsx
+│   │   │   └── user-profile.tsx
 │   │   ├── ui
 │   │   │   ├── badge.tsx
 │   │   │   ├── button.tsx
 │   │   │   ├── card.tsx
 │   │   │   ├── checkbox.tsx
 │   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── form.tsx
 │   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
 │   │   │   ├── scroll-area.tsx
-│   │   │   └── table.tsx
+│   │   │   ├── switch.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── toast.tsx
+│   │   │   └── toaster.tsx
 │   │   ├── Header.tsx
 │   │   ├── LanguageSwitcher.tsx
 │   │   ├── Layout.tsx
@@ -32,6 +47,8 @@ telegram-bot-verce
 │   │   └── ThemeToggle.tsx
 │   ├── contexts
 │   │   └── LocaleContext.tsx
+│   ├── hooks
+│   │   └── use-toast.ts
 │   ├── lib
 │   │   └── utils.ts
 │   ├── locales
