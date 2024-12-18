@@ -1,17 +1,19 @@
 // src/components/Layout.tsx
 
 import React, { useState, useCallback, useEffect } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';  // 使用react-router-dom的Link
 import { useIntl } from 'react-intl';
 import LanguageSwitcher from './LanguageSwitcher';
-import ThemeToggle from './ThemeToggle';
+import { useTheme } from '../contexts/ThemeContext';
+
 import { 
   Home, 
   MessageCircle, 
   Settings, 
   User, 
   Bell,
-  Menu 
+  Menu,Moon, Sun 
+
 } from 'lucide-react';
 
 // 定义导航项的接口，使导航配置更加类型安全和可维护
@@ -27,6 +29,34 @@ interface LayoutProps {
   defaultSidebarState?: boolean;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
+const ThemeToggle = () => {
+  const { theme, setTheme } = useTheme();
+  const intl = useIntl();
+
+  return (
+    <button
+      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+      className="
+        flex items-center justify-center
+        h-9 w-9 sm:h-10 sm:w-10
+        rounded-md
+        text-muted-foreground
+        hover:text-foreground hover:bg-accent
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+        transition-colors duration-200
+      "
+      aria-label={intl.formatMessage({ 
+        id: theme === 'light' ? 'theme.dark' : 'theme.light' 
+      })}
+    >
+      {theme === 'light' ? (
+        <Moon className="h-5 w-5" />
+      ) : (
+        <Sun className="h-5 w-5" />
+      )}
+    </button>
+  );
+};
 
 export default function Layout({
   children,
@@ -114,30 +144,23 @@ export default function Layout({
         </div>
 
         {/* 导航菜单 */}
-        <nav className="flex-1 overflow-y-auto p-3 md:p-4">
-          <div className="space-y-1">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.labelId}
-                href={item.path}
-                className="
-                  flex items-center px-3 md:px-4 py-2 md:py-2.5
-                  text-sm md:text-base
-                  text-muted-foreground
-                  hover:text-foreground hover:bg-accent
-                  rounded-md
-                  transition-colors duration-200
-                  focus-visible:outline-none focus-visible:ring-2
-                  focus-visible:ring-ring
-                "
-              >
-                <item.icon className="h-5 w-5 mr-3 shrink-0" />
-                <span className="font-medium truncate">
-                  {intl.formatMessage({ id: item.labelId })}
-                </span>
-              </Link>
-            ))}
-          </div>
+       {/* 导航菜单 */}
+        <nav className="flex-1 overflow-y-auto p-4">
+          {navigationItems.map((item) => (
+            <Link
+              key={item.labelId}
+              to={item.path}
+              className="
+                flex items-center px-4 py-2
+                text-sm text-muted-foreground
+                hover:text-foreground hover:bg-accent
+                rounded-md transition-colors
+              "
+            >
+              <item.icon className="h-5 w-5 mr-3" />
+              <span>{intl.formatMessage({ id: item.labelId })}</span>
+            </Link>
+          ))}
         </nav>
       </aside>
 
@@ -187,7 +210,7 @@ export default function Layout({
             {/* 右侧工具栏 */}
             <div className="flex items-center gap-4">
               <LanguageSwitcher />
-              <ThemeToggle />
+              <ThemeToggle  />
 
               {/* 通知按钮 */}
               <button

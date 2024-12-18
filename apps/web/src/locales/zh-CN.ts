@@ -44,6 +44,17 @@ export default {
   "dashboard.activity.event.newBot": "新机器人 '{name}' 已添加到系统",
   "dashboard.activity.event.milestone": "机器人 {name} 达到 {count} 用户里程碑",
   "dashboard.activity.event.systemUpdate": "系统更新完成",
+  'dashboard.botStatus.status.active': "在线",
+  'dashboard.botStatus.status.inactive': "离线",
+  'dashboard.botStatus.status.error': "机器人出错",
+  'dashboard.botStatus.metrics.users.description': "过去30天的活跃用户",
+  'dashboard.botStatus.metrics.messages.description': "过去24小时处理的消息",
+  'dashboard.botStatus.metrics.uptime.description': "机器人运行时间",
+  'dashboard.botStatus.metrics.errorRate.description': "过去30天的错误率",
+  'dashboard.botStatus.metrics.activeUsers.description': "机器人活跃用户数",
+  'dashboard.botStatus.metrics.activeChats.description': "机器人活跃聊天数",
+  'dashboard.botStatus.metrics.activeCommands.description': "机器人活跃命令数",
+
 
   // 机器人状态
   "dashboard.botStatus.title": "机器人状态概览",
@@ -63,6 +74,9 @@ export default {
   "nav.bots": "机器人",
   "nav.settings": "设置",
   "nav.profile": "个人资料",
+  "nav.toggle": "切换导航",
+  "notifications.toggle": "切换通知",
+
 
   // 应用标题
   "app.title": "TG机器人管理器",
@@ -113,6 +127,19 @@ export default {
   "bots.table.actions": "操作",
   "bots.table.noResults": "未找到机器人。",
   "bots.table.selected": "已选择 {count}/{total} 个机器人",
+  'bots.table.copyToken': '复制Token',
+  'bots.table.addNew': '添加机器人',
+  'bots.table.edit': '编辑',
+  'bots.table.selectAll': "全选",
+  'bots.table.selectRow': "选择行",
+  'bots.table.openMenu': "菜单",
+  'bots.table.delete': "删除",
+  'bots.table.deleteConfirm': "确定要删除选中的 {count} 个机器人吗？",
+  'bots.table.deleteSuccess': "已删除 {count} 个机器人",
+  'bots.table.deleteError': "删除 {count} 个机器人失败",
+  'bots.table.viewDetails': "查看详情",
+
+
   // 设置页面通用翻译
   'settings.title': '设置',
   'settings.description': '管理您的账户设置和偏好',
@@ -268,6 +295,7 @@ export default {
   'settings.security.twoFactor': '双因素认证',
   'settings.security.twoFactor.description': '为您的账户添加额外的安全保护',
   'settings.security.button.update': '更新安全设置',
+  'profile.open': '打开个人资料',
 
   // 集成部分
   'settings.integration.title': '集成与通知',
@@ -294,6 +322,9 @@ export default {
   'preferences.betaFeatures.description': '抢先体验未正式发布的新功能',
   'preferences.button.save': '保存设置',
   'settings.notifications.title': '通知设置',
+  'preferences.theme.light': '浅色',
+  'preferences.theme.dark': '深色',
+
   // 仪表盘板块描述
   "dashboard.section.keyMetrics.description": "关键性能指标概览",
   "dashboard.section.analyticsActivity.description": "机器人数据分析和近期活动",

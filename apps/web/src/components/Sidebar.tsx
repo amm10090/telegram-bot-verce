@@ -2,8 +2,9 @@
 import React from 'react';
 import { Home, MessageCircle, Settings } from 'lucide-react';
 import Link from 'next/link';
-import ThemeToggle from './ThemeToggle';
+import { useTheme } from '../contexts/ThemeContext';
 import { useIntl } from 'react-intl';
+import { Moon, Sun } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -16,6 +17,34 @@ interface SidebarProps {
   setOpen: (open: boolean) => void;
 }
 
+const ThemeToggle = () => {
+  const { theme, setTheme } = useTheme();
+  const intl = useIntl();
+
+  return (
+    <button
+      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+      className="
+        flex items-center justify-center
+        h-9 w-9 sm:h-10 sm:w-10
+        rounded-md
+        text-muted-foreground
+        hover:text-foreground hover:bg-accent
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+        transition-colors duration-200
+      "
+      aria-label={intl.formatMessage({ 
+        id: theme === 'light' ? 'theme.dark' : 'theme.light' 
+      })}
+    >
+      {theme === 'light' ? (
+        <Moon className="h-5 w-5" />
+      ) : (
+        <Sun className="h-5 w-5" />
+      )}
+    </button>
+  );
+};
 export default function Sidebar({ open, setOpen }: SidebarProps) {
   const intl = useIntl();
 

@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"target": "es5",
+		"lib": ["dom", "dom.iterable", "esnext"],
+		"allowJs": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"forceConsistentCasingInFileNames": true,
+		"noEmit": false,
+		"esModuleInterop": true,
+		"module": "esnext",
+		"allowSyntheticDefaultImports": true,
+		"moduleResolution": "bundler", // 改为 bundler 以更好地支持现代打包工具
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"jsx": "react-jsx", // 改为 react-jsx 以支持新的 JSX 转换
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"]
+		},
+		"incremental": true // 添加增量编译支持
+	},
+	"include": ["src/**/*.ts", "src/**/*.tsx", "src/types/**/*.d.ts"],
+	"exclude": ["node_modules", "dist"]
+}

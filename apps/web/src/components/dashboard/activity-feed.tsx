@@ -24,13 +24,13 @@ const activities: Activity[] = [
     timestamp: { value: 2, unit: "minutes" }
   },
     { 
-    id: 1, 
+    id: 2, 
     type: "userJoined",
     params: { name: "John", botName: "Bot A" },
     timestamp: { value: 2, unit: "minutes" }
   },
     { 
-    id: 1, 
+    id: 3, 
     type: "userJoined",
     params: { name: "John", botName: "Bot A" },
     timestamp: { value: 2, unit: "minutes" }

@@ -1,23 +1,15 @@
 {
     "version": 2,
-    "builds": [
+    "buildCommand": "turbo run build",
+    "outputDirectory": "apps/web/dist",
+    "rewrites": [
         {
-            "src": "package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "buildCommand": "npm run build",
-                "outputDirectory": "Web/dist"
-            }
-        }
-    ],
-    "routes": [
-        {
-            "src": "/[^.]+",
-            "dest": "/"
+            "source": "/api/:path*",
+            "destination": "/api/server/:path*"
         },
         {
-            "src": "/(.+)",
-            "dest": "/$1"
+            "source": "/(.*)",
+            "destination": "/apps/web/$1"
         }
     ]
 }

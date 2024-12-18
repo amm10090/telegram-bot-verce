@@ -1,8 +1,8 @@
 // src/components/Header.tsx
 import React from 'react';
-import { Menu, Bell, User, Search } from 'lucide-react'; // 添加 Search 图标用于搜索功能
+import { Menu, Bell, User, Search, Moon, Sun } from 'lucide-react'; // 添加 Search 图标用于搜索功能
 import { useIntl } from 'react-intl';
-import ThemeToggle from './ThemeToggle';
+import { useTheme } from '../contexts/ThemeContext';
 import LanguageSwitcher from './LanguageSwitcher';
 
 // 定义组件的属性接口
@@ -18,6 +18,32 @@ export default function Header({
   isDesktopView 
 }: HeaderProps) {
   const intl = useIntl();
+    const { theme, setTheme } = useTheme(); // 使用useTheme hook
+  const ThemeToggle = () => {
+    return (
+      <button
+        onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+        className="
+          flex items-center justify-center
+          h-9 w-9 sm:h-10 sm:w-10
+          rounded-md
+          text-muted-foreground
+          hover:text-foreground hover:bg-accent
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+          transition-colors duration-200
+        "
+        aria-label={intl.formatMessage({ 
+          id: theme === 'light' ? 'theme.dark' : 'theme.light' 
+        })}
+      >
+        {theme === 'light' ? (
+          <Moon className="h-5 w-5" />
+        ) : (
+          <Sun className="h-5 w-5" />
+        )}
+      </button>
+    );
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
@@ -102,7 +128,7 @@ export default function Header({
 
             {/* 主题切换器 - 平板和桌面端显示 */}
             <div className="hidden sm:block">
-              <ThemeToggle />
+              <ThemeToggle  />
             </div>
 
             {/* 通知按钮 */}
