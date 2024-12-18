@@ -1,13 +1,6 @@
 {
     "version": 2,
-    "buildCommand": "turbo run build",
-    "outputDirectory": "apps/web/dist",
-    "rewrites": [
-        {
-            "source": "/api/bot/telegram/:path*",
-            "destination": "/api/bot/telegram/:path*"
-        }
-    ],
+    "buildCommand": "turbo run build --filter=web... --filter=server...",
     "builds": [
         {
             "src": "apps/web/package.json",
@@ -31,8 +24,7 @@
         },
         {
             "src": "/(.*)",
-            "dest": "/apps/web/dist/$1"
+            "dest": "/apps/web/$1"
         }
-    ],
-    "env": {}
+    ]
 }
