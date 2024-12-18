@@ -69,3 +69,4 @@ Desktop.ini
 apps/*/dist/
 packages/*/dist/
 *.local
+.vercel
