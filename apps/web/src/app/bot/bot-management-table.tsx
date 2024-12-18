@@ -193,7 +193,7 @@ export default function BotManagementTable() {
 
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
+      <div className="flex items-center py-4 pt-9">
         <Input
           placeholder={intl.formatMessage({ id: "ui.search" })}
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}

@@ -16,7 +16,20 @@
 		"jsx": "react-jsx", // 改为 react-jsx 以支持新的 JSX 转换
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["src/*"]
+			"@/*": ["src/*"],
+			"@components/*": ["src/components/*"],
+			"@utils/*": ["src/utils/*"],
+			"@hooks/*": ["src/hooks/*"],
+			"@pages/*": ["src/pages/*"],
+			"@styles/*": ["src/styles/*"],
+			"@assets/*": ["src/assets/*"],
+			"@api/*": ["src/api/*"],
+			"@store/*": ["src/store/*"],
+			"@redux/*": ["src/redux/*"],
+			"@actions/*": ["src/actions/*"],
+			"@reducers/*": ["src/reducers/*"],
+			"@components-mobile/*": ["src/components-mobile/*"],
+			"@utils-mobile/*": ["src/utils-mobile/*"]
 		},
 		"incremental": true // 添加增量编译支持
 	},

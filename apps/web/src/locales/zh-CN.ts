@@ -188,12 +188,14 @@ export default {
   'apiKeys.input.placeholder': '输入新API密钥名称',
   'apiKeys.button.add': '添加新密钥',
   'apiKeys.button.delete': '删除',
-
+  'apiKeys.deleteSuccess': 'API密钥已删除',
+  'apiKeys.deleteError': '删除API密钥失败',
+  'apiKeys.table.type': '类型',
   'apiKeys.table.name': '名称',
   'apiKeys.table.key': 'API密钥',
   'apiKeys.table.createdAt': '创建时间',
   'apiKeys.table.actions': '操作',
-
+  'apiKeys.copied': '已复制到剪贴板',
   'apiKeys.error.title': '错误',
   'apiKeys.error.emptyName': '请输入API密钥名称',
   'apiKeys.success.title': '操作成功',
