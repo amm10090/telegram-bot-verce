@@ -1,15 +1,12 @@
 {
     "version": 2,
     "buildCommand": "turbo run build",
-    "outputDirectory": "apps/web/dist",
+    "outputDirectory": "apps/web/.next",
     "rewrites": [
         {
-            "source": "/api/:path*",
-            "destination": "/api/server/:path*"
-        },
-        {
-            "source": "/(.*)",
-            "destination": "/apps/web/$1"
+            "source": "/api/bot/telegram/:path*",
+            "destination": "http://localhost:3001/api/bot/telegram/:path*"
         }
-    ]
+    ],
+    "env": {}
 }

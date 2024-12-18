@@ -1,13 +1,28 @@
+// apps/web/next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // 启用 React 严格模式，帮助找出潜在问题
     reactStrictMode: true,
     async rewrites() {
         return [
             {
                 source: '/api/:path*',
-                destination: process.env.NEXT_PUBLIC_API_URL + '../server/api/:path*',  // 指向你的 server 端地址
-            },
+                destination: '/api/:path*',
+            }
+        ];
+    },
+    // 添加额外的配置以支持 API 路由
+    async headers() {
+        return [
+            {
+                // 匹配所有 API 路由
+                source: '/api/:path*',
+                headers: [
+                    { key: 'Access-Control-Allow-Credentials', value: 'true' },
+                    { key: 'Access-Control-Allow-Origin', value: '*' },
+                    { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT' },
+                    { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
+                ]
+            }
         ];
     },
     // 允许在页面中使用 SVG 文件
@@ -18,6 +33,7 @@ const nextConfig = {
         });
         return config;
     },
-}
 
-module.exports = nextConfig
+};
+
+module.exports = nextConfig;
