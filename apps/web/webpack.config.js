@@ -19,8 +19,10 @@ module.exports = (env, argv) => {
         output: {
             path: BUILD_DIR,
             filename: isProduction ? '[name].[contenthash].js' : '[name].bundle.js',
-            publicPath: '/',
-            clean: true
+            publicPath: isProduction ? '/' : '/', // 确保在生产环境中正确设置
+            clean: true,
+            assetModuleFilename: 'assets/[hash][ext][query]'
+
         },
         resolve: {
             extensions: ['.tsx', '.ts', '.js', '.jsx', '.json'],
@@ -118,7 +120,17 @@ module.exports = (env, argv) => {
             // 添加 process 插件
             new webpack.ProvidePlugin({
                 process: 'process/browser'
+            }),
+            new webpack.DefinePlugin({
+                'process.env': JSON.stringify({
+                    ...process.env,
+                    // 确保 Vercel 环境变量可用
+                    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '',
+                    NODE_ENV: isProduction ? 'production' : 'development'
+                })
             })
+
+
         ],
 
         // 开发服务器配置
@@ -148,10 +160,9 @@ module.exports = (env, argv) => {
         },
 
         // 优化配置
+        // 为 Vercel 环境添加特定的优化配置
         optimization: {
-            // 只在生产环境启用优化
-            ...(isProduction ? {
-                // 分块策略
+            ...(!isProduction ? {} : {
                 splitChunks: {
                     chunks: 'all',
                     minSize: 20000,
@@ -162,7 +173,14 @@ module.exports = (env, argv) => {
                         vendors: {
                             test: /[\\/]node_modules[\\/]/,
                             priority: -10,
-                            reuseExistingChunk: true
+                            reuseExistingChunk: true,
+                            // 添加这个配置以优化缓存
+                            name(module) {
+                                const packageName = module.context.match(
+                                    /[\\/]node_modules[\\/](.*?)([\\/]|$)/
+                                )[1];
+                                return `vendor.${packageName.replace('@', '')}`;
+                            }
                         },
                         default: {
                             minChunks: 2,
@@ -171,30 +189,22 @@ module.exports = (env, argv) => {
                         }
                     }
                 },
-                // 启用压缩
-                minimize: true
-            } : {}),
-            // 在开发环境下也启用的优化项
-            moduleIds: 'deterministic',
-            runtimeChunk: 'single'
-        },
-
-        // 性能提示配置
-        performance: {
-            hints: isProduction ? 'warning' : false,
-            maxAssetSize: 512000,
-            maxEntrypointSize: 512000
-        },
-
-        // 开发工具配置
-        devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
-
-        // 统计信息配置
-        stats: {
-            modules: false,
-            children: false,
-            chunks: false,
-            chunkModules: false
+                // 确保生成稳定的模块标识符
+                moduleIds: 'deterministic',
+                // 提取 webpack 运行时代码
+                runtimeChunk: 'single'
+            })
         }
     };
+
+    // 在生产环境中添加额外的性能优化
+    if (isProduction) {
+        config.performance = {
+            hints: 'warning',
+            maxEntrypointSize: 512000,
+            maxAssetSize: 512000
+        };
+    }
+
+    return config;
 };

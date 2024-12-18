@@ -1,11 +1,37 @@
 {
     "version": 2,
     "buildCommand": "turbo run build",
-    "outputDirectory": "apps/web/.next",
+    "outputDirectory": "apps/web/dist",
     "rewrites": [
         {
             "source": "/api/bot/telegram/:path*",
-            "destination": "http://localhost:3001/api/bot/telegram/:path*"
+            "destination": "/api/bot/telegram/:path*"
+        }
+    ],
+    "builds": [
+        {
+            "src": "apps/web/package.json",
+            "use": "@vercel/static-build",
+            "config": {
+                "distDir": "dist"
+            }
+        },
+        {
+            "src": "apps/server/package.json",
+            "use": "@vercel/node",
+            "config": {
+                "distDir": "dist"
+            }
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/bot/telegram/(.*)",
+            "dest": "/apps/server/api/bot/telegram/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/apps/web/dist/$1"
         }
     ],
     "env": {}
