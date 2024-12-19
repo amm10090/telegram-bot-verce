@@ -1,6 +1,5 @@
 // src/locales/zh-CN.ts
 export default {
-  // 现有的翻译
   "dashboard.welcome.title": "欢迎使用 Telegram Bot 管理器",
   "dashboard.welcome.description": "这是您的仪表盘。您可以在这里管理和监控您的 Telegram 机器人。",
   "dashboard.section.keyMetrics": "关键指标",
@@ -69,6 +68,16 @@ export default {
   "common.error": "错误",
   "common.retry": "重试",
   "common.noData": "暂无数据",
+  'common.search': '搜索',
+  'common.openMenu': '菜单',
+  'common.actions': '操作',
+  'common.edit': '编辑',
+  'common.delete': '删除',
+  'common.selectAll': '全选',
+  'common.selectRow': '选择行',
+  'common.previousPage': '上一页',
+  'common.nextPage': '下一页',
+
   // 导航相关
   "nav.dashboard": "仪表盘",
   "nav.bots": "机器人",
@@ -185,9 +194,10 @@ export default {
   'notifications.success.title': '通知设置已更新',
 
   // API密钥管理
+  'apiKeys.types.other': '其他',
   'apiKeys.input.placeholder': '输入新API密钥名称',
-  'apiKeys.button.add': '添加新密钥',
-  'apiKeys.button.delete': '删除',
+  'apiKeys.actions.add': '添加新密钥',
+  'apiKeys.actions.delete': '删除',
   'apiKeys.deleteSuccess': 'API密钥已删除',
   'apiKeys.deleteError': '删除API密钥失败',
   'apiKeys.table.type': '类型',
@@ -201,7 +211,17 @@ export default {
   'apiKeys.success.title': '操作成功',
   'apiKeys.success.created': '新API密钥已创建',
   'apiKeys.success.deleted': 'API密钥已删除',
-
+  'apiKeys.actions.edit': '编辑',
+  'apiKeys.actions.copy': '复制',
+  'apiKeys.dialog.editTitle': '编辑API密钥',
+  'apiKeys.dialog.editDescription': '编辑API密钥名称',
+  'apiKeys.dialog.editName': '名称',
+  'apiKeys.dialog.editKey': 'API密钥',
+  'apiKeys.dialog.addTitle': '添加API密钥',
+  'apiKeys.dialog.addDescription': '添加新的API密钥',
+  'apiKeys.dialog.addName': '名称',
+  'apiKeys.dialog.addType': '类型',
+  'apiKeys.dialog.addKey': 'API密钥',
   // 系统设置
   'system.theme.label': '主题',
   'system.theme.description': '选择应用的显示主题',
