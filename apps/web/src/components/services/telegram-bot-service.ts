@@ -101,7 +101,7 @@ export class TelegramBotService {
 
     constructor(token: string) {
         this.token = token;
-        this.baseUrl = `${API_CONFIG.BASE_URL}/api/bot/telegram`;
+        this.baseUrl = `${API_CONFIG.BASE_URL}api/bot/telegram`;
         this.timeout = API_CONFIG.TIMEOUT;
     }
 
