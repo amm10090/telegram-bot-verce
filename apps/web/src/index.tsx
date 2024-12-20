@@ -1,3 +1,4 @@
+// src/index.tsx
 import React, { Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -9,57 +10,39 @@ import './styles/globals.css';
 import Layout from './components/Layout';
 import MainContent from './components/MainContent';
 import { LocaleProvider } from './contexts/LocaleContext';
-import { ThemeProvider } from './contexts/ThemeContext';  // 添加主题提供者导入
+import { ThemeProvider } from './contexts/ThemeContext';
 
-/**
- * 应用的根组件
- * 包含了所有必要的上下文提供者和核心布局
- */
-function App() {
-  return (
-    <ErrorBoundary>
-      <Suspense fallback={<LoadingFallback />}>
-        {/* ThemeProvider 必须包裹在最外层，以便主题效果能够渗透到所有子组件 */}
-        <ThemeProvider
-          defaultTheme="system"
-          enableSystem={true}
-          disableTransitionOnChange={false}
-        >
-          <LocaleProvider>
-            <BrowserRouter>
-              <Layout maxWidth="2xl" defaultSidebarState={false}>
-                <MainContent />
-              </Layout>
-            </BrowserRouter>
-          </LocaleProvider>
-        </ThemeProvider>
-      </Suspense>
-    </ErrorBoundary>
-  );
+// 定义错误边界组件的类型
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
 }
 
 /**
  * 错误边界组件
  * 用于捕获和处理渲染过程中的错误
  */
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { children: React.ReactNode }) {
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  // 正确初始化构造函数和状态
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError() {
+  // 从错误中派生新状态
+  static getDerivedStateFromError(): ErrorBoundaryState {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  // 记录错误信息
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error('应用错误:', error, errorInfo);
   }
 
-  render() {
+  render(): React.ReactNode {
     if (this.state.hasError) {
       return (
         <div className="flex min-h-screen items-center justify-center">
@@ -84,7 +67,7 @@ class ErrorBoundary extends React.Component<
  * 加载状态组件
  * 在内容加载时显示的友好界面
  */
-const LoadingFallback = () => (
+const LoadingFallback: React.FC = () => (
   <div className="flex min-h-screen items-center justify-center">
     <div className="text-center">
       <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -92,6 +75,32 @@ const LoadingFallback = () => (
     </div>
   </div>
 );
+
+/**
+ * 应用的根组件
+ * 包含了所有必要的上下文提供者和核心布局
+ */
+const App: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback />}>
+        <ThemeProvider
+          defaultTheme="system"
+          enableSystem={true}
+          disableTransitionOnChange={false}
+        >
+          <LocaleProvider>
+            <BrowserRouter>
+              <Layout defaultSidebarState={false}>
+                <MainContent />
+              </Layout>
+            </BrowserRouter>
+          </LocaleProvider>
+        </ThemeProvider>
+      </Suspense>
+    </ErrorBoundary>
+  );
+};
 
 // 获取根元素并渲染应用
 const container = document.getElementById('root');

@@ -6,6 +6,35 @@ export default {
   "dashboard.section.analyticsActivity": "数据分析与活动",
   "dashboard.section.botStatus": "机器人状态",
 
+  // 导航和标题相关
+  "dashboard.title": "仪表盘",
+  "nav.toggle": "切换导航菜单",
+  "nav.dashboard": "仪表盘",
+  "nav.bots": "机器人管理",
+  "nav.settings": "设置",
+
+  // 搜索相关
+  "search.placeholder": "搜索...",
+
+  // 语言切换相关
+  "language.select.label": "选择语言",
+  "language.option.label": "{language}",
+  "language.current": "当前语言：{language}",
+  "language.changed": "已切换语言至{language}",
+
+  // 主题切换相关
+  "theme.light": "切换至亮色主题",
+  "theme.dark": "切换至暗色主题",
+  "theme.system": "跟随系统主题",
+
+  // 应用标题
+  "app.title": "TG机器人管理器",
+
+  // 通知和用户菜单
+  "notifications.toggle": "通知中心",
+  "profile.open": "个人信息",
+
+
   // 指标相关
   "dashboard.metrics.totalUsers": "总用户数",
   "dashboard.metrics.messages": "消息数",
@@ -79,22 +108,10 @@ export default {
   'common.nextPage': '下一页',
 
   // 导航相关
-  "nav.dashboard": "仪表盘",
-  "nav.bots": "机器人",
-  "nav.settings": "设置",
-  "nav.profile": "个人资料",
-  "nav.toggle": "切换导航",
-  "notifications.toggle": "切换通知",
-
 
   // 应用标题
-  "app.title": "TG机器人管理器",
-  "app.description": "高效管理您的Telegram机器人",
 
   // 主题切换
-  "theme.light": "浅色模式",
-  "theme.dark": "深色模式",
-  "theme.system": "跟随系统",
 
   // 用户界面
   "ui.search": "搜索...",
@@ -153,6 +170,10 @@ export default {
   'settings.title': '设置',
   'settings.description': '管理您的账户设置和偏好',
   'settings.form.title': '个人设置',
+  'common.pageInfo': '第 {current} 页，共 {total} 页',
+  'common.pageNumber': '第 {number} 页',
+  'common.cancel': '取消',
+
 
   // 设置页面选项卡标题
   'settings.tabs.profile': '个人资料',
@@ -222,6 +243,12 @@ export default {
   'apiKeys.dialog.addName': '名称',
   'apiKeys.dialog.addType': '类型',
   'apiKeys.dialog.addKey': 'API密钥',
+  'apiKeys.table.lastUsed': '上次使用时间',
+  'apiKeys.status.inactive': '未激活',
+  'apiKeys.dialog.deleteTitle': '删除API密钥',
+  'apiKeys.dialog.deleteDescription': '您确定要删除这个API密钥吗？此操作无法撤销。',
+  'apiKeys.toast.copySuccess': '已复制到剪贴板',
+  'apiKeys.toast.deleteSuccess': '已成功删除API密钥',
   // 系统设置
   'system.theme.label': '主题',
   'system.theme.description': '选择应用的显示主题',
@@ -317,7 +344,6 @@ export default {
   'settings.security.twoFactor': '双因素认证',
   'settings.security.twoFactor.description': '为您的账户添加额外的安全保护',
   'settings.security.button.update': '更新安全设置',
-  'profile.open': '打开个人资料',
 
   // 集成部分
   'settings.integration.title': '集成与通知',
@@ -386,9 +412,5 @@ export default {
   "dashboard.actions.export": "导出报告",
   "dashboard.actions.filter": "筛选数据",
   "dashboard.actions.viewDetails": "查看详情",
-  "language.select.label": "Select language",  // 选择语言
-  "language.changed": "{language} selected",   // 已选择{language}
-  "language.current": "Current language: {language}",  // 当前语言：{language}
-  "language.option.label": "Switch to {language}"  // 切换到{language}
 
 }

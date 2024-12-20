@@ -1,250 +1,105 @@
 // src/components/Layout.tsx
-
 import React, { useState, useCallback, useEffect } from 'react';
-import { Link } from 'react-router-dom';  // 使用react-router-dom的Link
 import { useIntl } from 'react-intl';
-import LanguageSwitcher from './LanguageSwitcher';
+import Sidebar from './Sidebar';
+import Header from './Header';
 import { useTheme } from '../contexts/ThemeContext';
 
-
-import { 
-  Home, 
-  MessageCircle, 
-  Settings, 
-  User, 
-  Bell,
-  Menu,Moon, Sun 
-
-} from 'lucide-react';
-
-// 定义导航项的接口，使导航配置更加类型安全和可维护
-interface NavItem {
-  path: string;
-  icon: React.ElementType;
-  labelId: string;
-}
-
-// 定义组件的属性接口，明确组件可接收的配置项
+// 定义布局组件的属性接口
 interface LayoutProps {
+  // 子组件，可以是任何有效的 React 节点
   children: React.ReactNode;
+  // 控制侧边栏的默认显示状态
   defaultSidebarState?: boolean;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
-const ThemeToggle = () => {
-  const { theme, setTheme } = useTheme();
-  const intl = useIntl();
 
-  return (
-    <button
-      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-      className="
-        flex items-center justify-center
-        h-9 w-9 sm:h-10 sm:w-10
-        rounded-md
-        text-muted-foreground
-        hover:text-foreground hover:bg-accent
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-        transition-colors duration-200
-      "
-      aria-label={intl.formatMessage({ 
-        id: theme === 'light' ? 'theme.dark' : 'theme.light' 
-      })}
-    >
-      {theme === 'light' ? (
-        <Moon className="h-5 w-5" />
-      ) : (
-        <Sun className="h-5 w-5" />
-      )}
-    </button>
-  );
-};
-
+/**
+ * 主布局组件
+ * 负责管理整个应用的页面结构和响应式布局
+ */
 export default function Layout({
   children,
   defaultSidebarState = true,
-  maxWidth = '2xl'
 }: LayoutProps) {
-  // 状态管理
-  const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarState);
-  const [isDesktopView, setIsDesktopView] = useState(false);
+  // 获取主题和国际化工具
+  const { theme } = useTheme();
   const intl = useIntl();
 
-  // 定义导航项配置
-  const navigationItems: NavItem[] = [
-    {
-      path: '/',
-      icon: Home,
-      labelId: 'nav.dashboard'
-    },
-    {
-      path: '/bots',
-      icon: MessageCircle,
-      labelId: 'nav.bots'
-    },
-    {
-      path: '/settings',
-      icon: Settings,
-      labelId: 'nav.settings'
-    }
-  ];
+  // 状态管理
+  // 控制侧边栏的开关状态
+  const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarState);
+  // 判断是否为桌面视图
+  const [isDesktopView, setIsDesktopView] = useState(false);
 
-  // 检测视窗大小的函数
+  // 检查是否为桌面视图的函数
+  // 使用 useCallback 来缓存函数，避免不必要的重新创建
   const checkIsDesktop = useCallback(() => {
+    // 将 1024px 作为桌面视图的断点
     return window.innerWidth >= 1024;
   }, []);
 
-  // 处理视窗大小变化
+  // 处理窗口大小变化的副作用
   useEffect(() => {
-    // 初始化检查
+    // 更新视图状态的函数
     const updateViewState = () => {
       const isDesktop = checkIsDesktop();
       setIsDesktopView(isDesktop);
       
-      // 只在视图模式发生变化时更新侧边栏状态
+      // 仅在视图模式发生变化时更新侧边栏状态
       if (isDesktop !== isDesktopView) {
         setSidebarOpen(isDesktop);
       }
     };
 
-    // 首次执行
+    // 初始化时执行一次
     updateViewState();
 
-    // 添加事件监听器
+    // 添加窗口大小变化的事件监听
     window.addEventListener('resize', updateViewState);
 
-    // 清理函数
+    // 清理函数，移除事件监听
     return () => window.removeEventListener('resize', updateViewState);
   }, [checkIsDesktop, isDesktopView]);
 
-  // 处理侧边栏切换
-  const toggleSidebar = useCallback(() => {
-    if (!isDesktopView) {
-      setSidebarOpen(prev => !prev);
-    }
-  }, [isDesktopView]);
-
   return (
+    // 整体容器，设置最小高度和背景色
     <div className="min-h-screen bg-background">
-      {/* 侧边栏 */}
-      <aside 
-        className={`
-          fixed inset-y-0 left-0 z-40
-          w-[240px] md:w-64 lg:w-72
-          flex flex-col
-          bg-card border-r border-border
-          transform transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          ${isDesktopView ? 'lg:translate-x-0' : ''}
-        `}
-      >
-        {/* 侧边栏头部 */}
-        <div className="h-16 flex items-center px-4 md:px-6 border-b border-border">
-          <span className="text-lg md:text-xl font-semibold truncate">
-            {intl.formatMessage({ id: 'app.title' })}
-          </span>
-        </div>
+      {/* 侧边栏组件 */}
+      <Sidebar 
+        open={sidebarOpen} 
+        setOpen={setSidebarOpen} 
+      />
 
-        {/* 导航菜单 */}
-       {/* 导航菜单 */}
-        <nav className="flex-1 overflow-y-auto p-4">
-          {navigationItems.map((item) => (
-            <Link
-              key={item.labelId}
-              to={item.path}
-              className="
-                flex items-center px-4 py-2
-                text-sm text-muted-foreground
-                hover:text-foreground hover:bg-accent
-                rounded-md transition-colors
-              "
-            >
-              <item.icon className="h-5 w-5 mr-3" />
-              <span>{intl.formatMessage({ id: item.labelId })}</span>
-            </Link>
-          ))}
-        </nav>
-      </aside>
-
-      {/* 遮罩层 - 仅在移动端且侧边栏打开时显示 */}
-      {!isDesktopView && sidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm"
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* 主内容区域 */}
+      {/* 主内容区域容器 */}
       <div 
         className={`
           flex flex-col min-h-screen
           transition-all duration-300
-          ${isDesktopView ? 'lg:pl-[240px] xl:pl-72' : ''}
+          ${isDesktopView ? 'lg:pl-64' : ''} // 桌面视图时为侧边栏预留空间
         `}
       >
         {/* 顶部导航栏 */}
-        <header className={`
-          fixed top-0 z-30 w-full
-          h-16 bg-card border-b border-border
-          transition-all duration-300
-          ${isDesktopView ? 'lg:w-[calc(100%-16rem)]' : 'lg:w-full'}
-        `}>
-          <div className="h-full px-6 flex items-center justify-between">
-            {/* 左侧区域 */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={toggleSidebar}
-                className="p-2 rounded-md
-                  text-muted-foreground
-                  hover:bg-accent hover:text-accent-foreground
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-                  lg:hidden"
-                aria-label={intl.formatMessage({ id: 'nav.toggle' })}
-              >
-                <Menu className="h-6 w-6" />
-              </button>
-              <h1 className="text-lg font-medium text-foreground hidden md:block">
-                {intl.formatMessage({ id: 'nav.dashboard' })}
-              </h1>
-            </div>
+        <Header 
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          isDesktopView={isDesktopView}
+        />
 
-            {/* 右侧工具栏 */}
-            <div className="flex items-center gap-4">
-              <LanguageSwitcher />
-              <ThemeToggle  />
-
-              {/* 通知按钮 */}
-              <button
-                className="p-2 rounded-md
-                  text-muted-foreground
-                  hover:bg-accent hover:text-accent-foreground
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label={intl.formatMessage({ id: 'notifications.toggle' })}
-              >
-                <Bell className="h-5 w-5" />
-              </button>
-
-              {/* 用户头像按钮 */}
-              <button
-                className="flex items-center justify-center
-                  h-8 w-8 rounded-full
-                  bg-accent
-                  hover:bg-accent/80
-                  transition-colors"
-                aria-label={intl.formatMessage({ id: 'profile.open' })}
-              >
-                <User className="h-5 w-5 text-accent-foreground" />
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* 主要内容 */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-20">
-          <div className={`container mx-auto ${maxWidth ? `max-w-${maxWidth}` : ''}`}>
-            {children}
-          </div>
-        </main>
+        {/* 主要内容区域 */}
+ <main className="flex-1">
+  {/* 内容容器 - 调整边距和宽度控制 */}
+  <div className="
+    w-full 
+    px-4 
+    sm:px-6 
+    lg:px-8 
+    py-4 
+    sm:py-6 
+    lg:py-8
+  ">
+    {children}
+  </div>
+</main>
       </div>
     </div>
   );

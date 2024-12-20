@@ -1,6 +1,6 @@
 // src/components/Header.tsx
 import React from 'react';
-import { Menu, Bell, User, Search, Moon, Sun } from 'lucide-react'; // 添加 Search 图标用于搜索功能
+import { Menu, Bell, User, Search, Moon, Sun } from 'lucide-react';
 import { useIntl } from 'react-intl';
 import { useTheme } from '../contexts/ThemeContext';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -18,173 +18,106 @@ export default function Header({
   isDesktopView 
 }: HeaderProps) {
   const intl = useIntl();
-    const { theme, setTheme } = useTheme(); // 使用useTheme hook
-  const ThemeToggle = () => {
-    return (
-      <button
-        onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-        className="
-          flex items-center justify-center
-          h-9 w-9 sm:h-10 sm:w-10
-          rounded-md
-          text-muted-foreground
-          hover:text-foreground hover:bg-accent
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-          transition-colors duration-200
-        "
-        aria-label={intl.formatMessage({ 
-          id: theme === 'light' ? 'theme.dark' : 'theme.light' 
-        })}
-      >
-        {theme === 'light' ? (
-          <Moon className="h-5 w-5" />
-        ) : (
-          <Sun className="h-5 w-5" />
-        )}
-      </button>
-    );
-  };
+  const { theme, setTheme } = useTheme();
+
+  // 主题切换按钮组件
+  const ThemeToggle = () => (
+    <button
+      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+      className="flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-md 
+                text-muted-foreground hover:text-foreground hover:bg-accent
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                transition-colors duration-200"
+      aria-label={intl.formatMessage({ 
+        id: theme === 'light' ? 'theme.dark' : 'theme.light' 
+      })}
+    >
+      {theme === 'light' ? (
+        <Moon className="h-5 w-5" />
+      ) : (
+        <Sun className="h-5 w-5" />
+      )}
+    </button>
+  );
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
+    <header className="sticky top-0 z-20 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       {/* 主要内容容器 */}
-      <div className="
-        flex h-14 sm:h-16 items-center justify-between
-        px-3 sm:px-4 md:px-6 lg:px-8
-        transition-all duration-300
-      ">
+      <div className="flex h-14 sm:h-16 items-center px-4 sm:px-6 lg:px-8">
         {/* 左侧区域：菜单按钮和标题 */}
-        <div className="flex items-center space-x-3 sm:space-x-4">
+        <div className="flex items-center gap-4">
           {/* 移动端菜单按钮 */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="
-              inline-flex items-center justify-center
-              h-9 w-9 sm:h-10 sm:w-10
-              rounded-md
-              text-muted-foreground
-              hover:text-foreground hover:bg-accent
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-              transition-colors duration-200
-              lg:hidden
-            "
+            className="lg:hidden flex items-center justify-center h-9 w-9 rounded-md
+                     text-muted-foreground hover:text-foreground hover:bg-accent
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                     transition-colors duration-200"
             aria-label={intl.formatMessage({ id: 'nav.toggle' })}
           >
             <Menu className="h-5 w-5" />
           </button>
 
-          {/* 标题区域 */}
-          <div className="flex items-center space-x-3">
-            <h1 className="
-              text-base sm:text-lg md:text-xl
-              font-semibold
-              text-foreground
-              truncate
-            ">
-              {intl.formatMessage({ id: 'dashboard.title' })}
-            </h1>
-          </div>
+          {/* 标题 */}
+          <h1 className="text-lg font-semibold text-foreground">
+            {intl.formatMessage({ id: 'dashboard.title' })}
+          </h1>
         </div>
 
         {/* 右侧工具栏 */}
-        <div className="flex items-center">
+        <div className="ml-auto flex items-center gap-2 sm:gap-4">
           {/* 搜索框 - 桌面端显示 */}
-          <div className="hidden md:flex items-center mr-4">
-            <div className="
-              relative
-              w-48 lg:w-64 xl:w-80
-              transition-all duration-300
-            ">
-              <input
-                type="search"
-                placeholder={intl.formatMessage({ id: 'search.placeholder' })}
-                className="
-                  w-full h-9
-                  px-3 py-2
-                  rounded-md
-                  border border-input
-                  bg-background
-                  text-sm
-                  placeholder:text-muted-foreground
-                  focus:outline-none focus:ring-2 focus:ring-ring
-                  transition-colors
-                "
-              />
-              <Search className="
-                absolute right-3 top-1/2 transform -translate-y-1/2
-                h-4 w-4
-                text-muted-foreground
-                pointer-events-none
-              "/>
-            </div>
+          <div className="hidden md:block relative w-full max-w-[20rem] lg:max-w-[24rem]">
+            <input
+              type="search"
+              placeholder={intl.formatMessage({ id: 'search.placeholder' })}
+              className="w-full h-9 px-3 pl-9 rounded-md border border-input bg-transparent
+                       placeholder:text-muted-foreground focus:outline-none focus:ring-2
+                       focus:ring-ring transition-colors"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 
+                             text-muted-foreground pointer-events-none" />
           </div>
 
           {/* 工具按钮组 */}
-          <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
-            {/* 语言切换器 - 平板和桌面端显示 */}
+          <div className="flex items-center gap-2">
             <div className="hidden sm:block">
               <LanguageSwitcher />
             </div>
-
-            {/* 主题切换器 - 平板和桌面端显示 */}
+            
             <div className="hidden sm:block">
-              <ThemeToggle  />
+              <ThemeToggle />
             </div>
 
-            {/* 通知按钮 */}
-            <button className="
-              flex items-center justify-center
-              h-9 w-9 sm:h-10 sm:w-10
-              rounded-md
-              text-muted-foreground
-              hover:text-foreground hover:bg-accent
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-              transition-colors duration-200
-            ">
+            <button className="flex items-center justify-center h-9 w-9 rounded-md
+                             text-muted-foreground hover:text-foreground hover:bg-accent
+                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                             transition-colors duration-200"
+                    aria-label={intl.formatMessage({ id: 'notifications' })}>
               <Bell className="h-5 w-5" />
             </button>
 
-            {/* 用户头像按钮 */}
-            <button className="
-              flex items-center justify-center
-              h-8 w-8 sm:h-9 sm:w-9
-              rounded-full
-              bg-accent
-              hover:bg-accent/80
-              transition-colors duration-200
-            ">
-              <User className="h-4 w-4 sm:h-5 sm:w-5 text-accent-foreground" />
+            <button className="flex items-center justify-center h-8 w-8 rounded-full
+                             bg-accent hover:bg-accent/80 transition-colors duration-200"
+                    aria-label={intl.formatMessage({ id: 'profile' })}>
+              <User className="h-4 w-4 text-accent-foreground" />
             </button>
           </div>
         </div>
       </div>
 
       {/* 移动端搜索栏 */}
-      <div className="block sm:hidden border-t border-border">
-        <div className="px-3 py-2">
-          <div className="relative">
-            <input
-              type="search"
-              placeholder={intl.formatMessage({ id: 'search.placeholder' })}
-              className="
-                w-full h-9
-                px-3 py-2
-                rounded-md
-                border border-input
-                bg-background
-                text-sm
-                placeholder:text-muted-foreground
-                focus:outline-none focus:ring-2 focus:ring-ring
-                transition-colors
-              "
-            />
-            <Search className="
-              absolute right-3 top-1/2 transform -translate-y-1/2
-              h-4 w-4
-              text-muted-foreground
-              pointer-events-none
-            "/>
-          </div>
+      <div className="border-t border-border md:hidden p-4">
+        <div className="relative">
+          <input
+            type="search"
+            placeholder={intl.formatMessage({ id: 'search.placeholder' })}
+            className="w-full h-9 px-3 pl-9 rounded-md border border-input bg-transparent
+                     placeholder:text-muted-foreground focus:outline-none focus:ring-2
+                     focus:ring-ring transition-colors"
+          />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 
+                           text-muted-foreground pointer-events-none" />
         </div>
       </div>
     </header>

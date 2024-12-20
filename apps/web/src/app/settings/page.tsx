@@ -72,34 +72,42 @@ function SettingsContent() {
           </Card>
         </section>
 
-        {/* API密钥和通知设置区域 - 响应式两栏布局 */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            {intl.formatMessage({ id: 'settings.section.integrations' })}
-          </h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="md:h-full">
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-xl">
-                  {intl.formatMessage({ id: 'settings.apiKeys.title' })}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <ApiKeysManagement />
-              </CardContent>
-            </Card>
-            <Card className="md:h-full">
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-xl">
-                  {intl.formatMessage({ id: 'settings.notifications.title' })}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <NotificationPreferences />
-              </CardContent>
-            </Card>
-          </div>
-        </section>
+{/* API密钥和通知设置区域 - 优化响应式布局 */}
+<section className="space-y-4">
+  <h2 className="text-2xl font-semibold tracking-tight">
+    {intl.formatMessage({ id: 'settings.section.integrations' })}
+  </h2>
+  {/* 修改网格容器的样式 */}
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {/* API密钥管理卡片 - 优化内部布局 */}
+    <div className="min-w-0"> {/* 添加 min-w-0 防止子元素溢出 */}
+      <Card>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-xl">
+            {intl.formatMessage({ id: 'settings.apiKeys.title' })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ApiKeysManagement />
+        </CardContent>
+      </Card>
+    </div>
+
+    {/* 通知设置卡片 - 优化内部布局 */}
+    <div className="min-w-0"> {/* 添加 min-w-0 防止子元素溢出 */}
+      <Card>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-xl">
+            {intl.formatMessage({ id: 'settings.notifications.title' })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <NotificationPreferences />
+        </CardContent>
+      </Card>
+    </div>
+  </div>
+</section>
 
         {/* 系统偏好设置区域 */}
         <section className="space-y-4">
