@@ -21,7 +21,7 @@ export default function App({ Component, pageProps }: AppProps) {
       {/* BrowserRouter 提供路由功能 */}
       <BrowserRouter>
         {/* Layout 组件提供页面的基础布局结构 */}
-        <Layout maxWidth="2xl" defaultSidebarState={false}>
+        <Layout  defaultSidebarState={false}>
           {/* 渲染传入的组件或默认的主内容组件 */}
           {Component ? (
             <Component {...pageProps} />
