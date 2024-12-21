@@ -1,8 +1,8 @@
 // apps/server/src/app/bot/telegram/routes.ts
 
-// 导入必要的 Express 相关类型和模块
 import { Router, Request, Response, NextFunction } from 'express';
 import { validateHandler } from './validate';
+import { saveApiKeyHandler, getAllBotsHandler, updateBotHandler, deleteBotHandler } from './save-key';
 
 /**
  * 创建路由实例
@@ -35,8 +35,22 @@ const validateRequestBody = (req: Request, res: Response, next: NextFunction): v
 };
 
 /**
+ * API 密钥验证中间件
+ */
+const validateApiKey = (req: Request, res: Response, next: NextFunction): void => {
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) {
+        res.status(401).json({
+            ok: false,
+            description: '缺少 API 密钥'
+        });
+        return;
+    }
+    next();
+};
+
+/**
  * 错误处理中间件
- * 统一处理路由中的错误
  */
 const errorHandler = (
     err: CustomError,
@@ -44,7 +58,6 @@ const errorHandler = (
     res: Response,
     next: NextFunction
 ): void => {
-    // 记录错误详情
     console.error('路由错误:', {
         message: err.message,
         stack: err.stack,
@@ -52,10 +65,7 @@ const errorHandler = (
         status: err.status
     });
 
-    // 确定响应状态码
     const statusCode = err.status || 500;
-
-    // 返回统一格式的错误响应
     res.status(statusCode).json({
         ok: false,
         description: process.env.NODE_ENV === 'production'
@@ -69,8 +79,26 @@ try {
     // 应用请求体验证中间件
     router.use(validateRequestBody);
 
-    // 注册验证端点
-    router.post('/validate', validateHandler);
+    // Bot 相关路由
+    router.post('/validate', (req: Request, res: Response, next: NextFunction) => {
+        validateHandler(req, res).catch(next);
+    });
+
+    router.post('/bots', (req: Request, res: Response, next: NextFunction) => {
+        saveApiKeyHandler(req, res).catch(next);
+    });
+
+    router.get('/bots', (req: Request, res: Response, next: NextFunction) => {
+        getAllBotsHandler(req, res).catch(next);
+    });
+
+    router.put('/bots/:id', (req: Request, res: Response, next: NextFunction) => {
+        updateBotHandler(req, res).catch(next);
+    });
+
+    router.delete('/bots/:id', (req: Request, res: Response, next: NextFunction) => {
+        deleteBotHandler(req, res).catch(next);
+    });
 
     // 处理 404 错误
     router.use((req: Request, res: Response) => {
@@ -82,11 +110,10 @@ try {
 
     // 注册错误处理中间件
     router.use(errorHandler);
+
 } catch (error) {
-    // 记录路由配置过程中的错误
     console.error('路由配置错误:', error);
-    throw error; // 重新抛出错误，确保应用能够感知到初始化失败
+    throw error;
 }
 
-// 导出路由实例
 export default router;

@@ -1,58 +1,51 @@
 // apps/web/src/services/telegram-bot-service.ts
 
+// 导入必要的类型定义
+import type { BotInfo } from '../../types/bot';
+
 /**
- * API 基础配置
+ * API 配置对象
+ * 定义了所有 API 相关的基础配置
  */
 const API_CONFIG = {
+    // API 基础URL，如果环境变量未设置则使用空字符串
     BASE_URL: process.env.NEXT_PUBLIC_API_URL || '',
+    // 请求超时时间（毫秒）
     TIMEOUT: 10000,
+    // 失败重试次数
     RETRY_COUNT: 3,
+    // 重试延迟时间（毫秒）
     RETRY_DELAY: 1000,
 };
 
 /**
- * Telegram API 响应的标准格式
+ * API 响应的标准格式
+ * 使用泛型T来定义响应数据的类型
  */
-export interface TelegramApiResponse<T> {
-    ok: boolean;
-    result?: T;
-    description?: string;
-    error_code?: number;
+interface ApiResponse<T = any> {
+    success: boolean;        // 请求是否成功
+    data?: T;               // 响应数据
+    message?: string;       // 错误信息
+    error?: any;           // 错误详情
 }
 
 /**
- * Bot 的基本信息接口
+ * Bot数据接口
+ * 定义了Bot的基本信息结构
  */
-export interface BotInfo {
-    id: number;
-    is_bot: boolean;
-    first_name: string;
-    username: string;
-    can_join_groups: boolean;
-    can_read_all_group_messages: boolean;
-    supports_inline_queries: boolean;
+interface Bot {
+    id: string;             // Bot唯一标识符
+    name: string;           // Bot名称
+    apiKey: string;         // API密钥
+    isEnabled: boolean;     // 是否启用
+    status: 'active' | 'inactive';  // Bot状态
+    createdAt: string;      // 创建时间
+    lastUsed?: string;      // 最后使用时间
 }
 
 /**
- * API 密钥配置接口
- */
-export interface ApiKeyConfig {
-    token: string;
-    name: string;
-    enabled: boolean;
-}
-
-/**
- * 验证结果接口
- */
-interface ValidationResult {
-    isValid: boolean;
-    error?: string;
-    botInfo?: BotInfo;
-}
-
-/**
- * 自定义错误类
+ * 自定义API错误类
+ * 用于统一错误处理
  */
 class TelegramApiError extends Error {
     constructor(
@@ -66,51 +59,25 @@ class TelegramApiError extends Error {
 }
 
 /**
- * 重试操作的辅助函数
- */
-async function retryOperation<T>(
-    operation: () => Promise<T>,
-    maxRetries: number = API_CONFIG.RETRY_COUNT,
-    delay: number = API_CONFIG.RETRY_DELAY
-): Promise<T> {
-    let lastError: Error | null = null;
-
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            return await operation();
-        } catch (error) {
-            lastError = error instanceof Error ? error : new Error(String(error));
-            console.log(`重试操作失败 (${i + 1}/${maxRetries}):`, error);
-
-            if (i < maxRetries - 1) {
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
-    }
-
-    throw lastError || new Error('操作失败，已达到最大重试次数');
-}
-
-/**
- * Telegram Bot 服务类
+ * API服务类
+ * 处理所有与后端API的通信
  */
 export class TelegramBotService {
     private readonly baseUrl: string;
-    private readonly token: string;
-    private readonly timeout: number;
 
-    constructor(token: string) {
-        this.token = token;
-        this.baseUrl = `${API_CONFIG.BASE_URL}api/bot/telegram`;
-        this.timeout = API_CONFIG.TIMEOUT;
+    constructor() {
+        // 设置API基础路径
+        this.baseUrl = `${API_CONFIG.BASE_URL}/api/bot/telegram`;
     }
 
     /**
-     * 创建请求选项
+     * 创建请求配置
+     * 设置请求头和超时控制
      */
     private createRequestOptions(method: string, body?: any): RequestInit {
+        // 创建超时控制器
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
 
         const options: RequestInit = {
             method,
@@ -128,98 +95,101 @@ export class TelegramBotService {
     }
 
     /**
-     * 验证 API 密钥
+     * 处理API请求
+     * 统一处理请求错误和重试逻辑
      */
-    async validateApiKey(): Promise<ValidationResult> {
-        try {
-            return await retryOperation(async () => {
-                const options = this.createRequestOptions('POST', { token: this.token });
+    private async fetchWithRetry<T>(
+        endpoint: string,
+        options: RequestInit
+    ): Promise<ApiResponse<T>> {
+        let lastError: Error | null = null;
 
-                const response = await fetch(`${this.baseUrl}/validate`, options);
-
-                if (!response.ok) {
-                    return {
-                        isValid: false,
-                        error: `服务器响应错误: ${response.status} ${response.statusText}`
-                    };
-                }
-
-                const data: TelegramApiResponse<BotInfo> = await response.json();
-
-                if (!data.ok) {
-                    return {
-                        isValid: false,
-                        error: data.description || '验证失败'
-                    };
-                }
-
-                return {
-                    isValid: true,
-                    botInfo: data.result
-                };
-            });
-        } catch (error) {
-            return {
-                isValid: false,
-                error: error instanceof Error ? error.message : '验证过程发生未知错误'
-            };
-        }
-    }
-
-    /**
-     * 获取 Bot 信息
-     */
-    async getMe(): Promise<TelegramApiResponse<BotInfo>> {
-        try {
-            return await retryOperation(async () => {
-                const options = this.createRequestOptions('POST', { token: this.token });
-                const response = await fetch(`${this.baseUrl}/getMe`, options);
-
-                if (!response.ok) {
-                    throw new TelegramApiError(
-                        `获取Bot信息失败: ${response.status} ${response.statusText}`,
-                        response.status
-                    );
-                }
-
-                return await response.json();
-            });
-        } catch (error) {
-            throw new TelegramApiError(
-                error instanceof Error ? error.message : '获取Bot信息失败'
-            );
-        }
-    }
-
-    /**
-     * 保存 API 密钥
-     */
-    async saveApiKey(config: ApiKeyConfig): Promise<boolean> {
-        try {
-            return await retryOperation(async () => {
-                const options = this.createRequestOptions('POST', config);
-                const response = await fetch(`${this.baseUrl}/saveKey`, options);
-
-                if (!response.ok) {
-                    throw new TelegramApiError(
-                        `保存失败: ${response.status} ${response.statusText}`,
-                        response.status
-                    );
-                }
-
+        // 重试机制
+        for (let i = 0; i < API_CONFIG.RETRY_COUNT; i++) {
+            try {
+                const response = await fetch(`${this.baseUrl}${endpoint}`, options);
                 const data = await response.json();
-                return data.ok;
-            });
-        } catch (error) {
-            console.error('保存API密钥失败:', error);
-            return false;
+
+                if (!response.ok) {
+                    throw new TelegramApiError(
+                        data.message || `请求失败: ${response.status}`,
+                        response.status,
+                        data
+                    );
+                }
+
+                return data;
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+                console.error(`请求失败，尝试重试 (${i + 1}/${API_CONFIG.RETRY_COUNT}):`, error);
+
+                if (i < API_CONFIG.RETRY_COUNT - 1) {
+                    await new Promise(resolve => setTimeout(resolve, API_CONFIG.RETRY_DELAY));
+                }
+            }
         }
+
+        throw lastError || new Error('请求失败，已达到最大重试次数');
+    }
+
+    /**
+     * 验证Bot Token
+     * 检查Token是否有效
+     */
+    async validateToken(token: string): Promise<ApiResponse<BotInfo>> {
+        const options = this.createRequestOptions('POST', { token });
+        return this.fetchWithRetry<BotInfo>('/validate', options);
+    }
+
+    /**
+     * 创建新的Bot
+     * 保存Bot配置到系统
+     */
+    async createBot(data: {
+        name: string;
+        apiKey: string;
+        isEnabled: boolean;
+    }): Promise<ApiResponse<Bot>> {
+        const options = this.createRequestOptions('POST', data);
+        return this.fetchWithRetry<Bot>('/bots', options);
+    }
+
+    /**
+     * 获取所有Bot列表
+     * 支持分页和筛选
+     */
+    async getAllBots(params?: {
+        status?: string;
+        search?: string;
+    }): Promise<ApiResponse<Bot[]>> {
+        const queryString = params
+            ? '?' + new URLSearchParams(params as Record<string, string>).toString()
+            : '';
+        const options = this.createRequestOptions('GET');
+        return this.fetchWithRetry<Bot[]>(`/bots${queryString}`, options);
+    }
+
+    /**
+     * 更新Bot信息
+     * 修改Bot的配置
+     */
+    async updateBot(
+        id: string,
+        data: Partial<Omit<Bot, 'id' | 'createdAt'>>
+    ): Promise<ApiResponse<Bot>> {
+        const options = this.createRequestOptions('PUT', data);
+        return this.fetchWithRetry<Bot>(`/bots/${id}`, options);
+    }
+
+    /**
+     * 删除Bot
+     * 从系统中移除Bot配置
+     */
+    async deleteBot(id: string): Promise<ApiResponse<void>> {
+        const options = this.createRequestOptions('DELETE');
+        return this.fetchWithRetry<void>(`/bots/${id}`, options);
     }
 }
 
-/**
- * 创建服务实例的工厂函数
- */
-export const createTelegramBotService = (token: string): TelegramBotService => {
-    return new TelegramBotService(token);
-};
+// 创建服务实例
+export const telegramBotService = new TelegramBotService();

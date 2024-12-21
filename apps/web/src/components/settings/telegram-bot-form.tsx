@@ -1,15 +1,13 @@
 // src/components/settings/telegram-bot-form.tsx
 
-// 导入 React 和状态管理相关依赖
 import React, { useState } from "react";
-// 导入表单验证相关依赖
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-// 导入国际化工具
 import { useIntl } from 'react-intl';
-// 导入自定义的 Telegram Bot 服务
-import { createTelegramBotService } from '../services/telegram-bot-service';
+// 导入新的服务实例和类型
+import { telegramBotService } from '../services/telegram-bot-service';
+import type { Bot, BotInfo, ApiResponse } from '../../types/bot';
 
 // 导入 UI 组件
 import {
@@ -23,71 +21,58 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useToast } from "../../hooks/use-toast";
-
-/**
- * API 密钥的类型定义
- * 定义了 API 密钥对象的数据结构
- */
-type ApiKey = {
-  id: string;                    // 密钥的唯一标识符
-  name: string;                  // Bot 的名称
-  key: string;                   // API 密钥值
-  createdAt: string;            // 创建时间
-  type: 'telegram' | 'other';   // 密钥类型，可以是 telegram 或 other
-};
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * 组件的 Props 接口定义
- * 定义了组件接收的属性
+ * 现在使用新的 Bot 类型替换原来的 ApiKey 类型
  */
 interface TelegramBotFormProps {
-  // 初始数据，用于编辑模式
-  initialData?: ApiKey | null;
-  // 成功回调函数，当操作成功时调用
-  onSuccess: (botData: ApiKey) => void;
+  initialData?: Bot | null;           // 使用新的 Bot 类型
+  onSuccess: (botData: Bot) => void;  // 回调函数也使用新的 Bot 类型
 }
 
 /**
- * 使用 Zod 定义表单验证模式
- * 设置各字段的验证规则
+ * 表单验证模式
+ * 使用 Zod 定义严格的验证规则
  */
 const telegramBotFormSchema = z.object({
   // Bot 名称验证规则
   botName: z.string()
     .min(2, { message: "Bot名称至少需要2个字符" })
-    .max(50, { message: "Bot名称不能超过50个字符" }),
+    .max(50, { message: "Bot名称不能超过50个字符" })
+    .trim(),
   
   // API 密钥验证规则
   apiKey: z.string()
     .min(1, { message: "API密钥不能为空" })
-    .regex(/^\d+:[A-Za-z0-9_-]+$/, { message: "无效的API密钥格式" }),
+    .regex(/^\d+:[A-Za-z0-9_-]+$/, { message: "无效的API密钥格式" })
+    .trim(),
   
-  // 可选的描述字段
+  // 描述字段（可选）
   description: z.string().optional(),
 });
 
-// 从验证模式中推断表单值的类型
+// 从验证模式推断表单值类型
 type TelegramBotFormValues = z.infer<typeof telegramBotFormSchema>;
 
 /**
  * Telegram Bot 表单组件
- * 用于创建或编辑 Telegram Bot 配置
+ * 用于创建或编辑 Bot 配置
  */
 export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps) {
-  // 使用必要的 hooks
-  const intl = useIntl();                            // 国际化
-  const { toast } = useToast();                      // 提示消息
-  const [loading, setLoading] = useState(false);     // 加载状态
+  const intl = useIntl();                        // 国际化工具
+  const { toast } = useToast();                  // 提示消息工具
+  const [loading, setLoading] = useState(false); // 加载状态管理
 
   // 设置表单的默认值
   const defaultValues: TelegramBotFormValues = {
-    botName: initialData?.name || "",        // 如果是编辑模式，使用现有名称
-    apiKey: initialData?.key || "",          // 如果是编辑模式，使用现有密钥
-    description: "",                         // 描述默认为空
+    botName: initialData?.name || "",     // 如果是编辑模式，使用现有名称
+    apiKey: initialData?.apiKey || "",    // 使用 apiKey 而不是 key
+    description: "",                      // 描述默认为空
   };
 
-  // 初始化表单，设置验证规则和默认值
+  // 初始化表单
   const form = useForm<TelegramBotFormValues>({
     resolver: zodResolver(telegramBotFormSchema),
     defaultValues,
@@ -95,89 +80,72 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
 
   /**
    * 处理表单提交
-   * 包含完整的验证、保存和错误处理流程
+   * 使用新的服务方法处理数据
    */
   async function onSubmit(data: TelegramBotFormValues) {
-    // 设置加载状态
     setLoading(true);
 
     try {
-      // 创建 Bot 服务实例
-      const botService = createTelegramBotService(data.apiKey);
-
-      // 验证 API 密钥
-      const validationResult = await botService.validateApiKey();
+      // 首先验证 Token
+      const validationResult = await telegramBotService.validateToken(data.apiKey);
       
-      // 如果验证失败，显示错误信息并返回
-      if (!validationResult.isValid) {
+      if (!validationResult.success) {
         toast({
           variant: "destructive",
           title: "验证失败",
-          description: `${validationResult.error}。请检查：
-            1. API密钥是否正确
-            2. 网络连接是否正常
-            3. Telegram API 服务是否可访问
-            4. 是否遇到了超时问题`,
+          description: validationResult.message || "Token验证失败，请检查输入是否正确",
         });
         return;
       }
 
-      // 尝试保存 API 密钥配置
-      const saved = await botService.saveApiKey({
-        token: data.apiKey,
+      // 准备要保存的数据
+      const botData = {
         name: data.botName,
-        enabled: true
-      });
+        apiKey: data.apiKey,
+        isEnabled: true,
+      };
 
-      // 如果保存成功
-      if (saved) {
-        // 创建新的 bot 数据对象
-        const newBotData: ApiKey = {
-          id: initialData?.id || String(Date.now()),  // 使用现有ID或生成新ID
-          name: data.botName,
-          key: data.apiKey,
-          type: 'telegram',
-          createdAt: initialData?.createdAt || new Date().toISOString().split('T')[0]
-        };
+      // 根据是否有初始数据决定是创建还是更新
+      const result = initialData
+        ? await telegramBotService.updateBot(initialData.id, botData)
+        : await telegramBotService.createBot(botData);
 
+      if (result.success && result.data) {
         // 显示成功提示
         toast({
           title: initialData ? "更新成功" : "添加成功",
-          description: `Bot ${validationResult.botInfo?.username || ''} 已成功${initialData ? '更新' : '添加'}！`,
+          description: `Bot ${data.botName} 已成功${initialData ? '更新' : '添加'}！`,
         });
         
-        // 重置表单
+        // 重置表单并调用成功回调
         form.reset();
-        // 调用成功回调
-        onSuccess(newBotData);
+        onSuccess(result.data);
       } else {
-        // 保存失败时显示错误提示
+        // 显示错误提示
         toast({
           variant: "destructive",
-          title: "保存失败",
-          description: "无法保存API密钥配置，请稍后重试",
+          title: "操作失败",
+          description: result.message || "操作失败，请稍后重试",
         });
       }
     } catch (error) {
-      // 记录详细错误信息
-      console.error('提交表单时发生错误:', error);
-      // 显示用户友好的错误提示
+      // 错误处理
+      console.error('表单提交错误:', error);
       toast({
         variant: "destructive",
         title: "操作失败",
-        description: "发生未知错误，请稍后重试",
+        description: error instanceof Error ? error.message : "发生未知错误",
       });
     } finally {
-      // 无论成功与否，都要关闭加载状态
       setLoading(false);
     }
   }
 
-  // 渲染表单
+  // 渲染表单界面
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* Bot名称字段 */}
+        {/* Bot名称输入字段 */}
         <FormField
           control={form.control}
           name="botName"
@@ -199,7 +167,7 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
           )}
         />
 
-        {/* API密钥字段 */}
+        {/* API密钥输入字段 */}
         <FormField
           control={form.control}
           name="apiKey"
@@ -211,6 +179,7 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
                   placeholder="输入Telegram Bot API密钥" 
                   {...field}
                   disabled={loading}
+                  type="password"  // 添加密码类型，提高安全性
                 />
               </FormControl>
               <FormDescription>
@@ -221,7 +190,7 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
           )}
         />
 
-        {/* 描述字段（可选） */}
+        {/* 描述输入字段（可选） */}
         <FormField
           control={form.control}
           name="description"
@@ -249,8 +218,7 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
           disabled={loading}
           className="w-full"
         >
-          {/* 根据状态和模式显示不同的按钮文本 */}
-          {loading ? '验证中...' : (initialData ? '更新' : '添加') + ' Telegram Bot'}
+          {loading ? '处理中...' : (initialData ? '更新' : '添加') + ' Telegram Bot'}
         </Button>
       </form>
     </Form>

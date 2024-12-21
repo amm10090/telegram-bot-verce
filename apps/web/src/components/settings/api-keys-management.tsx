@@ -1,4 +1,3 @@
-// src/components/settings/api-keys-management.tsx
 "use client"
 
 import * as React from "react"
@@ -27,6 +26,8 @@ import {
 } from 'lucide-react'
 import { useIntl } from 'react-intl'
 import { useToast } from "@/hooks/use-toast"
+
+// 导入UI组件
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -67,25 +68,33 @@ import {
   AlertTitle,
 } from "@/components/ui/alert"
 
-// API密钥数据接口定义
-interface ApiKey {
-  id: string
-  name: string
-  key: string
+// 导入Bot表单组件和相关服务
+import { TelegramBotForm } from "./telegram-bot-form"
+import { telegramBotService } from '../services/telegram-bot-service'
+import type { Bot } from '../../types/bot'
+
+// 表格数据接口定义,扩展Bot类型添加表格显示所需的字段
+interface TableBot extends Bot {
   type: 'telegram' | 'other'
-  createdAt: string
-  status?: 'active' | 'inactive'
-  lastUsed?: string
 }
 
-// 定义列配置的辅助函数，提高代码复用性
+// 将Bot数据转换为表格数据的函数
+const convertBotToTableData = (bot: Bot): TableBot => {
+  return {
+    ...bot,
+    type: 'telegram', // 所有Bot都是Telegram类型
+  }
+}
+
+// 创建表格列配置的函数
 function createColumns(
   intl: ReturnType<typeof useIntl>,
   copyKey: (key: string) => Promise<void>,
-  openEditDialog: (key: ApiKey) => void,
-  handleDeleteKey: (id: string) => void
-): ColumnDef<ApiKey>[] {
+  openEditDialog: (bot: TableBot) => void,
+  handleDeleteBot: (id: string) => void
+): ColumnDef<TableBot>[] {
   return [
+    // 名称列
     {
       accessorKey: "name",
       header: ({ column }) => (
@@ -107,7 +116,7 @@ function createColumns(
           <span className="font-medium line-clamp-1">
             {row.getValue("name")}
           </span>
-          {row.original.status === 'inactive' && (
+          {!row.original.isEnabled && (
             <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100">
               {intl.formatMessage({ id: "apiKeys.status.inactive" })}
             </span>
@@ -115,22 +124,23 @@ function createColumns(
         </div>
       ),
     },
+    // API密钥列
     {
-      accessorKey: "key",
+      accessorKey: "apiKey",
       header: () => intl.formatMessage({ id: "apiKeys.table.key" }),
       cell: ({ row }) => {
-        const key = row.getValue("key") as string
+        const apiKey = row.getValue("apiKey") as string
         return (
           <div className="flex items-center space-x-2">
             <code className="relative rounded bg-muted px-[0.5rem] py-[0.2rem] font-mono text-sm font-semibold">
-              <span className="hidden sm:inline">{key}</span>
-              <span className="sm:hidden">{`${key.slice(0, 8)}...`}</span>
+              <span className="hidden sm:inline">{apiKey}</span>
+              <span className="sm:hidden">{`${apiKey.slice(0, 8)}...`}</span>
             </code>
             <Button
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0"
-              onClick={() => copyKey(key)}
+              onClick={() => copyKey(apiKey)}
             >
               <Copy className="h-4 w-4" />
             </Button>
@@ -138,6 +148,7 @@ function createColumns(
         )
       },
     },
+    // 类型列
     {
       accessorKey: "type",
       header: () => intl.formatMessage({ id: "apiKeys.table.type" }),
@@ -150,6 +161,7 @@ function createColumns(
         )
       },
     },
+    // 最后使用时间列
     {
       accessorKey: "lastUsed",
       header: () => intl.formatMessage({ id: "apiKeys.table.lastUsed" }),
@@ -159,7 +171,7 @@ function createColumns(
           <span className="text-muted-foreground">
             {intl.formatRelativeTime(
               (new Date(lastUsed).getTime() - new Date().getTime()) / 1000,
-              'second', 
+              'second',
               { numeric: 'auto' }
             )}
           </span>
@@ -170,10 +182,11 @@ function createColumns(
         )
       },
     },
+    // 操作列
     {
       id: "actions",
       cell: ({ row }) => {
-        const apiKey = row.original
+        const bot = row.original
         
         return (
           <DropdownMenu>
@@ -189,18 +202,25 @@ function createColumns(
               <DropdownMenuLabel>
                 {intl.formatMessage({ id: "common.actions" })}
               </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => copyKey(apiKey.key)}>
+              <DropdownMenuItem onClick={() => copyKey(bot.apiKey)}>
                 <Copy className="mr-2 h-4 w-4" />
                 <span>{intl.formatMessage({ id: "apiKeys.actions.copy" })}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => openEditDialog(apiKey)}>
-                <Edit className="mr-2 h-4 w-4" />
-                <span>{intl.formatMessage({ id: "apiKeys.actions.edit" })}</span>
-              </DropdownMenuItem>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => {
+                    e.preventDefault()
+                    openEditDialog(bot)
+                  }}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    <span>{intl.formatMessage({ id: "apiKeys.actions.edit" })}</span>
+                  </DropdownMenuItem>
+                </DialogTrigger>
+              </Dialog>
               <DropdownMenuItem
                 className="text-red-600 dark:text-red-400"
-                onClick={() => handleDeleteKey(apiKey.id)}
+                onClick={() => handleDeleteBot(bot.id)}
               >
                 <Trash className="mr-2 h-4 w-4" />
                 <span>{intl.formatMessage({ id: "apiKeys.actions.delete" })}</span>
@@ -213,17 +233,20 @@ function createColumns(
   ]
 }
 
+// 主组件
 export default function ApiKeysManagement() {
-  // 初始化状态和hooks
   const intl = useIntl()
   const { toast } = useToast()
-  const [apiKeys, setApiKeys] = React.useState<ApiKey[]>([])
+  
+  // 状态管理
+  const [bots, setBots] = React.useState<TableBot[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
-  const [selectedKey, setSelectedKey] = React.useState<ApiKey | null>(null)
+  const [selectedBot, setSelectedBot] = React.useState<TableBot | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
-  
+  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false)
+
   // 表格状态
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -241,26 +264,61 @@ export default function ApiKeysManagement() {
       toast({
         variant: "destructive",
         description: intl.formatMessage({ id: "apiKeys.toast.copyError" }),
-        action: (
-          <Button variant="ghost" className="gap-2">
-            <AlertCircle className="h-4 w-4" />
-            {intl.formatMessage({ id: "common.retry" })}
-          </Button>
-        ),
       })
     }
   }
 
   // 打开编辑对话框
-  const openEditDialog = (key: ApiKey) => {
-    setSelectedKey(key)
+  const openEditDialog = (bot: TableBot) => {
+    setSelectedBot(bot)
     setIsEditDialogOpen(true)
   }
 
-  // 处理删除API密钥
-  const handleDeleteKey = (id: string) => {
+  // 处理添加新Bot
+  const handleAddBot = async (newBot: Bot) => {
     try {
-      setApiKeys(prevKeys => prevKeys.filter(key => key.id !== id))
+      // 转换为表格数据格式
+      const tableBot = convertBotToTableData(newBot)
+      setBots(prevBots => [...prevBots, tableBot])
+      setIsAddDialogOpen(false)
+      toast({
+        description: intl.formatMessage({ id: "apiKeys.toast.addSuccess" }),
+        action: <Check className="h-4 w-4" />,
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: intl.formatMessage({ id: "apiKeys.toast.addError" }),
+      })
+    }
+  }
+
+  // 处理更新Bot
+  const handleUpdateBot = async (updatedBot: Bot) => {
+    try {
+      const tableBot = convertBotToTableData(updatedBot)
+      setBots(prevBots => prevBots.map(bot => 
+        bot.id === updatedBot.id ? tableBot : bot
+      ))
+      setIsEditDialogOpen(false)
+      toast({
+        description: intl.formatMessage({ id: "apiKeys.toast.updateSuccess" }),
+        action: <Check className="h-4 w-4" />,
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: intl.formatMessage({ id: "apiKeys.toast.updateError" }),
+      })
+    }
+  }
+
+  // 处理删除Bot
+  const handleDeleteBot = async (id: string) => {
+    try {
+      await telegramBotService.deleteBot(id)
+      setBots(prevBots => prevBots.filter(bot => bot.id !== id))
+      setIsDeleteDialogOpen(false)
       toast({
         description: intl.formatMessage({ id: "apiKeys.toast.deleteSuccess" }),
         action: <Check className="h-4 w-4" />,
@@ -275,12 +333,13 @@ export default function ApiKeysManagement() {
 
   // 初始化表格配置
   const columns = React.useMemo(
-    () => createColumns(intl, copyKey, openEditDialog, handleDeleteKey),
+    () => createColumns(intl, copyKey, openEditDialog, handleDeleteBot),
     [intl]
   )
 
+  // 配置表格实例
   const table = useReactTable({
-    data: apiKeys,
+    data: bots,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -296,35 +355,19 @@ export default function ApiKeysManagement() {
     },
   })
 
-  // 获取API密钥数据
+  // 获取Bot列表数据
   React.useEffect(() => {
-    const fetchApiKeys = async () => {
+    const fetchBots = async () => {
       try {
         setLoading(true)
-        // 这里添加实际的API调用
-        const mockData: ApiKey[] = [
-          {
-            id: "1",
-            name: "Production API Key",
-            key: "pk_live_123456789",
-            type: "other",
-            createdAt: new Date().toISOString(),
-            status: "active",
-            lastUsed: new Date().toISOString(),
-          },
-          {
-            id: "2",
-            name: "Development API Key",
-            key: "pk_test_987654321",
-            type: "other",
-            createdAt: new Date().toISOString(),
-            status: "inactive",
-            lastUsed: "2023-12-01T00:00:00.000Z",
-          },
-        ]
-        
-        setApiKeys(mockData)
-        setError(null)
+        const response = await telegramBotService.getAllBots()
+        if (response.success && response.data) {
+          const tableBots = response.data.map(convertBotToTableData)
+          setBots(tableBots)
+          setError(null)
+        } else {
+          setError(response.message || intl.formatMessage({ id: "apiKeys.error.fetch" }))
+        }
       } catch (err) {
         setError(intl.formatMessage({ id: "apiKeys.error.fetch" }))
       } finally {
@@ -332,7 +375,7 @@ export default function ApiKeysManagement() {
       }
     }
 
-    fetchApiKeys()
+    fetchBots()
   }, [intl])
 
   return (
@@ -356,9 +399,9 @@ export default function ApiKeysManagement() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-
-        {/* 工具栏 */}
+       {/* 工具栏 */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between mb-4">
+          {/* 搜索框 */}
           <div className="flex-1 max-w-sm">
             <Input
               placeholder={intl.formatMessage({ id: "common.search" })}
@@ -369,107 +412,125 @@ export default function ApiKeysManagement() {
               className="w-full"
             />
           </div>
-          <Button className="shrink-0">
-            <Plus className="mr-2 h-4 w-4" />
-            {intl.formatMessage({ id: "apiKeys.actions.add" })}
-          </Button>
+          {/* 添加新Bot按钮 */}
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="shrink-0">
+                <Plus className="mr-2 h-4 w-4" />
+                {intl.formatMessage({ id: "apiKeys.actions.add" })}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {intl.formatMessage({ id: "apiKeys.dialog.addTitle" })}
+                </DialogTitle>
+                <DialogDescription>
+                  {intl.formatMessage({ id: "apiKeys.dialog.addDescription" })}
+                </DialogDescription>
+              </DialogHeader>
+              <TelegramBotForm onSuccess={handleAddBot} />
+            </DialogContent>
+          </Dialog>
         </div>
 
-        {/* 数据表格 */}
-<div className="overflow-auto -mx-6"> {/* 添加负边距抵消父容器的内边距 */}
-  <div className="min-w-full inline-block align-middle">
-    <div className="overflow-hidden border rounded-lg mx-6"> {/* 重新添加边距 */}
-      <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
+        {/* 数据表格区域 */}
+        <div className="overflow-auto -mx-6">
+          <div className="min-w-full inline-block align-middle">
+            <div className="overflow-hidden border rounded-lg mx-6">
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
                   ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-                      <span>{intl.formatMessage({ id: "common.loading" })}
-                        </span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="group hover:bg-muted/50 transition-colors"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
-                    <div className="rounded-full border p-3">
-                      <AlertCircle className="h-6 w-6" />
-                    </div>
-                    <div>
-                      {table.getColumn("name")?.getFilterValue()
-                        ? intl.formatMessage({ id: "apiKeys.table.noResults" })
-                        : intl.formatMessage({ id: "apiKeys.table.empty" })}
-                    </div>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-            </TableBody>
-          </Table>
-    </div>
-  </div>
-</div>
+                </TableHeader>
+                <TableBody>
+                  {/* 加载状态 */}
+                  {loading ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length}
+                        className="h-24 text-center"
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+                          <span>{intl.formatMessage({ id: "common.loading" })}</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : table.getRowModel().rows?.length ? (
+                    // 数据行渲染
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        data-state={row.getIsSelected() && "selected"}
+                        className="group hover:bg-muted/50 transition-colors"
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    // 空状态
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length}
+                        className="h-24 text-center"
+                      >
+                        <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
+                          <div className="rounded-full border p-3">
+                            <AlertCircle className="h-6 w-6" />
+                          </div>
+                          <div>
+                            {table.getColumn("name")?.getFilterValue()
+                              ? intl.formatMessage({ id: "apiKeys.table.noResults" })
+                              : intl.formatMessage({ id: "apiKeys.table.empty" })}
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
+
         {/* 分页控制 */}
-<div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* 分页信息 */}
-  <div className="text-sm text-muted-foreground order-2 sm:order-1">
+          <div className="text-sm text-muted-foreground order-2 sm:order-1">
             {intl.formatMessage(
               { id: "common.pageInfo" },
               {
-                from: table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1,
-                to: Math.min(
-                  (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                  table.getFilteredRowModel().rows.length
+                current: table.getState().pagination.pageIndex + 1,
+                total: Math.ceil(
+                  table.getFilteredRowModel().rows.length /
+                    table.getState().pagination.pageSize
                 ),
-                total: table.getFilteredRowModel().rows.length,
               }
             )}
           </div>
           
           {/* 分页按钮组 */}
-  <div className="flex items-center space-x-2 order-1 sm:order-2">
+          <div className="flex items-center space-x-2 order-1 sm:order-2">
             <Button
               variant="outline"
               size="sm"
@@ -483,7 +544,7 @@ export default function ApiKeysManagement() {
             <div className="flex w-[100px] items-center justify-center text-sm font-medium">
               {intl.formatMessage(
                 { id: "common.pageNumber" },
-                { current: table.getState().pagination.pageIndex + 1 }
+                { number: table.getState().pagination.pageIndex + 1 }
               )}
             </div>
             <Button
@@ -498,6 +559,26 @@ export default function ApiKeysManagement() {
             </Button>
           </div>
         </div>
+
+        {/* 编辑对话框 */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {intl.formatMessage({ id: "apiKeys.dialog.editTitle" })}
+              </DialogTitle>
+              <DialogDescription>
+                {intl.formatMessage({ id: "apiKeys.dialog.editDescription" })}
+              </DialogDescription>
+            </DialogHeader>
+            {selectedBot && (
+              <TelegramBotForm
+                initialData={selectedBot}
+                onSuccess={handleUpdateBot}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* 删除确认对话框 */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -520,9 +601,8 @@ export default function ApiKeysManagement() {
               <Button
                 variant="destructive"
                 onClick={() => {
-                  if (selectedKey) {
-                    handleDeleteKey(selectedKey.id)
-                    setIsDeleteDialogOpen(false)
+                  if (selectedBot) {
+                    handleDeleteBot(selectedBot.id)
                   }
                 }}
               >
