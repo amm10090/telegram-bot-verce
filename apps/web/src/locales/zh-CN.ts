@@ -246,6 +246,9 @@ export default {
   "apiKeys.dialog.addDescription": "添加新的API密钥",
   "apiKeys.dialog.addName": "名称",
   "apiKeys.dialog.addType": "类型",
+  'apiKeys.types.telegram': 'Telegram',
+  'apiKeys.never': '从未',
+  'apiKeys.table.noResults': '未搜索到API密钥',
   "apiKeys.dialog.addKey": "API密钥",
   "apiKeys.table.lastUsed": "上次使用时间",
   "apiKeys.status.inactive": "未激活",
@@ -262,6 +265,7 @@ export default {
   'apiKeys.title': "API密钥",
   'apiKeys.table.empty': '暂无API密钥',
   'apiKeys.error.fetch': '获取API密钥失败',
+  'apiKeys.error.invalidData': '无效的数据',
   // 设置页面 - 系统设置
   "system.theme.label": "主题",
   "system.theme.description": "选择应用的显示主题",

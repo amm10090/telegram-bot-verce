@@ -71,7 +71,7 @@ import {
 // 导入Bot表单组件和相关服务
 import { TelegramBotForm } from "./telegram-bot-form"
 import { telegramBotService } from '../services/telegram-bot-service'
-import type { Bot } from '../../types/bot'
+import type { Bot,RawBotData  } from '../../types/bot'
 
 // 表格数据接口定义,扩展Bot类型添加表格显示所需的字段
 interface TableBot extends Bot {
@@ -355,28 +355,65 @@ export default function ApiKeysManagement() {
     },
   })
 
-  // 获取Bot列表数据
-  React.useEffect(() => {
-    const fetchBots = async () => {
-      try {
-        setLoading(true)
-        const response = await telegramBotService.getAllBots()
-        if (response.success && response.data) {
-          const tableBots = response.data.map(convertBotToTableData)
-          setBots(tableBots)
-          setError(null)
-        } else {
-          setError(response.message || intl.formatMessage({ id: "apiKeys.error.fetch" }))
-        }
-      } catch (err) {
-        setError(intl.formatMessage({ id: "apiKeys.error.fetch" }))
-      } finally {
-        setLoading(false)
-      }
-    }
+// 获取Bot列表数据
+// 获取Bot列表数据
+React.useEffect(() => {
+  const fetchBots = async () => {
+    try {
+      setLoading(true)
+      console.log('开始获取Bot列表数据...')
+      
+      const response = await telegramBotService.getAllBots()
+      console.log('API响应数据:', response)
+      
+      if (response.success && Array.isArray(response.data)) {
+        console.log('获取到的Bot数组:', response.data)
+        
+        // 确保响应数据符合RawBotData类型
+        const rawBots = response.data as unknown as RawBotData[]
+        
+        // 第一步：转换原始数据为Bot类型
+        const botsData: Bot[] = rawBots.map((rawBot) => {
+          // 规范化状态字段
+          const normalizedStatus = (() => {
+            if (rawBot.status === 'active' || rawBot.status === 'inactive') {
+              return rawBot.status as 'active' | 'inactive'
+            }
+            return rawBot.isEnabled ? 'active' as const : 'inactive' as const
+          })()
 
-    fetchBots()
-  }, [intl])
+          // 创建符合Bot接口的对象
+          return {
+            id: rawBot._id,
+            name: rawBot.name,
+            apiKey: rawBot.apiKey,
+            isEnabled: rawBot.isEnabled,
+            status: normalizedStatus,  // 使用规范化后的状态
+            createdAt: rawBot.createdAt,
+            lastUsed: rawBot.lastUsed
+          }
+        })
+
+        // 第二步：转换Bot类型为TableBot类型
+        const tableBots: TableBot[] = botsData.map(bot => convertBotToTableData(bot))
+        
+        console.log('转换后的表格数据:', tableBots)
+        setBots(tableBots)
+        setError(null)
+      } else {
+        console.error('获取到的数据格式不正确:', response.data)
+        setError(intl.formatMessage({ id: "apiKeys.error.invalidData" }))
+      }
+    } catch (err) {
+      console.error('获取数据异常:', err)
+      setError(intl.formatMessage({ id: "apiKeys.error.fetch" }))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  fetchBots()
+}, [intl])
 
   return (
     <Card>

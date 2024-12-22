@@ -83,8 +83,6 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
    * 使用新的服务方法处理数据
    */
   async function onSubmit(data: TelegramBotFormValues) {
-    setLoading(true);
-
     try {
       // 首先验证 Token
       const validationResult = await telegramBotService.validateToken(data.apiKey);
@@ -95,6 +93,8 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
           title: "验证失败",
           description: validationResult.message || "Token验证失败，请检查输入是否正确",
         });
+                    setLoading(false);  // 重要：清除加载状态
+
         return;
       }
 

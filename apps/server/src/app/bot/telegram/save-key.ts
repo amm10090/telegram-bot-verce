@@ -99,10 +99,15 @@ const TelegramBot = mongoose.model('TelegramBot', TelegramBotSchema);
  */
 export async function saveApiKeyHandler(req: Request, res: Response) {
     try {
-        const { token, name, enabled } = req.body;
+        // 使用与前端一致的参数名称
+        const { name, apiKey, isEnabled } = req.body;
 
         // 验证请求数据
-        if (!token || !name) {
+        if (!apiKey || !name) {
+            console.log('缺少参数:', {
+                hasApiKey: !!apiKey,
+                hasName: !!name
+            });
             return res.status(400).json({
                 success: false,
                 message: '缺少必要的参数'
@@ -110,7 +115,7 @@ export async function saveApiKeyHandler(req: Request, res: Response) {
         }
 
         // 检查是否已存在相同的 API 密钥
-        const existingBot = await TelegramBot.findOne({ apiKey: token });
+        const existingBot = await TelegramBot.findOne({ apiKey });
         if (existingBot) {
             return res.status(409).json({
                 success: false,
@@ -118,16 +123,16 @@ export async function saveApiKeyHandler(req: Request, res: Response) {
             });
         }
 
-        // 创建新的 Bot 记录，自动使用中国时区
+        // 创建新的 Bot 记录
         const newBot = await TelegramBot.create({
             name,
-            apiKey: token,
-            isEnabled: enabled,
-            status: enabled ? 'active' : 'inactive',
+            apiKey,
+            isEnabled,
+            status: isEnabled ? 'active' : 'inactive',
             createdAt: toChineseTime()
         });
 
-        // 返回成功响应，包含格式化的时间信息
+        // 返回成功响应
         res.status(201).json({
             success: true,
             data: {
@@ -290,10 +295,14 @@ function handleError(error: any, res: Response) {
 }
 
 // 导出其他可能需要的辅助函数
+export async function getBotByApiKey(apiKey: string) {
+    return await TelegramBot.findOne({ apiKey });
+}
+
 export async function updateBotLastUsed(apiKey: string) {
     return await TelegramBot.findOneAndUpdate(
         { apiKey },
-        { lastUsed: toChineseTime() },
+        { lastUsed: new Date() },
         { new: true }
     );
 }

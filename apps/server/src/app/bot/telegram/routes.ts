@@ -89,6 +89,7 @@ try {
     });
 
     router.get('/bots', (req: Request, res: Response, next: NextFunction) => {
+
         getAllBotsHandler(req, res).catch(next);
     });
 

@@ -111,9 +111,20 @@ dotenv.config();
 
 // 创建 Express 应用实例
 const app = express();
+// 配置 CORS
+const corsOptions = {
+    // 允许前端应用访问
+    origin: ['http://localhost:3000', 'http://localhost:8080'],
+    // 允许的HTTP方法
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    // 允许发送凭证
+    credentials: true,
+    // 允许的请求头
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
+};
 
 // 配置全局中间件
-app.use(cors());                    // 启用跨域资源共享
+app.use(cors(corsOptions));                    // 启用跨域资源共享
 app.use(express.json());           // 解析 JSON 请求体
 
 // 添加请求日志中间件，记录所有请求的时间和路径
@@ -159,7 +170,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 // 获取服务器端口配置
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3000;
 
 /**
  * 启动服务器和数据库连接

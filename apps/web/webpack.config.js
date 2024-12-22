@@ -170,9 +170,11 @@ module.exports = (env, argv) => {
             // API 代理配置
             proxy: {
                 '/api': {
-                    target: 'http://localhost:3000',
+                    target: 'http://localhost:8080',
                     pathRewrite: { '^/api': '' },
-                    changeOrigin: true
+                    changeOrigin: true,
+                    logLevel: 'debug'  // 添加调试日志
+
                 }
             }
         },
