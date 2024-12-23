@@ -1,5 +1,6 @@
 {
     "version": 2,
+    "buildCommand": "turbo run build --filter=web... --filter=server...",
     "builds": [
         {
             "src": "apps/web/package.json",
@@ -15,16 +16,43 @@
     ],
     "routes": [
         {
-            "src": "/(.+\\.[a-zA-Z0-9]+)$",
-            "dest": "/apps/web/dist/$1"
+            "src": "/api/bot/telegram/validate",
+            "methods": [
+                "POST"
+            ],
+            "dest": "apps/server/src/index.ts"
         },
         {
-            "src": "/api/(.*)",
-            "dest": "/apps/server/src/index.ts"
+            "src": "/api/bot/telegram/bots",
+            "methods": [
+                "GET",
+                "POST"
+            ],
+            "dest": "apps/server/src/index.ts"
+        },
+        {
+            "src": "/api/bot/telegram/bots/.*",
+            "methods": [
+                "GET",
+                "PUT",
+                "DELETE"
+            ],
+            "dest": "apps/server/src/index.ts"
+        },
+        {
+            "src": "/health",
+            "methods": [
+                "GET"
+            ],
+            "dest": "apps/server/src/index.ts"
+        },
+        {
+            "src": "/api/.*",
+            "dest": "apps/server/src/index.ts"
         },
         {
             "src": "/(.*)",
-            "dest": "/apps/web/dist/index.html"
+            "dest": "apps/web/$1"
         }
     ]
 }
