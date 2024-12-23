@@ -1,28 +1,26 @@
-// webpack.config.js
+// apps/web/webpack.config.js
 
-// 导入必要的依赖
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 
-// 定义项目的关键路径
-// 这些路径常量可以帮助我们在配置中保持一致的路径引用
+// 定义关键路径
+// __dirname 在这里指的是 apps/web 目录
 const ROOT_DIR = path.resolve(__dirname);
 const SRC_DIR = path.resolve(ROOT_DIR, 'src');
 const BUILD_DIR = path.resolve(ROOT_DIR, 'dist');
 const PUBLIC_DIR = path.resolve(ROOT_DIR, 'public');
 
-// webpack 配置生成函数
-// env：环境变量对象
-// argv：webpack 命令行参数对象
 module.exports = (env, argv) => {
-    // 根据 webpack mode 判断是否为生产环境
+    // 判断是否为生产环境
     const isProduction = argv.mode === 'production';
 
-    // webpack 配置对象
     return {
-        // 设置模式，如果未指定则默认为开发模式
+        // 设置模式，影响内置的优化
         mode: argv.mode || 'development',
+
+        // 定义开发工具，生产环境使用 source-map，开发环境使用 eval-source-map
+        devtool: isProduction ? 'source-map' : 'eval-source-map',
 
         // 入口配置
         entry: {
@@ -33,12 +31,19 @@ module.exports = (env, argv) => {
         output: {
             path: BUILD_DIR,
             // 在生产环境使用内容哈希来支持长期缓存
-            filename: isProduction ? '[name].[contenthash].js' : '[name].bundle.js',
+            filename: isProduction
+                ? 'static/js/[name].[contenthash:8].js'
+                : 'static/js/[name].bundle.js',
+            // 块文件名格式
+            chunkFilename: isProduction
+                ? 'static/js/[name].[contenthash:8].chunk.js'
+                : 'static/js/[name].chunk.js',
+            // 资源文件名格式
+            assetModuleFilename: 'static/media/[name].[hash:8][ext]',
+            // 公共路径，确保在任何路由下资源都能被正确加载
             publicPath: '/',
             // 每次构建前清理输出目录
-            clean: true,
-            // 自定义静态资源输出规则
-            assetModuleFilename: 'assets/[hash][ext][query]'
+            clean: true
         },
 
         // 模块解析配置
@@ -66,7 +71,7 @@ module.exports = (env, argv) => {
                     use: {
                         loader: 'ts-loader',
                         options: {
-                            // 在开发环境下只转译不做类型检查，加快构建速度
+                            // 开发环境下只转译不做类型检查，加快构建速度
                             transpileOnly: !isProduction,
                             compilerOptions: {
                                 module: 'esnext'
@@ -74,32 +79,43 @@ module.exports = (env, argv) => {
                         }
                     }
                 },
-                // CSS 文件处理，包括 Tailwind 集成
+                // CSS 文件处理
                 {
                     test: /\.css$/,
                     use: [
                         'style-loader',
-                        'css-loader',
+                        {
+                            loader: 'css-loader',
+                            options: {
+                                // 启用 CSS 模块化
+                                modules: {
+                                    auto: true,
+                                    localIdentName: isProduction
+                                        ? '[hash:base64]'
+                                        : '[path][name]__[local]'
+                                }
+                            }
+                        },
                         {
                             loader: 'postcss-loader',
                             options: {
                                 postcssOptions: {
                                     plugins: [
                                         'tailwindcss',
-                                        'autoprefixer'
+                                        'autoprefixer',
                                     ]
                                 }
                             }
                         }
                     ]
                 },
-                // 静态资源处理（图片、字体等）
+                // 静态资源处理
                 {
                     test: /\.(png|jpg|gif|svg|eot|ttf|woff|woff2)$/,
                     type: 'asset',
                     parser: {
                         dataUrlCondition: {
-                            // 10KB 以下的文件将被转换为 DataURL
+                            // 10KB 以下的文件转换为 DataURL
                             maxSize: 10 * 1024
                         }
                     }
@@ -109,11 +125,18 @@ module.exports = (env, argv) => {
 
         // 插件配置
         plugins: [
-            // HTML 模板插件配置
+            // HTML 模板插件
             new HtmlWebpackPlugin({
                 template: path.join(PUBLIC_DIR, 'index.html'),
                 favicon: path.join(PUBLIC_DIR, 'favicon.ico'),
-                // 在生产环境下压缩 HTML
+                title: 'Telegram Bot Dashboard',
+                meta: {
+                    'viewport': 'width=device-width, initial-scale=1, shrink-to-fit=no',
+                    'theme-color': '#000000'
+                },
+                // 确保脚本正确加载
+                scriptLoading: 'defer',
+                inject: true,
                 minify: isProduction ? {
                     removeComments: true,
                     collapseWhitespace: true,
@@ -128,24 +151,18 @@ module.exports = (env, argv) => {
                 } : false
             }),
 
-            // 环境变量定义
-            // 将所有环境变量的定义集中在这里，避免多处定义造成的冲突
+            // 定义环境变量
             new webpack.DefinePlugin({
                 'process.env': JSON.stringify({
-                    // 展开所有已有的环境变量
-                    ...process.env,
-                    // 明确定义关键环境变量
                     NODE_ENV: isProduction ? 'production' : 'development',
+                    // 添加其他环境变量
+                    PUBLIC_URL: '',
                     // API 相关配置
                     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '',
-                    // 服务器配置
-                    PORT: process.env.PORT || 3001,
-                    // Vercel 部署相关
-                    VERCEL: process.env.VERCEL || ''
                 })
             }),
 
-            // 提供全局变量和 polyfills
+            // 提供全局变量
             new webpack.ProvidePlugin({
                 React: 'react',
                 process: 'process/browser'
@@ -154,74 +171,53 @@ module.exports = (env, argv) => {
 
         // 开发服务器配置
         devServer: {
-            // 静态文件服务配置
             static: {
                 directory: PUBLIC_DIR
             },
             port: 8080,
-            // 启用热模块替换
             hot: true,
-            // 自动打开浏览器
             open: true,
-            // 启用 gzip 压缩
             compress: true,
             // 支持 HTML5 History API
             historyApiFallback: true,
-            // API 代理配置
+            // 开发环境的代理配置
             proxy: {
                 '/api': {
                     target: 'http://localhost:8080',
                     pathRewrite: { '^/api': '' },
                     changeOrigin: true,
-                    logLevel: 'debug'  // 添加调试日志
-
+                    logLevel: 'debug'
                 }
             }
         },
 
         // 生产环境特定配置
         ...(isProduction ? {
-            // 代码分割和优化配置
             optimization: {
                 splitChunks: {
                     chunks: 'all',
-                    minSize: 20000,
-                    minChunks: 1,
-                    maxAsyncRequests: 30,
-                    maxInitialRequests: 30,
+                    name: false, // 不为分割的块指定名称
                     cacheGroups: {
-                        // 第三方库分割配置
-                        vendors: {
+                        vendor: {
                             test: /[\\/]node_modules[\\/]/,
-                            priority: -10,
-                            reuseExistingChunk: true,
-                            // 根据包名生成文件名
                             name(module) {
+                                // 获取包名
                                 const packageName = module.context.match(
                                     /[\\/]node_modules[\\/](.*?)([\\/]|$)/
                                 )[1];
                                 return `vendor.${packageName.replace('@', '')}`;
-                            }
+                            },
                         },
-                        // 默认分割配置
-                        default: {
-                            minChunks: 2,
-                            priority: -20,
-                            reuseExistingChunk: true
-                        }
-                    }
+                    },
                 },
-                // 使用确定性的模块标识符
+                // 使用确定性的哈希
                 moduleIds: 'deterministic',
-                // 提取 webpack 运行时代码
+                // 提取运行时代码
                 runtimeChunk: 'single'
             },
-            // 性能提示配置
             performance: {
                 hints: 'warning',
-                // 入口文件大小限制：500KB
                 maxEntrypointSize: 512000,
-                // 单个资源大小限制：500KB
                 maxAssetSize: 512000
             }
         } : {})

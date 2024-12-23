@@ -1,6 +1,5 @@
 {
     "version": 2,
-    "buildCommand": "turbo run build --filter=web... --filter=server...",
     "builds": [
         {
             "src": "apps/web/package.json",
@@ -16,16 +15,16 @@
     ],
     "routes": [
         {
-            "src": "/api/(.*)",
-            "dest": "apps/server/src/index.ts"
+            "src": "/(.+\\.[a-zA-Z0-9]+)$",
+            "dest": "/apps/web/dist/$1"
         },
         {
-            "handle": "filesystem"
+            "src": "/api/(.*)",
+            "dest": "/apps/server/src/index.ts"
         },
         {
             "src": "/(.*)",
-            "dest": "/index.html",
-            "status": 200
+            "dest": "/apps/web/dist/index.html"
         }
     ]
 }
