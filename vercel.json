@@ -16,74 +16,16 @@
     ],
     "routes": [
         {
-            "src": "/api/bot/telegram/validate",
-            "methods": [
-                "POST"
-            ],
+            "src": "/api/(.*)",
             "dest": "apps/server/src/index.ts"
         },
         {
-            "src": "/api/bot/telegram/bots",
-            "methods": [
-                "GET",
-                "POST"
-            ],
-            "dest": "apps/server/src/index.ts"
-        },
-        {
-            "src": "/api/bot/telegram/bots/.*",
-            "methods": [
-                "GET",
-                "PUT",
-                "DELETE"
-            ],
-            "dest": "apps/server/src/index.ts"
-        },
-        {
-            "src": "/health",
-            "methods": [
-                "GET"
-            ],
-            "dest": "apps/server/src/index.ts"
-        },
-        {
-            "src": "/api/.*",
-            "dest": "apps/server/src/index.ts"
-        },
-        {
-            "src": "/main\\.[0-9a-zA-Z]+\\.js$",
-            "dest": "apps/web/dist/main.$1.js",
-            "headers": {
-                "cache-control": "public, max-age=31536000, immutable"
-            }
-        },
-        {
-            "src": "/runtime\\.[0-9a-zA-Z]+\\.js$",
-            "dest": "apps/web/dist/runtime.$1.js",
-            "headers": {
-                "cache-control": "public, max-age=31536000, immutable"
-            }
-        },
-        {
-            "src": "/vendor\\.[0-9a-zA-Z]+\\.js$",
-            "dest": "apps/web/dist/vendor.$1.js",
-            "headers": {
-                "cache-control": "public, max-age=31536000, immutable"
-            }
-        },
-        {
-            "src": "/(.*\\.[0-9a-zA-Z]+\\.(js|css|ico|png|jpg|jpeg|svg|webp))$",
-            "dest": "apps/web/dist/$1",
-            "headers": {
-                "cache-control": "public, max-age=31536000, immutable"
-            }
+            "handle": "filesystem"
         },
         {
             "src": "/(.*)",
-            "dest": "apps/web/dist/index.html",
-            "headers": {
-                "cache-control": "public, max-age=0, must-revalidate"
-            }
+            "dest": "/index.html",
+            "status": 200
         }
     ]
 }
