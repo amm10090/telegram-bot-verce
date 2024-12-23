@@ -1,7 +1,6 @@
 {
     "version": 2,
-    "buildCommand": "pnpm install && pnpm run build",
-    "outputDirectory": "apps/web/dist",
+    "buildCommand": "turbo run build --filter=web... --filter=server...",
     "builds": [
         {
             "src": "apps/web/package.json",
@@ -9,26 +8,51 @@
             "config": {
                 "distDir": "dist"
             }
+        },
+        {
+            "src": "apps/server/src/index.ts",
+            "use": "@vercel/node"
         }
     ],
     "routes": [
         {
-            "src": "/api/(.*)",
-            "dest": "/api/$1"
+            "src": "/api/bot/telegram/validate",
+            "methods": [
+                "POST"
+            ],
+            "dest": "apps/server/src/index.ts"
         },
         {
-            "src": "/static/(.*)",
-            "headers": {
-                "cache-control": "public, max-age=31536000, immutable"
-            },
-            "dest": "/static/$1"
+            "src": "/api/bot/telegram/bots",
+            "methods": [
+                "GET",
+                "POST"
+            ],
+            "dest": "apps/server/src/index.ts"
         },
         {
-            "handle": "filesystem"
+            "src": "/api/bot/telegram/bots/.*",
+            "methods": [
+                "GET",
+                "PUT",
+                "DELETE"
+            ],
+            "dest": "apps/server/src/index.ts"
+        },
+        {
+            "src": "/health",
+            "methods": [
+                "GET"
+            ],
+            "dest": "apps/server/src/index.ts"
+        },
+        {
+            "src": "/api/.*",
+            "dest": "apps/server/src/index.ts"
         },
         {
             "src": "/(.*)",
-            "dest": "/index.html"
+            "dest": "apps/web/$1"
         }
     ]
 }
