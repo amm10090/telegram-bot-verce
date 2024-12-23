@@ -46,6 +46,78 @@ interface DatabaseConnectionState {
 }
 
 /**
+ * 缓存数据接口
+ * 定义缓存项的数据结构
+ */
+interface CacheItem<T> {
+    data: T;
+    timestamp: number;
+}
+
+/**
+ * 数据库缓存管理类
+ * 实现数据的内存缓存，减少数据库访问频率
+ */
+class DatabaseCache {
+    private static instance: DatabaseCache;
+    private cache: Map<string, CacheItem<any>> = new Map();
+    private readonly ttl: number = 5 * 60 * 1000; // 默认缓存时间：5分钟
+
+    private constructor() { }
+
+    static getInstance(): DatabaseCache {
+        if (!DatabaseCache.instance) {
+            DatabaseCache.instance = new DatabaseCache();
+        }
+        return DatabaseCache.instance;
+    }
+
+    /**
+     * 设置缓存
+     * @param key 缓存键
+     * @param data 缓存数据
+     */
+    set(key: string, data: any): void {
+        this.cache.set(key, {
+            data,
+            timestamp: Date.now()
+        });
+    }
+
+    /**
+     * 获取缓存
+     * @param key 缓存键
+     * @returns 缓存数据或null（如果缓存不存在或已过期）
+     */
+    get(key: string): any | null {
+        const cached = this.cache.get(key);
+        if (!cached) return null;
+
+        if (Date.now() - cached.timestamp > this.ttl) {
+            this.cache.delete(key);
+            return null;
+        }
+
+        return cached.data;
+    }
+
+    /**
+     * 清除特定缓存
+     * @param key 缓存键
+     */
+    clear(key: string): void {
+        this.cache.delete(key);
+    }
+
+    /**
+     * 清除所有缓存
+     */
+    clearAll(): void {
+        this.cache.clear();
+    }
+}
+
+/**
  * 数据库配置管理类
  * 使用单例模式确保全局配置的一致性
  */
@@ -68,7 +140,7 @@ class DatabaseConfig {
 
     private createConnectionOptions(): ExtendedConnectOptions {
         return {
-            maxPoolSize: 10,                    // 连接池最大连接数
+            maxPoolSize: 3,                    // 连接池最大连接数
             minPoolSize: 2,                     // 连接池最小连接数
             connectTimeoutMS: 30000,            // 连接超时：30秒
             socketTimeoutMS: 45000,             // 套接字超时：45秒
@@ -152,7 +224,7 @@ class ReconnectionStrategy {
     private readonly maxDelay: number;
 
     constructor(
-        maxRetries = 10,    // 最大重试次数：10次
+        maxRetries = 3,    // 最大重试次数：10次
         baseDelay = 10000,  // 基础延迟时间：10秒
         maxDelay = 60000    // 最大延迟时间：60秒
     ) {
@@ -261,7 +333,7 @@ class DatabaseHealthCheck {
 
 /**
  * 数据库连接管理器类
- * 核心类，管理数据库连接的完整生命周期
+ * 核心类，管理数据库连接的完整生命周期，包括连接池管理
  */
 class DatabaseConnectionManager {
     private static instance: DatabaseConnectionManager;
@@ -270,6 +342,8 @@ class DatabaseConnectionManager {
     private readonly reconnectionStrategy: ReconnectionStrategy;
     private readonly eventEmitter: EventEmitter;
     private state: DatabaseConnectionState;
+    private connectionPool: mongoose.Connection[] = [];
+    private readonly maxPoolSize: number = 10;
 
     private constructor() {
         this.config = DatabaseConfig.getInstance();
@@ -289,6 +363,59 @@ class DatabaseConnectionManager {
             DatabaseConnectionManager.instance = new DatabaseConnectionManager();
         }
         return DatabaseConnectionManager.instance;
+    }
+
+    /**
+     * 从连接池获取可用连接
+     */
+    async getConnection(): Promise<mongoose.Connection> {
+        // 从连接池中查找可用连接
+        const availableConnection = this.connectionPool.find(
+            conn => conn.readyState === 1
+        );
+
+        if (availableConnection) {
+            return availableConnection;
+        }
+
+        // 如果没有可用连接且未达到最大连接数，创建新连接
+        if (this.connectionPool.length < this.maxPoolSize) {
+            const newConnection = await this.createNewConnection();
+            this.connectionPool.push(newConnection);
+            return newConnection;
+        }
+
+        // 等待可用连接
+        return new Promise((resolve) => {
+            const checkInterval = setInterval(() => {
+                const conn = this.connectionPool.find(
+                    c => c.readyState === 1
+                );
+                if (conn) {
+                    clearInterval(checkInterval);
+                    resolve(conn);
+                }
+            }, 100);
+        });
+    }
+
+    /**
+     * 创建新的数据库连接
+     */
+    private async createNewConnection(): Promise<mongoose.Connection> {
+        const { uri, options } = this.config.getConfig();
+        const connection = await mongoose.createConnection(uri, options);
+
+        // 设置连接事件处理
+        connection.on('error', (error: Error) => {
+            DatabaseLogger.error('数据库连接错误', error);
+        });
+
+        connection.on('disconnected', () => {
+            DatabaseLogger.warn('数据库连接断开');
+        });
+
+        return connection;
     }
 
     private validateEnvironment(): void {
@@ -449,6 +576,11 @@ class DatabaseConnectionManager {
         try {
             this.healthCheck.stop();
             DatabaseLogger.info('正在关闭数据库连接');
+
+            // 关闭所有连接池中的连接
+            await Promise.all(this.connectionPool.map(conn => conn.close()));
+            this.connectionPool = [];
+
             await mongoose.connection.close();
             DatabaseLogger.info('数据库连接已安全关闭');
         } catch (error) {
@@ -460,6 +592,70 @@ class DatabaseConnectionManager {
             DatabaseLogger.error('关闭数据库连接时出错', errorInfo);
             throw error;
         }
+    }
+}
+
+/**
+ * 数据访问层类
+ * 统一管理数据库操作，实现缓存策略
+ */
+class DataAccessLayer {
+    private static instance: DataAccessLayer;
+    private readonly dbManager: DatabaseConnectionManager;
+    private readonly cache: DatabaseCache;
+
+    private constructor() {
+        this.dbManager = DatabaseConnectionManager.getInstance();
+        this.cache = DatabaseCache.getInstance();
+    }
+
+    static getInstance(): DataAccessLayer {
+        if (!DataAccessLayer.instance) {
+            DataAccessLayer.instance = new DataAccessLayer();
+        }
+        return DataAccessLayer.instance;
+    }
+
+    /**
+     * 获取API列表
+     * 实现了缓存机制，减少数据库访问
+     */
+    async getAPIList(): Promise<any[]> {
+        const cacheKey = 'api_list';
+        const cached = this.cache.get(cacheKey);
+        if (cached) return cached;
+
+        const conn = await this.dbManager.getConnection();
+        const result = await conn.collection('apis').find().toArray();
+
+        this.cache.set(cacheKey, result);
+        return result;
+    }
+
+    /**
+     * 获取系统设置
+     * 实现了缓存机制，减少数据库访问
+     */
+    async getSystemSettings(): Promise<any> {
+        const cacheKey = 'system_settings';
+        const cached = this.cache.get(cacheKey);
+        if (cached) return cached;
+
+        const conn = await this.dbManager.getConnection();
+        const settings = await conn.collection('settings').findOne({});
+
+        this.cache.set(cacheKey, settings);
+        return settings;
+    }
+
+    /**
+     * 更新系统设置
+     * 更新后自动清除相关缓存
+     */
+    async updateSystemSettings(settings: any): Promise<void> {
+        const conn = await this.dbManager.getConnection();
+        await conn.collection('settings').updateOne({}, { $set: settings }, { upsert: true });
+        this.cache.clear('system_settings');
     }
 }
 
@@ -506,7 +702,7 @@ export const getDatabaseStatus = () => {
 
     return {
         ...state,
-        // 格式化时间为人类可读格式
+        // 格式化时间为可读格式
         lastConnectedAt: state.lastConnectedAt
             ? moment(state.lastConnectedAt).format('YYYY-MM-DD HH:mm:ss')
             : null,
@@ -530,5 +726,13 @@ export const getDatabaseStatus = () => {
     };
 };
 
-// 导出默认的数据库连接函数和状态查询函数
+// 导出所需的类和函数
+export {
+    DatabaseConnectionManager,
+    DataAccessLayer,
+    DatabaseCache,
+    DatabaseError
+};
+
+// 导出默认的数据库连接函数
 export default connectDatabase;

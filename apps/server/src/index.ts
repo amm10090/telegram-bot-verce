@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 // 导入 moment-timezone 用于处理时区转换
 import moment from 'moment-timezone';
+import { healthCheckService } from './health-check.service';
 
 // 设置系统默认时区为中国时区 (UTC+8)
 moment.tz.setDefault('Asia/Shanghai');
@@ -134,22 +135,24 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // 健康检查路由
-app.get('/health', (req: Request, res: Response) => {
-    // 收集当前服务器状态信息
-    const serverStatus = {
-        status: 'ok',
-        currentTime: formatChineseTime(),
-        server: {
-            uptime: formatUptime(process.uptime()),
-            environment: process.env.NODE_ENV || 'development',
-            nodeVersion: process.version,
-            platform: process.platform
-        },
-        database: getFullDbStatus()
-    };
+app.get('/health', async (req: Request, res: Response) => {
+    try {
+        const healthStatus = await healthCheckService.getFullHealthStatus();
 
-    // 返回状态信息
-    res.json(serverStatus);
+        // 根据整体状态设置响应状态码
+        const statusCode = healthStatus.status === 'healthy' ? 200
+            : healthStatus.status === 'degraded' ? 200
+                : 503;
+
+        res.status(statusCode).json(healthStatus);
+    } catch (error) {
+        console.error('健康检查失败:', error);
+        res.status(500).json({
+            status: 'error',
+            timestamp: moment().tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss.SSS [GMT+8]'),
+            error: '健康检查执行失败'
+        });
+    }
 });
 
 // 注册 Telegram bot 相关路由
