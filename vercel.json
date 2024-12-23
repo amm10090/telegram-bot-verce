@@ -51,8 +51,12 @@
             "dest": "apps/server/src/index.ts"
         },
         {
+            "src": "^/static/(.*)",
+            "dest": "apps/web/static/$1"
+        },
+        {
             "src": "/(.*)",
-            "dest": "apps/web/$1"
+            "dest": "apps/web/index.html"
         }
     ]
 }
