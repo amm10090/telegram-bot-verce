@@ -16,25 +16,32 @@ module.exports = (env, argv) => {
     const isProduction = argv.mode === 'production';
 
     return {
-        // 设置模式，影响内置的优化
+        // 设置模式，这会启用 webpack 的内置优化
         mode: argv.mode || 'development',
 
-        // 定义开发工具，生产环境使用 source-map，开发环境使用 eval-source-map
+        // 设置 source map 类型
+        // 生产环境使用 source-map 以获得更好的调试体验
+        // 开发环境使用 eval-source-map 以获得更快的构建速度
         devtool: isProduction ? 'source-map' : 'eval-source-map',
 
-        // 入口配置
+        // 入口配置，指定应用的主入口文件
         entry: {
             main: path.resolve(SRC_DIR, 'index.tsx')
         },
 
-        // 输出配置
+        // 输出配置，定义构建产物的输出位置和命名方式
         output: {
+            // 输出目录为 dist
             path: BUILD_DIR,
-            // 修改文件输出结构
+            // 主文件的输出位置和命名规则
             filename: 'static/js/[name].[contenthash:8].js',
+            // 代码分割后的块文件命名规则
             chunkFilename: 'static/js/[name].[contenthash:8].chunk.js',
+            // 静态资源的输出位置和命名规则
             assetModuleFilename: 'static/media/[name].[hash:8][ext]',
+            // 公共路径，用于确保资源能够被正确访问
             publicPath: '/',
+            // 构建前清理输出目录
             clean: true
         },
 
@@ -117,18 +124,24 @@ module.exports = (env, argv) => {
 
         // 插件配置
         plugins: [
-            // HTML 模板插件
+            // HTML 模板插件，用于生成 HTML 文件
             new HtmlWebpackPlugin({
+                // 使用的 HTML 模板文件
                 template: path.join(PUBLIC_DIR, 'index.html'),
+                // 网站图标
                 favicon: path.join(PUBLIC_DIR, 'favicon.ico'),
+                // 页面标题
                 title: 'Telegram Bot Dashboard',
+                // HTML meta 标签配置
                 meta: {
                     'viewport': 'width=device-width, initial-scale=1, shrink-to-fit=no',
                     'theme-color': '#000000'
                 },
                 // 确保脚本正确加载
                 scriptLoading: 'defer',
+                // 自动注入生成的文件
                 inject: true,
+                // 生产环境下压缩 HTML
                 minify: isProduction ? {
                     removeComments: true,
                     collapseWhitespace: true,
@@ -163,14 +176,19 @@ module.exports = (env, argv) => {
 
         // 开发服务器配置
         devServer: {
+            // 静态文件目录
             static: {
                 directory: PUBLIC_DIR
             },
+            // 开发服务器端口
             port: 8080,
+            // 启用热更新
             hot: true,
+            // 自动打开浏览器
             open: true,
+            // 启用 gzip 压缩
             compress: true,
-            // 支持 HTML5 History API
+            // 支持 HTML5 History API 路由
             historyApiFallback: true,
             // 开发环境的代理配置
             proxy: {
@@ -183,35 +201,46 @@ module.exports = (env, argv) => {
             }
         },
 
-        // 生产环境特定配置
-        ...(isProduction ? {
-            optimization: {
-                splitChunks: {
-                    chunks: 'all',
-                    name: false, // 不为分割的块指定名称
-                    cacheGroups: {
-                        vendor: {
-                            test: /[\\/]node_modules[\\/]/,
-                            name(module) {
-                                // 获取包名
-                                const packageName = module.context.match(
-                                    /[\\/]node_modules[\\/](.*?)([\\/]|$)/
-                                )[1];
-                                return `vendor.${packageName.replace('@', '')}`;
-                            },
+        // 优化配置
+        optimization: {
+            splitChunks: {
+                chunks: 'all',
+                maxInitialRequests: Infinity,
+                minSize: 0,
+                cacheGroups: {
+                    // 第三方模块单独打包
+                    vendor: {
+                        test: /[\\/]node_modules[\\/]/,
+                        name(module) {
+                            // 获取包名，创建更细粒度的块
+                            const packageName = module.context.match(
+                                /[\\/]node_modules[\\/](.*?)([\\/]|$)/
+                            )[1];
+                            return `vendor.${packageName.replace('@', '')}`;
                         },
+                        priority: 20
                     },
-                },
-                // 使用确定性的哈希
-                moduleIds: 'deterministic',
-                // 提取运行时代码
-                runtimeChunk: 'single'
+                    // 共用模块打包
+                    common: {
+                        minChunks: 2,
+                        priority: 10,
+                        reuseExistingChunk: true
+                    }
+                }
             },
-            performance: {
-                hints: 'warning',
-                maxEntrypointSize: 512000,
-                maxAssetSize: 512000
-            }
-        } : {})
+            // 将 runtime 代码拆分为单独的块
+            runtimeChunk: 'single',
+            // 使用确定性的模块 ID
+            moduleIds: 'deterministic'
+        },
+
+        // 性能提示配置
+        performance: {
+            hints: 'warning',
+            // 入口文件大小限制：500KB
+            maxEntrypointSize: 512000,
+            // 单个资源大小限制：500KB
+            maxAssetSize: 512000
+        }
     };
 };
