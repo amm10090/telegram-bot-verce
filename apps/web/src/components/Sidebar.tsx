@@ -1,9 +1,10 @@
 // src/components/Sidebar.tsx
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Home, MessageCircle, Settings, Moon, Sun } from 'lucide-react';
 import { useIntl } from 'react-intl';
 import { useTheme } from '../contexts/ThemeContext';
+import { useRoutePreload } from '../hooks/useRoutePreload';
 
 // 导航项接口定义
 interface NavItem {
@@ -18,15 +19,70 @@ interface SidebarProps {
   setOpen: (open: boolean) => void;
 }
 
+// 导航链接组件
+const NavLink = React.memo(({ item, onClick }: { item: NavItem; onClick?: () => void }) => {
+  const intl = useIntl();
+  const { preloadRoute } = useRoutePreload();
+
+  // 处理鼠标悬停事件，触发预加载
+  const handleMouseEnter = useCallback(() => {
+    preloadRoute(item.path as any);
+  }, [item.path, preloadRoute]);
+
+  return (
+    <Link
+      key={item.labelId}
+      to={item.path}
+      className="
+        flex items-center px-4 py-2.5
+        text-muted-foreground
+        hover:text-foreground hover:bg-accent
+        active:bg-accent/80
+        rounded-md
+        transition-all duration-200
+        group
+        focus-visible:outline-none focus-visible:ring-2
+        focus-visible:ring-ring
+      "
+      onClick={onClick}
+      onMouseEnter={handleMouseEnter}  // 添加鼠标悬停事件
+      onFocus={handleMouseEnter}       // 添加焦点事件，支持键盘用户
+    >
+      <item.icon className="
+        h-5 w-5 mr-3 
+        transition-colors
+        text-muted-foreground
+        group-hover:text-foreground
+      " />
+      <span className="font-medium">
+        {intl.formatMessage({ id: item.labelId })}
+      </span>
+    </Link>
+  );
+});
+
+NavLink.displayName = 'NavLink';
+
 /**
  * 侧边栏组件
  * - 提供应用主要导航功能
  * - 支持响应式设计
  * - 包含主题切换功能
+ * - 实现路由组件预加载，提升用户体验
  */
 export default function Sidebar({ open, setOpen }: SidebarProps) {
   const intl = useIntl();
   const { theme, setTheme } = useTheme();
+  const { preloadAllRoutes } = useRoutePreload();
+
+  // 在组件加载后，延迟预加载所有路由组件
+  React.useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      preloadAllRoutes();
+    }, 1000); // 延迟1秒开始预加载，避免影响首屏加载
+
+    return () => clearTimeout(timeoutId);
+  }, [preloadAllRoutes]);
 
   // 导航配置
   const navigationItems: NavItem[] = [
@@ -46,6 +102,13 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
       labelId: 'nav.settings'
     }
   ];
+
+  // 处理移动端导航点击
+  const handleMobileNavClick = useCallback(() => {
+    if (window.innerWidth < 1024) {
+      setOpen(false);
+    }
+  }, [setOpen]);
 
   return (
     <>
@@ -93,36 +156,11 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         <nav className="flex-1 overflow-y-auto p-4">
           <div className="space-y-1">
             {navigationItems.map((item) => (
-              <Link
+              <NavLink
                 key={item.labelId}
-                to={item.path}
-                className="
-                  flex items-center px-4 py-2.5
-                  text-muted-foreground
-                  hover:text-foreground hover:bg-accent
-                  active:bg-accent/80
-                  rounded-md
-                  transition-all duration-200
-                  group
-                  focus-visible:outline-none focus-visible:ring-2
-                  focus-visible:ring-ring
-                "
-                onClick={() => {
-                  if (window.innerWidth < 1024) {
-                    setOpen(false);
-                  }
-                }}
-              >
-                <item.icon className="
-                  h-5 w-5 mr-3 
-                  transition-colors
-                  text-muted-foreground
-                  group-hover:text-foreground
-                " />
-                <span className="font-medium">
-                  {intl.formatMessage({ id: item.labelId })}
-                </span>
-              </Link>
+                item={item}
+                onClick={handleMobileNavClick}
+              />
             ))}
           </div>
         </nav>

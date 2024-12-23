@@ -1,14 +1,12 @@
 {
     "version": 2,
-    "buildCommand": "pnpm install && pnpm turbo run build --filter=web... --filter=server...",
-    "installCommand": "pnpm install",
     "builds": [
         {
             "src": "apps/web/package.json",
             "use": "@vercel/static-build",
             "config": {
-                "distDir": "apps/web/dist",
-                "buildCommand": "cd apps/web && pnpm install && pnpm run build"
+                "buildCommand": "cd apps/web && pnpm install && NODE_ENV=production pnpm run build",
+                "outputDirectory": "dist"
             }
         },
         {
@@ -23,6 +21,13 @@
         }
     ],
     "routes": [
+        {
+            "src": "/static/(.*)",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable"
+            },
+            "dest": "/static/$1"
+        },
         {
             "src": "/api/bot/telegram/validate",
             "methods": [
@@ -63,13 +68,6 @@
                 "Access-Control-Allow-Methods": "GET, PUT, DELETE, OPTIONS",
                 "Access-Control-Allow-Headers": "Content-Type, Authorization"
             }
-        },
-        {
-            "src": "/static/(.*)",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable"
-            },
-            "dest": "/static/$1"
         },
         {
             "src": "/api/(.*)",

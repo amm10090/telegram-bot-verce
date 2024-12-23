@@ -195,8 +195,6 @@ class DatabaseConfig {
      * 根据环境配置不同的连接参数
      */
     private createConnectionOptions(): ExtendedConnectOptions {
-        const isProd = process.env.NODE_ENV === 'production';
-
         return {
             maxPoolSize: parseInt(process.env.DB_MAX_POOL_SIZE || '10'),
             minPoolSize: parseInt(process.env.DB_MIN_POOL_SIZE || '2'),
@@ -204,15 +202,14 @@ class DatabaseConfig {
             socketTimeoutMS: parseInt(process.env.DB_SOCKET_TIMEOUT || '45000'),
             serverSelectionTimeoutMS: parseInt(process.env.DB_SERVER_SELECTION_TIMEOUT || '30000'),
             heartbeatFrequencyMS: parseInt(process.env.DB_HEARTBEAT_FREQUENCY || '10000'),
-            ssl: isProd,
-            tls: isProd,
+            ssl: true,  // 始终启用 SSL
+            tls: true,  // 始终启用 TLS
             authSource: 'admin',
             retryWrites: true,
             retryReads: true,
-            autoIndex: !isProd
+            autoIndex: process.env.NODE_ENV !== 'production'
         };
     }
-
     /**
      * 验证配置的有效性
      * 确保必要的配置项存在且有效
