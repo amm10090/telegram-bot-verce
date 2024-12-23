@@ -7,8 +7,8 @@
             "src": "apps/web/package.json",
             "use": "@vercel/static-build",
             "config": {
-                "distDir": "dist",
-                "buildCommand": "pnpm turbo run build --filter=web..."
+                "distDir": "apps/web/dist",
+                "buildCommand": "cd apps/web && pnpm install && pnpm run build"
             }
         },
         {
@@ -18,7 +18,7 @@
                 "includeFiles": [
                     "apps/server/dist/**"
                 ],
-                "buildCommand": "cd apps/server && tsc"
+                "buildCommand": "cd apps/server && pnpm install && tsc"
             }
         }
     ],
@@ -65,29 +65,25 @@
             }
         },
         {
-            "src": "/health",
-            "methods": [
-                "GET"
-            ],
-            "dest": "apps/server/src/index.ts"
+            "src": "/static/(.*)",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable"
+            },
+            "dest": "/static/$1"
         },
         {
             "src": "/api/(.*)",
             "dest": "apps/server/src/index.ts"
         },
         {
-            "src": "^/static/(.*)",
-            "dest": "apps/web/dist/static/$1",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable"
-            }
-        },
-        {
             "handle": "filesystem"
         },
         {
             "src": "/(.*)",
-            "dest": "apps/web/dist/index.html"
+            "dest": "/index.html",
+            "headers": {
+                "Cache-Control": "no-cache, no-store, must-revalidate"
+            }
         }
     ]
 }
