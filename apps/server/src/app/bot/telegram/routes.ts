@@ -1,29 +1,28 @@
-// apps/server/src/app/bot/telegram/routes.ts
-
+"use strict";
 import { Router, Request, Response, NextFunction } from 'express';
 import { validateHandler } from './validate';
-import { saveApiKeyHandler, getAllBotsHandler, updateBotHandler, deleteBotHandler } from './save-key';
+import {
+    saveApiKeyHandler,
+    getAllBotsHandler,
+    updateBotHandler,
+    deleteBotHandler
+} from './save-key';
 
 /**
  * 创建路由实例
  * Express.Router() 用于创建模块化的路由处理器
  */
-const router = Router();
-
-/**
- * 自定义错误接口
- * 扩展标准 Error 接口，添加可选的状态码属性
- */
-interface CustomError extends Error {
-    status?: number;
-    code?: string;
-}
+const router: Router = Router();
 
 /**
  * 请求体验证中间件
  * 确保所有请求都具有正确的 JSON 结构
  */
-const validateRequestBody = (req: Request, res: Response, next: NextFunction): void => {
+const validateRequestBody = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): void => {
     if (!req.body || typeof req.body !== 'object') {
         res.status(400).json({
             ok: false,
@@ -37,7 +36,11 @@ const validateRequestBody = (req: Request, res: Response, next: NextFunction): v
 /**
  * API 密钥验证中间件
  */
-const validateApiKey = (req: Request, res: Response, next: NextFunction): void => {
+const validateApiKey = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): void => {
     const apiKey = req.headers['x-api-key'];
     if (!apiKey) {
         res.status(401).json({
@@ -53,7 +56,7 @@ const validateApiKey = (req: Request, res: Response, next: NextFunction): void =
  * 错误处理中间件
  */
 const errorHandler = (
-    err: CustomError,
+    err: any,
     req: Request,
     res: Response,
     next: NextFunction
@@ -89,7 +92,6 @@ try {
     });
 
     router.get('/bots', (req: Request, res: Response, next: NextFunction) => {
-
         getAllBotsHandler(req, res).catch(next);
     });
 
@@ -111,7 +113,6 @@ try {
 
     // 注册错误处理中间件
     router.use(errorHandler);
-
 } catch (error) {
     console.error('路由配置错误:', error);
     throw error;
