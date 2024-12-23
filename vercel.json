@@ -23,10 +23,31 @@
             "dest": "apps/server/src/index.ts"
         },
         {
+            "src": "/api/bot/telegram/bots",
+            "methods": [
+                "GET",
+                "POST"
+            ],
+            "dest": "apps/server/src/index.ts"
+        },
+        {
+            "src": "/api/bot/telegram/bots/.*",
+            "methods": [
+                "GET",
+                "PUT",
+                "DELETE"
+            ],
+            "dest": "apps/server/src/index.ts"
+        },
+        {
             "src": "/health",
             "methods": [
                 "GET"
             ],
+            "dest": "apps/server/src/index.ts"
+        },
+        {
+            "src": "/api/.*",
             "dest": "apps/server/src/index.ts"
         },
         {
