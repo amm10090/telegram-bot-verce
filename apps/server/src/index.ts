@@ -1,13 +1,10 @@
 // apps/server/src/index.ts
 
-/**
- * 导入必要的依赖和类型
- * 我们使用 as 重命名基础类型以避免与扩展接口冲突
- */
+// 导入必要的依赖和类型
 import express, {
     Express,
-    Request as ExpressRequest,
-    Response as ExpressResponse,
+    Request,
+    Response,
     NextFunction,
     RequestHandler,
     ErrorRequestHandler
@@ -20,30 +17,28 @@ import mongoose from 'mongoose';
 import moment from 'moment-timezone';
 import { healthCheckService } from './health-check.service';
 
-/**
- * 扩展 Express 的 Request 和 Response 接口
- * 添加必要的类型定义以确保类型安全
- */
-interface Request extends ExpressRequest {
-    body: any;
-    query: any;
-    params: any;
-}
-
-interface Response extends ExpressResponse {
-    json: (body: any) => this;
-    status: (code: number) => this;
-}
-
-
-/**
- * 设置系统默认时区为中国时区
- * 确保所有时间操作都基于东八区
- */
+// 设置系统默认时区为中国时区
 moment.tz.setDefault('Asia/Shanghai');
 
 /**
- * 数据库状态接口定义
+ * 扩展请求接口，添加我们需要的类型定义
+ */
+interface ExtendedRequest extends Request {
+    body: any;
+    query: Record<string, any>;
+    params: Record<string, any>;
+}
+
+/**
+ * 扩展响应接口，确保支持链式调用
+ */
+interface ExtendedResponse extends Response {
+    json(body: any): this;
+    status(code: number): this;
+}
+
+/**
+ * 数据库状态接口
  * 用于监控和报告数据库连接状态
  */
 interface DbStatus {
@@ -51,6 +46,10 @@ interface DbStatus {
     description: string; // 连接状态的中文描述
 }
 
+/**
+ * 完整数据库状态接口
+ * 扩展基本状态，包含更多详细信息
+ */
 interface FullDbStatus extends DbStatus {
     host: string;            // 数据库主机地址
     name: string;            // 数据库名称
@@ -58,9 +57,9 @@ interface FullDbStatus extends DbStatus {
 }
 
 /**
- * 时间处理工具函数：将任何时间转换为中国时区并格式化
- * @param date - 需要格式化的日期，默认为当前时间
- * @returns 格式化后的时间字符串，包含时区信息
+ * 格式化时间为中国时区
+ * @param date 需要格式化的日期，默认为当前时间
+ * @returns 格式化后的时间字符串
  */
 const formatChineseTime = (date: Date = new Date()): string => {
     return moment(date)
@@ -69,8 +68,8 @@ const formatChineseTime = (date: Date = new Date()): string => {
 };
 
 /**
- * 格式化服务器运行时间
- * @param seconds - 运行的秒数
+ * 格式化运行时间
+ * @param seconds 运行的秒数
  * @returns 格式化后的运行时间字符串
  */
 const formatUptime = (seconds: number): string => {
@@ -89,8 +88,8 @@ const formatUptime = (seconds: number): string => {
 };
 
 /**
- * 获取数据库连接状态信息
- * @returns 数据库状态信息对象
+ * 获取数据库连接状态
+ * @returns 数据库状态信息
  */
 const getDbStatus = (): DbStatus => {
     const statusMap: Record<number, DbStatus> = {
@@ -121,7 +120,7 @@ const getDbStatus = (): DbStatus => {
 
 /**
  * 获取完整的数据库状态信息
- * @returns 包含连接状态、主机名、数据库名和最后连接时间的状态信息
+ * @returns 完整的数据库状态信息
  */
 const getFullDbStatus = (): FullDbStatus => {
     const basicStatus = getDbStatus();
@@ -142,8 +141,8 @@ dotenv.config();
 const app: Express = express();
 
 /**
- * CORS 配置
- * 定义允许的来源、方法和请求头
+ * 配置 CORS 选项
+ * 定义允许的源、方法和头部
  */
 const corsOptions: CorsOptions = {
     origin: ['http://localhost:3000', 'http://localhost:8080'],
@@ -161,21 +160,26 @@ app.use(express.json());
  * 记录所有请求的时间和路径
  */
 const requestLogger: RequestHandler = (
-    req: Request,
-    res: Response,
+    req: ExtendedRequest,
+    res: ExtendedResponse,
     next: NextFunction
 ): void => {
-    console.log(`[${formatChineseTime()}] ${req.method} ${req.path}`);
+    const method = req.method || 'UNKNOWN';
+    const path = (req as any).path || 'UNKNOWN';
+    console.log(`[${formatChineseTime()}] ${method} ${path}`);
     next();
 };
 
 app.use(requestLogger);
 
 /**
- * 健康检查路由
+ * 健康检查路由处理器
  * 提供系统状态监控接口
  */
-app.get('/health', async (req: Request, res: Response): Promise<void> => {
+const healthCheckHandler: RequestHandler = async (
+    req: ExtendedRequest,
+    res: ExtendedResponse
+): Promise<void> => {
     try {
         const healthStatus = await healthCheckService.getFullHealthStatus();
         const statusCode = healthStatus.status === 'healthy' ? 200
@@ -191,19 +195,22 @@ app.get('/health', async (req: Request, res: Response): Promise<void> => {
             error: '健康检查执行失败'
         });
     }
-});
+};
+
+// 注册健康检查路由
+app.get('/health', healthCheckHandler);
 
 // 注册 Telegram bot 相关路由
 app.use('/api/bot/telegram', telegramRoutes);
 
 /**
  * 全局错误处理中间件
- * 统一处理所有未捕获的错误
+ * 统一处理未捕获的错误
  */
 const errorHandler: ErrorRequestHandler = (
     err: Error,
-    req: Request,
-    res: Response,
+    req: ExtendedRequest,
+    res: ExtendedResponse,
     next: NextFunction
 ): void => {
     console.error('全局错误:', err);
@@ -215,6 +222,7 @@ const errorHandler: ErrorRequestHandler = (
     });
 };
 
+// 注册错误处理中间件
 app.use(errorHandler);
 
 // 获取服务器端口配置
