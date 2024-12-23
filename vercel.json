@@ -5,9 +5,11 @@
             "src": "apps/web/package.json",
             "use": "@vercel/static-build",
             "config": {
-                "buildCommand": "chmod +x apps/web/build.sh && ./apps/web/build.sh",
-                "outputDirectory": ".",
-                "zeroConfig": true
+                "buildCommand": "cd apps/web && pnpm install && NODE_ENV=production pnpm run build",
+                "outputDirectory": "apps/web/dist",
+                "distDir": "apps/web/dist",
+                "root": "apps/web",
+                "installCommand": "cd ../.. && pnpm install"
             }
         },
         {
@@ -27,7 +29,7 @@
         },
         {
             "src": "/static/(.*)",
-            "dest": "/static/$1",
+            "dest": "apps/web/dist/static/$1",
             "headers": {
                 "cache-control": "public,max-age=31536000,immutable"
             }
@@ -79,7 +81,7 @@
         },
         {
             "src": "/(.*)",
-            "dest": "/index.html"
+            "dest": "apps/web/dist/index.html"
         }
     ]
 }
