@@ -23,38 +23,116 @@
             "continue": true
         },
         {
-            "src": "^/static/(.*)",
+            "src": "^/static/.*\\.js$",
             "dest": "/static/$1",
             "headers": {
                 "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": {
-                    ".js": "application/javascript",
-                    ".css": "text/css",
-                    ".svg": "image/svg+xml",
-                    ".png": "image/png",
-                    ".jpg": "image/jpeg",
-                    ".ico": "image/x-icon"
-                }
+                "Content-Type": "application/javascript; charset=utf-8"
             }
         },
         {
-            "src": "^/(favicon\\.ico|robots\\.txt|manifest\\.json)",
-            "dest": "/$1"
+            "src": "^/static/.*\\.css$",
+            "dest": "/static/$1",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable",
+                "Content-Type": "text/css; charset=utf-8"
+            }
         },
         {
-            "src": "^/(.*)\\.(js|css|svg|png|jpg|jpeg|gif|ico|json)$",
-            "dest": "/$1.$2"
+            "src": "^/static/.*\\.svg$",
+            "dest": "/static/$1",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable",
+                "Content-Type": "image/svg+xml"
+            }
+        },
+        {
+            "src": "^/static/.*\\.png$",
+            "dest": "/static/$1",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable",
+                "Content-Type": "image/png"
+            }
+        },
+        {
+            "src": "^/static/.*\\.jpg$",
+            "dest": "/static/$1",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable",
+                "Content-Type": "image/jpeg"
+            }
+        },
+        {
+            "src": "^/static/.*\\.gif$",
+            "dest": "/static/$1",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable",
+                "Content-Type": "image/gif"
+            }
+        },
+        {
+            "src": "^/static/.*\\.ico$",
+            "dest": "/static/$1",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable",
+                "Content-Type": "image/x-icon"
+            }
+        },
+        {
+            "src": "^/static/.*\\.(woff|woff2)$",
+            "dest": "/static/$1",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable",
+                "Content-Type": "font/woff"
+            }
+        },
+        {
+            "src": "^/static/.*\\.json$",
+            "dest": "/static/$1",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable",
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        {
+            "src": "^/favicon.ico$",
+            "dest": "/favicon.ico",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable",
+                "Content-Type": "image/x-icon"
+            }
+        },
+        {
+            "src": "^/robots.txt$",
+            "dest": "/robots.txt",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable",
+                "Content-Type": "text/plain; charset=utf-8"
+            }
+        },
+        {
+            "src": "^/manifest.json$",
+            "dest": "/manifest.json",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable",
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        },
+        {
+            "handle": "filesystem"
         },
         {
             "src": "/(.*)",
             "dest": "/index.html",
             "headers": {
-                "Cache-Control": "no-cache, no-store, must-revalidate"
+                "cache-control": "public, max-age=0, must-revalidate",
+                "Content-Type": "text/html; charset=utf-8"
             }
         }
     ],
     "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "NEXT_PUBLIC_API_URL": "@next_public_api_url"
     },
     "regions": [
         "iad1"
@@ -65,5 +143,36 @@
     "github": {
         "silent": true,
         "autoJobCancelation": true
-    }
+    },
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "DENY"
+                },
+                {
+                    "key": "X-XSS-Protection",
+                    "value": "1; mode=block"
+                },
+                {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
+                },
+                {
+                    "key": "Permissions-Policy",
+                    "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+                },
+                {
+                    "key": "Strict-Transport-Security",
+                    "value": "max-age=31536000; includeSubDomains"
+                }
+            ]
+        }
+    ]
 }
