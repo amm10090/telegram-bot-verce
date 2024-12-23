@@ -7,7 +7,9 @@
             "config": {
                 "buildCommand": "cd apps/web && pnpm install && NODE_ENV=production pnpm run build",
                 "outputDirectory": "apps/web/dist",
-                "distDir": "apps/web/dist"
+                "distDir": "apps/web/dist",
+                "root": "apps/web",
+                "installCommand": "cd ../.. && pnpm install"
             }
         },
         {
@@ -23,8 +25,11 @@
     ],
     "routes": [
         {
+            "handle": "filesystem"
+        },
+        {
             "src": "/static/(.*)",
-            "dest": "/apps/web/dist/static/$1",
+            "dest": "apps/web/dist/static/$1",
             "headers": {
                 "cache-control": "public,max-age=31536000,immutable"
             }
@@ -34,7 +39,12 @@
             "methods": [
                 "POST"
             ],
-            "dest": "apps/server/src/index.ts"
+            "dest": "apps/server/src/index.ts",
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            }
         },
         {
             "src": "/api/bot/telegram/bots",
@@ -43,7 +53,12 @@
                 "POST",
                 "OPTIONS"
             ],
-            "dest": "apps/server/src/index.ts"
+            "dest": "apps/server/src/index.ts",
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            }
         },
         {
             "src": "/api/bot/telegram/bots/(.*)",
@@ -53,18 +68,20 @@
                 "DELETE",
                 "OPTIONS"
             ],
-            "dest": "apps/server/src/index.ts"
+            "dest": "apps/server/src/index.ts",
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            }
         },
         {
             "src": "/api/(.*)",
             "dest": "apps/server/src/index.ts"
         },
         {
-            "handle": "filesystem"
-        },
-        {
             "src": "/(.*)",
-            "dest": "/apps/web/dist/index.html"
+            "dest": "apps/web/dist/index.html"
         }
     ]
 }
