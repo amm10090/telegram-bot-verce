@@ -7,144 +7,39 @@
             "use": "@vercel/static-build",
             "config": {
                 "distDir": "dist",
-                "outputFileTracing": true,
                 "zeroConfig": true
             }
         }
     ],
-    "routes": [
-        {
-            "src": "/api/(.*)",
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization"
-            },
-            "continue": true
-        },
-        {
-            "src": "^/static/.*\\.js$",
-            "dest": "/static/$1",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "application/javascript; charset=utf-8"
-            }
-        },
-        {
-            "src": "^/static/.*\\.css$",
-            "dest": "/static/$1",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "text/css; charset=utf-8"
-            }
-        },
-        {
-            "src": "^/static/.*\\.svg$",
-            "dest": "/static/$1",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "image/svg+xml"
-            }
-        },
-        {
-            "src": "^/static/.*\\.png$",
-            "dest": "/static/$1",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "image/png"
-            }
-        },
-        {
-            "src": "^/static/.*\\.jpg$",
-            "dest": "/static/$1",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "image/jpeg"
-            }
-        },
-        {
-            "src": "^/static/.*\\.gif$",
-            "dest": "/static/$1",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "image/gif"
-            }
-        },
-        {
-            "src": "^/static/.*\\.ico$",
-            "dest": "/static/$1",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "image/x-icon"
-            }
-        },
-        {
-            "src": "^/static/.*\\.(woff|woff2)$",
-            "dest": "/static/$1",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "font/woff"
-            }
-        },
-        {
-            "src": "^/static/.*\\.json$",
-            "dest": "/static/$1",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "application/json; charset=utf-8"
-            }
-        },
-        {
-            "src": "^/favicon.ico$",
-            "dest": "/favicon.ico",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "image/x-icon"
-            }
-        },
-        {
-            "src": "^/robots.txt$",
-            "dest": "/robots.txt",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "text/plain; charset=utf-8"
-            }
-        },
-        {
-            "src": "^/manifest.json$",
-            "dest": "/manifest.json",
-            "headers": {
-                "cache-control": "public,max-age=31536000,immutable",
-                "Content-Type": "application/json; charset=utf-8"
-            }
-        },
-        {
-            "handle": "filesystem"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/index.html",
-            "headers": {
-                "cache-control": "public, max-age=0, must-revalidate",
-                "Content-Type": "text/html; charset=utf-8"
-            }
-        }
-    ],
-    "env": {
-        "NODE_ENV": "production",
-        "NEXT_PUBLIC_API_URL": "@next_public_api_url"
-    },
-    "regions": [
-        "iad1"
-    ],
-    "public": false,
     "cleanUrls": true,
     "trailingSlash": false,
-    "github": {
-        "silent": true,
-        "autoJobCancelation": true
-    },
     "headers": [
+        {
+            "source": "/api/(.*)",
+            "headers": [
+                {
+                    "key": "Access-Control-Allow-Origin",
+                    "value": "*"
+                },
+                {
+                    "key": "Access-Control-Allow-Methods",
+                    "value": "GET, POST, PUT, DELETE, OPTIONS"
+                },
+                {
+                    "key": "Access-Control-Allow-Headers",
+                    "value": "Content-Type, Authorization"
+                }
+            ]
+        },
+        {
+            "source": "/static/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        },
         {
             "source": "/(.*)",
             "headers": [
@@ -161,18 +56,26 @@
                     "value": "1; mode=block"
                 },
                 {
-                    "key": "Referrer-Policy",
-                    "value": "strict-origin-when-cross-origin"
-                },
-                {
-                    "key": "Permissions-Policy",
-                    "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
-                },
-                {
                     "key": "Strict-Transport-Security",
                     "value": "max-age=31536000; includeSubDomains"
                 }
             ]
+        }
+    ],
+    "redirects": [
+        {
+            "source": "/api",
+            "destination": "/api/health"
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/api/:path*",
+            "destination": "/api/:path*"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ]
 }
