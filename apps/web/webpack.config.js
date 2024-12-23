@@ -30,19 +30,11 @@ module.exports = (env, argv) => {
         // 输出配置
         output: {
             path: BUILD_DIR,
-            // 在生产环境使用内容哈希来支持长期缓存
-            filename: isProduction
-                ? 'static/js/[name].[contenthash:8].js'
-                : 'static/js/[name].bundle.js',
-            // 块文件名格式
-            chunkFilename: isProduction
-                ? 'static/js/[name].[contenthash:8].chunk.js'
-                : 'static/js/[name].chunk.js',
-            // 资源文件名格式
+            // 修改文件输出结构
+            filename: 'static/js/[name].[contenthash:8].js',
+            chunkFilename: 'static/js/[name].[contenthash:8].chunk.js',
             assetModuleFilename: 'static/media/[name].[hash:8][ext]',
-            // 公共路径，确保在任何路由下资源都能被正确加载
             publicPath: '/',
-            // 每次构建前清理输出目录
             clean: true
         },
 

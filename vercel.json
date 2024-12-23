@@ -16,43 +16,23 @@
     ],
     "routes": [
         {
-            "src": "/api/bot/telegram/validate",
-            "methods": [
-                "POST"
-            ],
+            "src": "/api/(.*)",
             "dest": "apps/server/src/index.ts"
         },
         {
-            "src": "/api/bot/telegram/bots",
-            "methods": [
-                "GET",
-                "POST"
-            ],
-            "dest": "apps/server/src/index.ts"
+            "src": "^/static/(.*)",
+            "dest": "apps/web/dist/static/$1",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable"
+            }
         },
         {
-            "src": "/api/bot/telegram/bots/.",
-            "methods": [
-                "GET",
-                "PUT",
-                "DELETE"
-            ],
-            "dest": "apps/server/src/index.ts"
-        },
-        {
-            "src": "/health",
-            "methods": [
-                "GET"
-            ],
-            "dest": "apps/server/src/index.ts"
-        },
-        {
-            "src": "/api/.",
-            "dest": "apps/server/src/index.ts"
+            "src": "^/(favicon\\.ico|robots\\.txt)",
+            "dest": "apps/web/dist/$1"
         },
         {
             "src": "/(.*)",
-            "dest": "apps/web/$1"
+            "dest": "apps/web/dist/index.html"
         }
     ]
 }
