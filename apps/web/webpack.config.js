@@ -26,16 +26,11 @@ module.exports = (env, argv) => {
 
         // 输出配置
         output: {
-            path: BUILD_DIR,
-            // 设置 chunk 文件的命名规则
-            filename: 'static/js/[name].[contenthash:8].js',
-            // 动态导入的文件命名规则
-            chunkFilename: 'static/js/[name].[contenthash:8].chunk.js',
-            // 静态资源的输出规则
-            assetModuleFilename: 'static/media/[name].[hash:8][ext]',
-            // 确保资源能够被正确访问
+            path: path.resolve(__dirname, 'dist'),
             publicPath: '/',
-            // 构建前清理输出目录
+            filename: 'static/js/[name].[contenthash:8].js',
+            chunkFilename: 'static/js/[name].[contenthash:8].chunk.js',
+            assetModuleFilename: 'static/media/[name].[hash:8][ext]',
             clean: true
         },
 
