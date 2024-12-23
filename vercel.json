@@ -51,8 +51,25 @@
             "dest": "apps/server/src/index.ts"
         },
         {
+            "src": "/static/(.*)",
+            "dest": "apps/web/dist/static/$1",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable"
+            }
+        },
+        {
+            "src": "/(.+\\.[a-zA-Z0-9]{1,10})$",
+            "dest": "apps/web/dist/$1",
+            "headers": {
+                "cache-control": "public,max-age=31536000,immutable"
+            }
+        },
+        {
             "src": "/(.*)",
-            "dest": "apps/web/$1"
+            "dest": "apps/web/dist/index.html",
+            "headers": {
+                "cache-control": "public,max-age=0,must-revalidate"
+            }
         }
     ]
 }
