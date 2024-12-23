@@ -1,5 +1,14 @@
-"use strict";
-import { Router, Request, Response, NextFunction } from 'express';
+// apps/server/src/app/bot/telegram/routes.ts
+
+import {
+    Router,
+    Request,
+    Response,
+    NextFunction,
+    RequestHandler,
+    ErrorRequestHandler
+} from 'express';
+import { IncomingHttpHeaders } from 'http';
 import { validateHandler } from './validate';
 import {
     saveApiKeyHandler,
@@ -7,6 +16,28 @@ import {
     updateBotHandler,
     deleteBotHandler
 } from './save-key';
+
+/**
+ * 扩展基础请求接口
+ * 这个接口扩展了 Express 的 Request 接口，添加了我们需要的额外属性
+ */
+interface ExtendedRequest extends Request {
+    body: any;
+    query: Record<string, any>;
+    params: Record<string, any>;
+    headers: IncomingHttpHeaders & {
+        'x-api-key'?: string;
+    };
+}
+
+/**
+ * 扩展响应接口
+ * 使用泛型参数来支持不同的响应体类型
+ */
+interface ExtendedResponse extends Response {
+    json(body: any): this;
+    status(code: number): this;
+}
 
 /**
  * 创建路由实例
@@ -18,9 +49,9 @@ const router: Router = Router();
  * 请求体验证中间件
  * 确保所有请求都具有正确的 JSON 结构
  */
-const validateRequestBody = (
-    req: Request,
-    res: Response,
+const validateRequestBody: RequestHandler = (
+    req: ExtendedRequest,
+    res: ExtendedResponse,
     next: NextFunction
 ): void => {
     if (!req.body || typeof req.body !== 'object') {
@@ -35,10 +66,11 @@ const validateRequestBody = (
 
 /**
  * API 密钥验证中间件
+ * 验证请求中是否包含有效的 API 密钥
  */
-const validateApiKey = (
-    req: Request,
-    res: Response,
+const validateApiKey: RequestHandler = (
+    req: ExtendedRequest,
+    res: ExtendedResponse,
     next: NextFunction
 ): void => {
     const apiKey = req.headers['x-api-key'];
@@ -54,11 +86,12 @@ const validateApiKey = (
 
 /**
  * 错误处理中间件
+ * 统一处理路由中的错误
  */
-const errorHandler = (
+const errorHandler: ErrorRequestHandler = (
     err: any,
-    req: Request,
-    res: Response,
+    req: ExtendedRequest,
+    res: ExtendedResponse,
     next: NextFunction
 ): void => {
     console.error('路由错误:', {
@@ -77,34 +110,46 @@ const errorHandler = (
     });
 };
 
+/**
+ * 异步处理器包装函数
+ * 用于统一处理异步路由的错误
+ */
+const asyncHandler = (
+    fn: (req: ExtendedRequest, res: ExtendedResponse, next: NextFunction) => Promise<void>
+): RequestHandler => {
+    return (req, res, next) => {
+        Promise.resolve(fn(req as ExtendedRequest, res as ExtendedResponse, next)).catch(next);
+    };
+};
+
 // 配置路由中间件和端点
 try {
     // 应用请求体验证中间件
     router.use(validateRequestBody);
 
     // Bot 相关路由
-    router.post('/validate', (req: Request, res: Response, next: NextFunction) => {
-        validateHandler(req, res).catch(next);
-    });
+    router.post('/validate', asyncHandler(async (req: ExtendedRequest, res: ExtendedResponse) => {
+        await validateHandler(req, res);
+    }));
 
-    router.post('/bots', (req: Request, res: Response, next: NextFunction) => {
-        saveApiKeyHandler(req, res).catch(next);
-    });
+    router.post('/bots', asyncHandler(async (req: ExtendedRequest, res: ExtendedResponse) => {
+        await saveApiKeyHandler(req, res);
+    }));
 
-    router.get('/bots', (req: Request, res: Response, next: NextFunction) => {
-        getAllBotsHandler(req, res).catch(next);
-    });
+    router.get('/bots', asyncHandler(async (req: ExtendedRequest, res: ExtendedResponse) => {
+        await getAllBotsHandler(req, res);
+    }));
 
-    router.put('/bots/:id', (req: Request, res: Response, next: NextFunction) => {
-        updateBotHandler(req, res).catch(next);
-    });
+    router.put('/bots/:id', asyncHandler(async (req: ExtendedRequest, res: ExtendedResponse) => {
+        await updateBotHandler(req, res);
+    }));
 
-    router.delete('/bots/:id', (req: Request, res: Response, next: NextFunction) => {
-        deleteBotHandler(req, res).catch(next);
-    });
+    router.delete('/bots/:id', asyncHandler(async (req: ExtendedRequest, res: ExtendedResponse) => {
+        await deleteBotHandler(req, res);
+    }));
 
     // 处理 404 错误
-    router.use((req: Request, res: Response) => {
+    router.use((req: ExtendedRequest, res: ExtendedResponse) => {
         res.status(404).json({
             ok: false,
             description: '未找到请求的资源'
