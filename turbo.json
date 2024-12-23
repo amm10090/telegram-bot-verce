@@ -9,12 +9,14 @@
         "^build"
       ],
       "outputs": [
-        "dist/**",
-        ".next/**",
-        "!.next/cache/**"
+        "dist/**"
       ],
       "env": [
-        "NEXT_PUBLIC_*",
+        "BOT_TOKEN",
+        "MONGODB_URI",
+        "MONITOR_UPDATE_INTERVAL",
+        "MAX_DURATION",
+        "MONGODB_CONNECTION_LIMIT",
         "NODE_ENV"
       ]
     },
@@ -28,8 +30,7 @@
     "lint": {
       "dependsOn": [
         "^build"
-      ],
-      "outputs": []
+      ]
     },
     "test": {
       "dependsOn": [
@@ -37,22 +38,10 @@
       ],
       "outputs": [
         "coverage/**"
-      ],
-      "env": [
-        "NODE_ENV"
       ]
     },
     "clean": {
-      "cache": false,
-      "outputs": []
-    },
-    "deploy": {
-      "dependsOn": [
-        "build",
-        "test",
-        "lint"
-      ],
-      "outputs": []
+      "cache": false
     }
   }
 }

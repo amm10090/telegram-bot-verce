@@ -4,10 +4,10 @@
     "outputDirectory": "apps/web/dist",
     "builds": [
         {
-            "src": "package.json",
+            "src": "apps/web/package.json",
             "use": "@vercel/static-build",
             "config": {
-                "zeroConfig": true
+                "distDir": "dist"
             }
         }
     ],
@@ -22,6 +22,9 @@
                 "cache-control": "public, max-age=31536000, immutable"
             },
             "dest": "/static/$1"
+        },
+        {
+            "handle": "filesystem"
         },
         {
             "src": "/(.*)",
