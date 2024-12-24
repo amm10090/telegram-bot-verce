@@ -1,26 +1,17 @@
 {
     "version": 2,
+    "buildCommand": "turbo run build --filter=web... --filter=server...",
     "builds": [
         {
             "src": "apps/web/package.json",
             "use": "@vercel/static-build",
             "config": {
-                "buildCommand": "cd apps/web && pnpm install && NODE_ENV=production pnpm run build",
-                "outputDirectory": "apps/web/dist",
-                "distDir": "apps/web/dist",
-                "root": "apps/web",
-                "installCommand": "cd ../.. && pnpm install"
+                "distDir": "dist"
             }
         },
         {
             "src": "apps/server/src/index.ts",
-            "use": "@vercel/node",
-            "config": {
-                "includeFiles": [
-                    "apps/server/dist/**"
-                ],
-                "buildCommand": "cd apps/server && pnpm install && tsc"
-            }
+            "use": "@vercel/node"
         }
     ],
     "routes": [
@@ -80,8 +71,11 @@
             "dest": "apps/server/src/index.ts"
         },
         {
-            "src": "/(.*)",
-            "dest": "apps/web/dist/index.html"
+            "src": "/((?!api/).*)",
+            "dest": "apps/web/$1",
+            "headers": {
+                "Cache-Control": "public, max-age=0, must-revalidate"
+            }
         }
     ]
 }

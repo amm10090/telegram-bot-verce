@@ -63,6 +63,9 @@ importers:
       node-fetch:
         specifier: '2'
         version: 2.6.7
+      qs:
+        specifier: ^6.13.1
+        version: 6.13.1
     devDependencies:
       '@types/express':
         specifier: ^5.0.0
@@ -76,6 +79,9 @@ importers:
       '@types/node-fetch':
         specifier: ^2.6.12
         version: 2.6.12
+      '@types/qs':
+        specifier: ^6.9.17
+        version: 6.9.17
       nodemon:
         specifier: ^3.1.9
         version: 3.1.9
@@ -2829,6 +2835,10 @@ packages:
 
   qs@6.13.0:
     resolution: {integrity: sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==}
+    engines: {node: '>=0.6'}
+
+  qs@6.13.1:
+    resolution: {integrity: sha512-EJPeIn0CYrGu+hli1xilKAPXODtJ12T0sP63Ijx2/khC2JtuaN3JyNIpvmnkmaEtha9ocbG4A4cMcr+TvqvwQg==}
     engines: {node: '>=0.6'}
 
   querystring@0.2.1:
@@ -6204,6 +6214,10 @@ snapshots:
   punycode@2.3.1: {}
 
   qs@6.13.0:
+    dependencies:
+      side-channel: 1.1.0
+
+  qs@6.13.1:
     dependencies:
       side-channel: 1.1.0
 

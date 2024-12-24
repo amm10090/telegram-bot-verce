@@ -1,15 +1,18 @@
 // apps/server/src/index.ts
 
-// 导入必要的依赖和类型
+/**
+ * 核心依赖导入
+ * 包含 Express 框架及其类型定义、中间件和工具库
+ */
 import express, {
-    Express,
-    Request,
-    Response,
+    Application,
     NextFunction,
-    RequestHandler,
-    ErrorRequestHandler
+    Request,
+    Response
 } from 'express';
-import cors, { CorsOptions } from 'cors';
+import { CorsOptions } from 'cors';
+import cors from 'cors';
+import { ExtendedRequest, ExtendedResponse, HttpStatus, Middleware, RequestHandler, ErrorHandler } from './types/express';
 import telegramRoutes from './app/bot/telegram/routes';
 import connectDatabase from './app/config/database';
 import dotenv from 'dotenv';
@@ -17,49 +20,16 @@ import mongoose from 'mongoose';
 import moment from 'moment-timezone';
 import { healthCheckService } from './health-check.service';
 
-// 设置系统默认时区为中国时区
+/**
+ * 时区配置
+ * 将系统默认时区设置为中国时区(UTC+8)，确保整个应用使用统一的时区标准
+ */
 moment.tz.setDefault('Asia/Shanghai');
 
 /**
- * 扩展请求接口，添加我们需要的类型定义
- */
-interface ExtendedRequest extends Request {
-    body: any;
-    query: Record<string, any>;
-    params: Record<string, any>;
-}
-
-/**
- * 扩展响应接口，确保支持链式调用
- */
-interface ExtendedResponse extends Response {
-    json(body: any): this;
-    status(code: number): this;
-}
-
-/**
- * 数据库状态接口
- * 用于监控和报告数据库连接状态
- */
-interface DbStatus {
-    status: string;      // 连接状态的英文描述
-    description: string; // 连接状态的中文描述
-}
-
-/**
- * 完整数据库状态接口
- * 扩展基本状态，包含更多详细信息
- */
-interface FullDbStatus extends DbStatus {
-    host: string;            // 数据库主机地址
-    name: string;            // 数据库名称
-    lastConnectedTime: string; // 最后连接时间
-}
-
-/**
  * 格式化时间为中国时区
- * @param date 需要格式化的日期，默认为当前时间
- * @returns 格式化后的时间字符串
+ * @param date 待格式化的日期，默认为当前时间
+ * @returns 格式化后的时间字符串，包含时区信息
  */
 const formatChineseTime = (date: Date = new Date()): string => {
     return moment(date)
@@ -69,8 +39,8 @@ const formatChineseTime = (date: Date = new Date()): string => {
 
 /**
  * 格式化运行时间
- * @param seconds 运行的秒数
- * @returns 格式化后的运行时间字符串
+ * @param seconds 运行的总秒数
+ * @returns 人类可读的运行时间格式
  */
 const formatUptime = (seconds: number): string => {
     const days = Math.floor(seconds / (24 * 60 * 60));
@@ -88,11 +58,19 @@ const formatUptime = (seconds: number): string => {
 };
 
 /**
- * 获取数据库连接状态
- * @returns 数据库状态信息
+ * 数据库状态信息接口定义
  */
-const getDbStatus = (): DbStatus => {
-    const statusMap: Record<number, DbStatus> = {
+interface StatusInfo {
+    status: string;
+    description: string;
+}
+
+/**
+ * 获取数据库连接状态
+ * @returns 数据库当前状态信息
+ */
+const getDbStatus = (): StatusInfo => {
+    const statusMap: Record<number, StatusInfo> = {
         [mongoose.ConnectionStates.disconnected]: {
             status: 'disconnected',
             description: '连接已断开'
@@ -120,9 +98,9 @@ const getDbStatus = (): DbStatus => {
 
 /**
  * 获取完整的数据库状态信息
- * @returns 完整的数据库状态信息
+ * @returns 包含连接状态、主机信息和最后连接时间的详细状态
  */
-const getFullDbStatus = (): FullDbStatus => {
+const getFullDbStatus = () => {
     const basicStatus = getDbStatus();
     return {
         ...basicStatus,
@@ -138,11 +116,11 @@ const getFullDbStatus = (): FullDbStatus => {
 dotenv.config();
 
 // 创建 Express 应用实例
-const app: Express = express();
+const app: Application = express();
 
 /**
- * 配置 CORS 选项
- * 定义允许的源、方法和头部
+ * CORS 配置选项
+ * 定义允许的源、HTTP 方法和请求头
  */
 const corsOptions: CorsOptions = {
     origin: ['http://localhost:3000', 'http://localhost:8080'],
@@ -152,44 +130,46 @@ const corsOptions: CorsOptions = {
 };
 
 // 配置全局中间件
-app.use(cors(corsOptions));
-app.use(express.json());
+app.use(cors(corsOptions) as unknown as Middleware);
+app.use(express.json() as unknown as Middleware);
 
 /**
  * 请求日志中间件
- * 记录所有请求的时间和路径
+ * 记录所有进入的 HTTP 请求的方法和路径
  */
 const requestLogger: RequestHandler = (
     req: ExtendedRequest,
     res: ExtendedResponse,
     next: NextFunction
 ): void => {
-    const method = req.method || 'UNKNOWN';
-    const path = (req as any).path || 'UNKNOWN';
-    console.log(`[${formatChineseTime()}] ${method} ${path}`);
+    const requestMethod = req.method;
+    const requestPath = req.originalUrl || req.url;
+    console.log(`[${formatChineseTime()}] ${requestMethod} ${requestPath}`);
     next();
 };
 
-app.use(requestLogger);
+// 应用请求日志中间件
+app.use(requestLogger as unknown as Middleware);
 
 /**
- * 健康检查路由处理器
- * 提供系统状态监控接口
+ * 健康检查处理器
+ * 提供系统的健康状态信息，包括数据库连接状态
  */
 const healthCheckHandler: RequestHandler = async (
     req: ExtendedRequest,
-    res: ExtendedResponse
+    res: ExtendedResponse,
+    next: NextFunction
 ): Promise<void> => {
     try {
         const healthStatus = await healthCheckService.getFullHealthStatus();
-        const statusCode = healthStatus.status === 'healthy' ? 200
-            : healthStatus.status === 'degraded' ? 200
-                : 503;
+        const statusCode = healthStatus.status === 'healthy' ? HttpStatus.OK
+            : healthStatus.status === 'degraded' ? HttpStatus.OK
+                : HttpStatus.INTERNAL_SERVER_ERROR;
 
         res.status(statusCode).json(healthStatus);
     } catch (error) {
         console.error('健康检查失败:', error);
-        res.status(500).json({
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
             status: 'error',
             timestamp: moment().tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss.SSS [GMT+8]'),
             error: '健康检查执行失败'
@@ -197,36 +177,34 @@ const healthCheckHandler: RequestHandler = async (
     }
 };
 
-// 注册健康检查路由
-app.get('/health', healthCheckHandler);
-
-// 注册 Telegram bot 相关路由
+// 注册路由
+app.get('/health', healthCheckHandler as unknown as RequestHandler);
 app.use('/api/bot/telegram', telegramRoutes);
 
 /**
  * 全局错误处理中间件
- * 统一处理未捕获的错误
+ * 统一处理未被捕获的错误，提供适当的错误响应
  */
-const errorHandler: ErrorRequestHandler = (
-    err: Error,
+const errorHandler: ErrorHandler = (
+    error: Error,
     req: ExtendedRequest,
     res: ExtendedResponse,
     next: NextFunction
 ): void => {
-    console.error('全局错误:', err);
-    res.status(500).json({
-        ok: false,
+    console.error('全局错误:', error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
         description: process.env.NODE_ENV === 'production'
             ? '服务器内部错误'
-            : err.message
+            : error.message
     });
 };
 
 // 注册错误处理中间件
-app.use(errorHandler);
+app.use(errorHandler as unknown as ErrorHandler);
 
 // 获取服务器端口配置
-const port: number = Number(process.env.PORT) || 3000;
+const port = Number(process.env.PORT) || 3000;
 
 /**
  * 启动服务器和数据库连接
@@ -256,7 +234,7 @@ const startServer = async (): Promise<void> => {
 };
 
 // 启动服务器
-startServer();
+void startServer().catch(console.error);
 
 // 导出应用实例（用于测试和其他模块引用）
 export default app;
