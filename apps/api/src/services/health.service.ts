@@ -63,19 +63,19 @@ export class HealthService {
       memory: this.getMemoryUsage(),
       environment: env.NODE_ENV,
       version: process.env.npm_package_version || '1.0.0',
-      routes: this.getRoutes()
+      routes: this.getRoutes(),
     };
   }
 
   // 路由监控中间件
   monitorRoute(router: Router): void {
-    router.stack.forEach(layer => {
+    router.stack.forEach((layer) => {
       if (layer.route) {
         const path = layer.route.path;
-        const methods = Object.keys(layer.route).filter(key => 
+        const methods = Object.keys(layer.route).filter((key) =>
           ['get', 'post', 'put', 'delete', 'patch'].includes(key)
         );
-        methods.forEach(method => {
+        methods.forEach((method) => {
           this.registerRoute(method, path);
         });
       }
@@ -83,4 +83,4 @@ export class HealthService {
   }
 }
 
-export const healthService = new HealthService(); 
+export const healthService = new HealthService();

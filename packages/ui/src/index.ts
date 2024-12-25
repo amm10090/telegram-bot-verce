@@ -16,4 +16,4 @@ export * from "./components/tabs";
 export * from "./components/textarea";
 export * from "./components/toast";
 export * from "./components/toaster";
-export * from "./hooks/use-toast"; 
+export * from "./hooks/use-toast";

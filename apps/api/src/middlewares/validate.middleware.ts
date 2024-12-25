@@ -1,11 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
-import { validationResult, ValidationChain, body, param, query } from 'express-validator';
+import {
+  validationResult,
+  ValidationChain,
+  param,
+  query,
+} from 'express-validator';
 import { ResponseUtils } from '../utils/response.utils';
 
 export const validate = (validations: ValidationChain[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     // 执行所有验证
-    await Promise.all(validations.map(validation => validation.run(req)));
+    await Promise.all(validations.map((validation) => validation.run(req)));
 
     // 获取验证结果
     const errors = validationResult(req);
@@ -14,10 +19,10 @@ export const validate = (validations: ValidationChain[]) => {
     }
 
     // 格式化错误信息
-    const formattedErrors = errors.array().map(error => ({
+    const formattedErrors = errors.array().map((error) => ({
       field: error.type === 'field' ? error.path : undefined,
       message: error.msg,
-      value: error.type === 'field' ? error.value : undefined
+      value: error.type === 'field' ? error.value : undefined,
     }));
 
     // 返回验证错误响应
@@ -42,24 +47,17 @@ export const validatePagination = [
     .toInt(),
 
   // 排序字段验证
-  query('sortBy')
-    .optional()
-    .isString()
-    .withMessage('排序字段必须是字符串'),
+  query('sortBy').optional().isString().withMessage('排序字段必须是字符串'),
 
   // 排序方向验证
   query('sortOrder')
     .optional()
     .isIn(['asc', 'desc'])
-    .withMessage('排序方向必须是 asc 或 desc')
+    .withMessage('排序方向必须是 asc 或 desc'),
 ];
 
 // 通用的ID参数验证
-export const validateId = [
-  param('id')
-    .isMongoId()
-    .withMessage('无效的ID格式')
-];
+export const validateId = [param('id').isMongoId().withMessage('无效的ID格式')];
 
 // 通用的搜索参数验证
 export const validateSearch = [
@@ -68,5 +66,5 @@ export const validateSearch = [
     .isString()
     .trim()
     .isLength({ min: 1 })
-    .withMessage('搜索关键词不能为空')
-]; 
+    .withMessage('搜索关键词不能为空'),
+];

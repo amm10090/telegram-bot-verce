@@ -29,10 +29,7 @@ export const createBotValidation = [
     .isLength({ max: 500 })
     .withMessage('描述不能超过500个字符'),
 
-  body('settings')
-    .optional()
-    .isObject()
-    .withMessage('settings必须是一个对象'),
+  body('settings').optional().isObject().withMessage('settings必须是一个对象'),
 
   body('settings.allowGroups')
     .optional()
@@ -75,7 +72,7 @@ export const createBotValidation = [
     .notEmpty()
     .withMessage('命令响应不能为空')
     .isLength({ max: 1000 })
-    .withMessage('命令响应不能超过1000个字符')
+    .withMessage('命令响应不能超过1000个字符'),
 ];
 
 export const updateBotValidation = [
@@ -93,20 +90,16 @@ export const updateBotValidation = [
     .isLength({ max: 500 })
     .withMessage('描述不能超过500个字符'),
 
-  body('isEnabled')
-    .optional()
-    .isBoolean()
-    .withMessage('isEnabled必须是布尔值'),
+  body('isEnabled').optional().isBoolean().withMessage('isEnabled必须是布尔值'),
 
-  body('settings')
-    .optional()
-    .isObject()
-    .withMessage('settings必须是一个对象'),
+  body('settings').optional().isObject().withMessage('settings必须是一个对象'),
 
   // 复用settings相关的验证规则
-  ...createBotValidation.filter(validation => 
-    (validation as any).fields && (validation as any).fields[0].startsWith('settings.')
-  )
+  ...createBotValidation.filter(
+    (validation) =>
+      (validation as any).fields &&
+      (validation as any).fields[0].startsWith('settings.')
+  ),
 ];
 
 export const validateWebhookConfig = [
@@ -117,10 +110,7 @@ export const validateWebhookConfig = [
     .isURL()
     .withMessage('无效的URL格式'),
 
-  body('certificate')
-    .optional()
-    .isString()
-    .withMessage('证书必须是字符串格式'),
+  body('certificate').optional().isString().withMessage('证书必须是字符串格式'),
 
   body('maxConnections')
     .optional()
@@ -143,12 +133,12 @@ export const validateWebhookConfig = [
         'shipping_query',
         'pre_checkout_query',
         'poll',
-        'poll_answer'
+        'poll_answer',
       ];
-      
+
       if (!value.every((update: string) => validUpdates.includes(update))) {
         throw new Error('包含��效的更新类型');
       }
       return true;
-    })
-]; 
+    }),
+];

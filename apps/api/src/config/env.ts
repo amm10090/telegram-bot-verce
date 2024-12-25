@@ -18,7 +18,8 @@ interface EnvConfig {
 export const env: EnvConfig = {
   NODE_ENV: (process.env.NODE_ENV as EnvConfig['NODE_ENV']) || 'development',
   PORT: parseInt(process.env.PORT || '3000', 10),
-  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/telegram-bot',
+  MONGODB_URI:
+    process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/telegram-bot',
   API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:3000',
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:8080',
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
@@ -36,7 +37,9 @@ function validateEnv(config: EnvConfig) {
 
   // 端口号验证
   if (isNaN(config.PORT) || config.PORT <= 0 || config.PORT > 65535) {
-    throw new Error(`Invalid PORT: ${config.PORT}. Must be between 1 and 65535`);
+    throw new Error(
+      `Invalid PORT: ${config.PORT}. Must be between 1 and 65535`
+    );
   }
 
   // URL 格式验证
@@ -51,4 +54,4 @@ function validateEnv(config: EnvConfig) {
 }
 
 // 验证并导出环境配置
-export default validateEnv(env); 
+export default validateEnv(env);

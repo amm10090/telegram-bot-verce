@@ -86,4 +86,4 @@ export interface PaginatedApiResponse<T = any> extends ApiResponse<T> {
   total: number;
   page: number;
   pageSize: number;
-} 
+}

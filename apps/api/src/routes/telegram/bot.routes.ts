@@ -4,7 +4,7 @@ import { validate } from '../../middlewares/validate.middleware';
 import {
   createBotValidation,
   updateBotValidation,
-  validateWebhookConfig
+  validateWebhookConfig,
 } from '../../validations/bot.validation';
 
 const router = Router();
@@ -20,7 +20,11 @@ router.get('/:id', botController.getBot);
 router.post('/validate', botController.validateToken);
 
 // Webhook管理路由
-router.post('/:id/webhook', validate(validateWebhookConfig), botController.setWebhook);
+router.post(
+  '/:id/webhook',
+  validate(validateWebhookConfig),
+  botController.setWebhook
+);
 router.delete('/:id/webhook', botController.deleteWebhook);
 
-export const botRoutes = router; 
+export const botRoutes = router;

@@ -6,13 +6,9 @@ import {
   BotUpdateData,
   BotQueryParams,
   BotValidationResult,
-  BotWebhookConfig
+  BotWebhookConfig,
 } from '../../types/bot.types';
-import {
-  NotFoundError,
-  ValidationError,
-  TelegramError
-} from '../../utils/error.utils';
+import { NotFoundError } from '../../utils/error.utils';
 
 export class BotService {
   /**
@@ -35,8 +31,8 @@ export class BotService {
           allowChannels: true,
           commandPrefix: '/',
           customCommands: [],
-          ...data.settings
-        }
+          ...data.settings,
+        },
       });
 
       // 保存Bot记录
@@ -78,7 +74,7 @@ export class BotService {
       if (data.settings) {
         bot.settings = {
           ...bot.settings,
-          ...data.settings
+          ...data.settings,
         };
       }
 
@@ -127,7 +123,7 @@ export class BotService {
         page = 1,
         pageSize = 10,
         sortBy = 'createdAt',
-        sortOrder = 'desc'
+        sortOrder = 'desc',
       } = params;
 
       // 构建查询条件
@@ -136,7 +132,7 @@ export class BotService {
       if (search) {
         query.$or = [
           { name: { $regex: search, $options: 'i' } },
-          { username: { $regex: search, $options: 'i' } }
+          { username: { $regex: search, $options: 'i' } },
         ];
       }
 
@@ -151,7 +147,7 @@ export class BotService {
         bots,
         total,
         page,
-        pageSize
+        pageSize,
       };
     } catch (error) {
       logger.error('获取Bot列表失败:', error);
@@ -219,17 +215,17 @@ export class BotService {
       const botInfo = await telegramService.validateToken(token);
       return {
         isValid: true,
-        botInfo
+        botInfo,
       };
     } catch (error) {
       logger.error('Token验证失败:', error);
       return {
         isValid: false,
-        error: error instanceof Error ? error.message : '验证失败'
+        error: error instanceof Error ? error.message : '验证失败',
       };
     }
   }
 }
 
 // 导出单例实例
-export const botService = new BotService(); 
+export const botService = new BotService();

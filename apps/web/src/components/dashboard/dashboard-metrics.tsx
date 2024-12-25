@@ -1,8 +1,8 @@
 // src/components/dashboard-metrics.tsx
-import { Card, CardContent, CardHeader, CardTitle } from "@telegram-bot/ui"
-import { Users, MessageCircle, Bot, AlertTriangle } from 'lucide-react'
-import { useIntl } from "react-intl"
-import React from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@telegram-bot/ui";
+import { Users, MessageCircle, Bot, AlertTriangle } from "lucide-react";
+import { useIntl } from "react-intl";
+import React from "react";
 
 // 定义指标数据的类型接口
 interface MetricInfo {
@@ -11,7 +11,7 @@ interface MetricInfo {
   icon: React.ElementType;
   isPercentage?: boolean;
   trend?: {
-    direction: 'up' | 'down';
+    direction: "up" | "down";
     value: number;
   };
   color?: string;
@@ -21,28 +21,32 @@ interface MetricInfo {
  * 趋势指标组件
  * 用于展示指标的增长或下降趋势
  */
-const TrendIndicator = ({ 
-  direction, 
+const TrendIndicator = ({
+  direction,
   value,
-  className = "" 
-}: { 
-  direction: 'up' | 'down';
+  className = "",
+}: {
+  direction: "up" | "down";
   value: number;
   className?: string;
 }) => {
-  const isPositive = direction === 'up';
-  const textColor = isPositive ? 'text-green-500' : 'text-red-500';
-  
+  const isPositive = direction === "up";
+  const textColor = isPositive ? "text-green-500" : "text-red-500";
+
   return (
-    <span className={`
+    <span
+      className={`
       inline-flex items-center
       ${textColor}
       text-xs sm:text-sm
       font-medium
       ${className}
-    `}>
+    `}
+    >
       <svg
-        className={`w-3 h-3 sm:w-4 sm:h-4 mr-1 ${isPositive ? '' : 'transform rotate-180'}`}
+        className={`w-3 h-3 sm:w-4 sm:h-4 mr-1 ${
+          isPositive ? "" : "transform rotate-180"
+        }`}
         fill="none"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -68,9 +72,9 @@ const getMetricInfo = (intl: any): MetricInfo[] => [
     icon: Users,
     color: "blue",
     trend: {
-      direction: 'up',
-      value: 2.5
-    }
+      direction: "up",
+      value: 2.5,
+    },
   },
   {
     id: "messages",
@@ -78,9 +82,9 @@ const getMetricInfo = (intl: any): MetricInfo[] => [
     icon: MessageCircle,
     color: "green",
     trend: {
-      direction: 'up',
-      value: 3.2
-    }
+      direction: "up",
+      value: 3.2,
+    },
   },
   {
     id: "activeBots",
@@ -88,9 +92,9 @@ const getMetricInfo = (intl: any): MetricInfo[] => [
     icon: Bot,
     color: "purple",
     trend: {
-      direction: 'down',
-      value: 1.1
-    }
+      direction: "down",
+      value: 1.1,
+    },
   },
   {
     id: "errorRate",
@@ -99,10 +103,10 @@ const getMetricInfo = (intl: any): MetricInfo[] => [
     color: "red",
     isPercentage: true,
     trend: {
-      direction: 'down',
-      value: 0.8
-    }
-  }
+      direction: "down",
+      value: 0.8,
+    },
+  },
 ];
 
 /**
@@ -121,15 +125,15 @@ export default function DashboardMetrics() {
    */
   const formatValue = (value: number, isPercentage?: boolean) => {
     if (isPercentage) {
-      return intl.formatNumber(value, { 
-        style: 'percent',
+      return intl.formatNumber(value, {
+        style: "percent",
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
     }
     return intl.formatNumber(value, {
-      notation: value > 9999 ? 'compact' : 'standard',
-      maximumFractionDigits: 1
+      notation: value > 9999 ? "compact" : "standard",
+      maximumFractionDigits: 1,
     });
   };
 
@@ -137,27 +141,31 @@ export default function DashboardMetrics() {
    * 获取颜色样式的辅助函数
    * 根据指标类型返回对应的渐变颜色类
    */
-  const getColorClasses = (color: string = 'blue') => {
+  const getColorClasses = (color: string = "blue") => {
     const colors = {
-      blue: 'from-blue-500/10 via-blue-500/5 to-transparent hover:from-blue-500/20',
-      green: 'from-green-500/10 via-green-500/5 to-transparent hover:from-green-500/20',
-      purple: 'from-purple-500/10 via-purple-500/5 to-transparent hover:from-purple-500/20',
-      red: 'from-red-500/10 via-red-500/5 to-transparent hover:from-red-500/20',
+      blue: "from-blue-500/10 via-blue-500/5 to-transparent hover:from-blue-500/20",
+      green:
+        "from-green-500/10 via-green-500/5 to-transparent hover:from-green-500/20",
+      purple:
+        "from-purple-500/10 via-purple-500/5 to-transparent hover:from-purple-500/20",
+      red: "from-red-500/10 via-red-500/5 to-transparent hover:from-red-500/20",
     };
     return colors[color as keyof typeof colors] || colors.blue;
   };
 
   return (
     // 指标卡片网格容器
-    <div className="
+    <div
+      className="
       grid
       gap-4
       grid-cols-1 sm:grid-cols-2 lg:grid-cols-4
       auto-rows-fr
-    ">
+    "
+    >
       {/* 遍历渲染指标卡片 */}
       {metrics.map((metric) => (
-        <Card 
+        <Card
           key={metric.id}
           className="
             relative
@@ -171,12 +179,14 @@ export default function DashboardMetrics() {
           "
         >
           {/* 背景渐变效果 */}
-          <div className={`
+          <div
+            className={`
             absolute inset-0
             bg-gradient-to-br
             ${getColorClasses(metric.color)}
             transition-all duration-300
-          `} />
+          `}
+          />
 
           {/* 卡片内容 */}
           <div className="relative z-10">
@@ -199,13 +209,13 @@ export default function DashboardMetrics() {
                 {/* 描述和趋势 */}
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
-                    {intl.formatMessage({ 
-                      id: `dashboard.metrics.${metric.id}.description` 
+                    {intl.formatMessage({
+                      id: `dashboard.metrics.${metric.id}.description`,
                     })}
                   </p>
                   {metric.trend && (
-                    <TrendIndicator 
-                      direction={metric.trend.direction} 
+                    <TrendIndicator
+                      direction={metric.trend.direction}
                       value={metric.trend.value}
                       className="flex-shrink-0"
                     />

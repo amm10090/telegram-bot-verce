@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -12,11 +12,11 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus } from 'lucide-react'
-import { useIntl } from 'react-intl'
+} from "@tanstack/react-table";
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus } from "lucide-react";
+import { useIntl } from "react-intl";
 
-import { 
+import {
   Button,
   Checkbox,
   DropdownMenu,
@@ -33,15 +33,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Badge
-} from "@telegram-bot/ui"
+  Badge,
+} from "@telegram-bot/ui";
 
 interface Bot {
-  id: string
-  name: string
-  token: string
-  status: "active" | "inactive"
-  createdAt: string
+  id: string;
+  name: string;
+  token: string;
+  status: "active" | "inactive";
+  createdAt: string;
 }
 
 const data: Bot[] = [
@@ -59,7 +59,7 @@ const data: Bot[] = [
     status: "inactive",
     createdAt: "2023-02-15",
   },
-]
+];
 
 export default function BotManagementTable() {
   const intl = useIntl();
@@ -95,7 +95,7 @@ export default function BotManagementTable() {
             {intl.formatMessage({ id: "bots.table.name" })}
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
-        )
+        );
       },
       cell: ({ row }) => <div>{row.getValue("name")}</div>,
     },
@@ -103,34 +103,34 @@ export default function BotManagementTable() {
       accessorKey: "status",
       header: () => intl.formatMessage({ id: "bots.table.status" }),
       cell: ({ row }) => {
-        const status = row.getValue("status") as string
+        const status = row.getValue("status") as string;
         return (
           <Badge variant={status === "active" ? "default" : "secondary"}>
-            {intl.formatMessage({ 
-              id: `dashboard.botStatus.status.${status}` 
+            {intl.formatMessage({
+              id: `dashboard.botStatus.status.${status}`,
             })}
           </Badge>
-        )
+        );
       },
     },
     {
       accessorKey: "createdAt",
       header: () => intl.formatMessage({ id: "bots.table.createdAt" }),
       cell: ({ row }) => {
-        const date = new Date(row.getValue("createdAt"))
+        const date = new Date(row.getValue("createdAt"));
         const formattedDate = intl.formatDate(date, {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-        return <div>{formattedDate}</div>
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        return <div>{formattedDate}</div>;
       },
     },
     {
       id: "actions",
       header: () => intl.formatMessage({ id: "bots.table.actions" }),
       cell: ({ row }) => {
-        const bot = row.original
+        const bot = row.original;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -145,7 +145,9 @@ export default function BotManagementTable() {
               <DropdownMenuLabel>
                 {intl.formatMessage({ id: "bots.table.actions" })}
               </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(bot.token)}>
+              <DropdownMenuItem
+                onClick={() => navigator.clipboard.writeText(bot.token)}
+              >
                 {intl.formatMessage({ id: "bots.table.copyToken" })}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -160,15 +162,18 @@ export default function BotManagementTable() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        )
+        );
       },
     },
-  ]
+  ];
 
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
     data,
@@ -187,7 +192,7 @@ export default function BotManagementTable() {
       columnVisibility,
       rowSelection,
     },
-  })
+  });
 
   return (
     <div className="w-full">
@@ -232,14 +237,20 @@ export default function BotManagementTable() {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   {intl.formatMessage({ id: "bots.table.noResults" })}
                 </TableCell>
               </TableRow>
@@ -251,9 +262,9 @@ export default function BotManagementTable() {
         <div className="flex-1 text-sm text-muted-foreground">
           {intl.formatMessage(
             { id: "bots.table.selected" },
-            { 
+            {
               count: table.getFilteredSelectedRowModel().rows.length,
-              total: table.getFilteredRowModel().rows.length
+              total: table.getFilteredRowModel().rows.length,
             }
           )}
         </div>
@@ -277,5 +288,5 @@ export default function BotManagementTable() {
         </div>
       </div>
     </div>
-  )
+  );
 }

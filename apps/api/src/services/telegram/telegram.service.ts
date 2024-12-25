@@ -1,5 +1,4 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
 import { TelegramError } from '../../utils/error.utils';
 import { BotInfo, BotWebhookConfig } from '../../types/bot.types';
@@ -23,7 +22,7 @@ export class TelegramService {
         id: me.id.toString(),
         name: me.first_name,
         username: me.username,
-        description: undefined // Telegram API 不直接提供描述
+        description: undefined, // Telegram API 不直接提供描述
       };
     } catch (error) {
       logger.error('Token验证失败:', error);
@@ -34,10 +33,13 @@ export class TelegramService {
   /**
    * 初始化Bot实例
    */
-  async initializeBot(token: string, useWebhook: boolean = false): Promise<TelegramBot> {
+  async initializeBot(
+    token: string,
+    useWebhook: boolean = false
+  ): Promise<TelegramBot> {
     try {
       const options: TelegramBot.ConstructorOptions = {
-        polling: !useWebhook
+        polling: !useWebhook,
       };
 
       const bot = new TelegramBot(token, options);
@@ -63,7 +65,7 @@ export class TelegramService {
       await bot.setWebHook(config.url, {
         certificate: config.certificate,
         max_connections: config.maxConnections,
-        allowed_updates: config.allowedUpdates
+        allowed_updates: config.allowedUpdates,
       });
       return true;
     } catch (error) {
@@ -131,7 +133,12 @@ export class TelegramService {
   /**
    * 发送消息
    */
-  async sendMessage(token: string, chatId: number | string, text: string, options?: TelegramBot.SendMessageOptions): Promise<TelegramBot.Message> {
+  async sendMessage(
+    token: string,
+    chatId: number | string,
+    text: string,
+    options?: TelegramBot.SendMessageOptions
+  ): Promise<TelegramBot.Message> {
     try {
       const bot = this.getBot(token);
       return await bot.sendMessage(chatId, text, options);
@@ -152,7 +159,7 @@ export class TelegramService {
         id: me.id.toString(),
         name: me.first_name,
         username: me.username,
-        description: undefined
+        description: undefined,
       };
     } catch (error) {
       logger.error('获取Bot信息失败:', error);
@@ -162,4 +169,4 @@ export class TelegramService {
 }
 
 // 导出单例实例
-export const telegramService = new TelegramService(); 
+export const telegramService = new TelegramService();

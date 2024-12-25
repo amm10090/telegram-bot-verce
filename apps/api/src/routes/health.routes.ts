@@ -19,7 +19,7 @@ router.get('/ping', (req, res) => {
   ResponseUtils.success(res, {
     status: 'ok',
     message: 'pong',
-    responseTime: `${responseTime.toFixed(2)}ms`
+    responseTime: `${responseTime.toFixed(2)}ms`,
   });
 });
 
@@ -27,7 +27,7 @@ router.get('/ping', (req, res) => {
 router.get('/database', async (req, res) => {
   const isConnected = await healthService.checkDatabase();
   ResponseUtils.success(res, {
-    status: isConnected ? 'connected' : 'disconnected'
+    status: isConnected ? 'connected' : 'disconnected',
   });
 });
 
@@ -41,16 +41,16 @@ router.get('/metrics', (req, res) => {
     memory: {
       heapUsed: `${(memory.heapUsed / 1024 / 1024).toFixed(2)} MB`,
       heapTotal: `${(memory.heapTotal / 1024 / 1024).toFixed(2)} MB`,
-      rss: `${(memory.rss / 1024 / 1024).toFixed(2)} MB`
-    }
+      rss: `${(memory.rss / 1024 / 1024).toFixed(2)} MB`,
+    },
   });
 });
 
 // 路由列表
 router.get('/routes', (req, res) => {
   ResponseUtils.success(res, {
-    routes: healthService.getRoutes()
+    routes: healthService.getRoutes(),
   });
 });
 
-export const healthRoutes = router; 
+export const healthRoutes = router;

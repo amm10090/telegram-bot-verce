@@ -1,14 +1,23 @@
 import { Request, Response, NextFunction } from 'express';
 import { botService } from '../../services/telegram/bot.service';
 import { ResponseUtils } from '../../utils/response.utils';
-import { BotQueryParams, BotCreateData, BotUpdateData, BotWebhookConfig, Bot } from '../../types/bot.types';
-import { logger } from '../../utils/logger';
+import {
+  BotQueryParams,
+  BotCreateData,
+  BotUpdateData,
+  BotWebhookConfig,
+  Bot,
+} from '../../types/bot.types';
 
 export class BotController {
   /**
    * 创建新的Bot
    */
-  async createBot(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async createBot(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const botData: BotCreateData = req.body;
       const bot = await botService.createBot(botData);
@@ -21,7 +30,11 @@ export class BotController {
   /**
    * 更新Bot信息
    */
-  async updateBot(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updateBot(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const { id } = req.params;
       const updateData: BotUpdateData = req.body;
@@ -35,7 +48,11 @@ export class BotController {
   /**
    * 删除Bot
    */
-  async deleteBot(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async deleteBot(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const { id } = req.params;
       await botService.deleteBot(id);
@@ -48,15 +65,23 @@ export class BotController {
   /**
    * 获取Bot列表
    */
-  async getBots(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getBots(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const queryParams: BotQueryParams = {
         status: req.query.status as 'active' | 'inactive',
         search: req.query.search as string,
-        page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
-        pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string, 10) : undefined,
+        page: req.query.page
+          ? parseInt(req.query.page as string, 10)
+          : undefined,
+        pageSize: req.query.pageSize
+          ? parseInt(req.query.pageSize as string, 10)
+          : undefined,
         sortBy: req.query.sortBy as keyof Bot | undefined,
-        sortOrder: req.query.sortOrder as 'asc' | 'desc'
+        sortOrder: req.query.sortOrder as 'asc' | 'desc',
       };
 
       const result = await botService.getBots(queryParams);
@@ -82,7 +107,11 @@ export class BotController {
   /**
    * 验证Bot Token
    */
-  async validateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async validateToken(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const { token } = req.body;
       const result = await botService.validateToken(token);
@@ -95,7 +124,11 @@ export class BotController {
   /**
    * 设置Bot的Webhook
    */
-  async setWebhook(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async setWebhook(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const { id } = req.params;
       const webhookConfig: BotWebhookConfig = req.body;
@@ -109,7 +142,11 @@ export class BotController {
   /**
    * 删除Bot的Webhook
    */
-  async deleteWebhook(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async deleteWebhook(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const { id } = req.params;
       const success = await botService.deleteWebhook(id);
@@ -121,4 +158,4 @@ export class BotController {
 }
 
 // 导出单例实例
-export const botController = new BotController(); 
+export const botController = new BotController();

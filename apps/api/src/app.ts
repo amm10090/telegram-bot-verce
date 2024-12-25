@@ -33,28 +33,35 @@ healthService.monitorRoute(healthRoutes);
 
 // 404处理
 app.use((req, res) => {
-  ResponseUtils.notFound(res, '请求的资源不存在');
+  ResponseUtils.notFound(res, '请��的资源不存在');
 });
 
 // 错误处理
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error('未捕获的错误:', err);
+app.use(
+  (
+    err: any,
+    req: express.Request,
+    res: express.Response,
+    _next: express.NextFunction
+  ) => {
+    logger.error('未捕获的错误:', err);
 
-  if (err.name === 'ValidationError') {
-    return ResponseUtils.badRequest(res, err.message);
-  }
-  if (err.name === 'UnauthorizedError') {
-    return ResponseUtils.unauthorized(res, err.message);
-  }
-  if (err.name === 'ForbiddenError') {
-    return ResponseUtils.forbidden(res, err.message);
-  }
-  if (err.name === 'NotFoundError') {
-    return ResponseUtils.notFound(res, err.message);
-  }
+    if (err.name === 'ValidationError') {
+      return ResponseUtils.badRequest(res, err.message);
+    }
+    if (err.name === 'UnauthorizedError') {
+      return ResponseUtils.unauthorized(res, err.message);
+    }
+    if (err.name === 'ForbiddenError') {
+      return ResponseUtils.forbidden(res, err.message);
+    }
+    if (err.name === 'NotFoundError') {
+      return ResponseUtils.notFound(res, err.message);
+    }
 
-  return ResponseUtils.internalError(res, '服务器内部错误', err);
-});
+    return ResponseUtils.internalError(res, '服务器内部错误', err);
+  }
+);
 
 // 启动服务器
 const startServer = async () => {
@@ -82,11 +89,10 @@ const startServer = async () => {
 
     process.on('SIGTERM', gracefulShutdown);
     process.on('SIGINT', gracefulShutdown);
-
   } catch (error) {
     logger.error('服务器启动失败:', error);
     process.exit(1);
   }
 };
 
-startServer(); 
+startServer();
