@@ -7,19 +7,14 @@ import NotificationPreferences from "@/components/settings/notification-preferen
 import ApiKeysManagement from "@/components/settings/api-keys-management";
 import SystemPreferences from "@/components/settings/system-preferences";
 import SecuritySettings from "@/components/settings/security-settings";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ToastProvider } from "@/components/ui/toast"
-import { Toaster } from "@/components/ui/toaster"  // 添加 Toaster 组件
-
-function SettingsLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ToastProvider>
-      {children}
-      <Toaster /> {/* Toaster 组件用于实际渲染 toast 通知 */}
-    </ToastProvider>
-  );
-}
-
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle,
+  ToastProvider,
+  Toaster
+} from "@telegram-bot/ui";
 
 function SettingsContent() {
   const intl = useIntl();
@@ -72,42 +67,42 @@ function SettingsContent() {
           </Card>
         </section>
 
-{/* API密钥和通知设置区域 - 优化响应式布局 */}
-<section className="space-y-4">
-  <h2 className="text-2xl font-semibold tracking-tight">
-    {intl.formatMessage({ id: 'settings.section.integrations' })}
-  </h2>
-  {/* 修改网格容器的样式 */}
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    {/* API密钥管理卡片 - 优化内部布局 */}
-    <div className="min-w-0"> {/* 添加 min-w-0 防止子元素溢出 */}
-      <Card>
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-xl">
-            {intl.formatMessage({ id: 'settings.apiKeys.title' })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ApiKeysManagement />
-        </CardContent>
-      </Card>
-    </div>
+        {/* API密钥和通知设置区域 - 优化响应式布局 */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold tracking-tight">
+            {intl.formatMessage({ id: 'settings.section.integrations' })}
+          </h2>
+          {/* 修改网格容器的样式 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* API密钥管理卡片 - 优化内部布局 */}
+            <div className="min-w-0"> {/* 添加 min-w-0 防止子元素溢出 */}
+              <Card>
+                <CardHeader className="space-y-1">
+                  <CardTitle className="text-xl">
+                    {intl.formatMessage({ id: 'settings.apiKeys.title' })}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ApiKeysManagement />
+                </CardContent>
+              </Card>
+            </div>
 
-    {/* 通知设置卡片 - 优化内部布局 */}
-    <div className="min-w-0"> {/* 添加 min-w-0 防止子元素溢出 */}
-      <Card>
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-xl">
-            {intl.formatMessage({ id: 'settings.notifications.title' })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <NotificationPreferences />
-        </CardContent>
-      </Card>
-    </div>
-  </div>
-</section>
+            {/* 通知设置卡片 - 优化内部布局 */}
+            <div className="min-w-0"> {/* 添加 min-w-0 防止子元素溢出 */}
+              <Card>
+                <CardHeader className="space-y-1">
+                  <CardTitle className="text-xl">
+                    {intl.formatMessage({ id: 'settings.notifications.title' })}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <NotificationPreferences />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
 
         {/* 系统偏好设置区域 */}
         <section className="space-y-4">
@@ -133,8 +128,9 @@ function SettingsContent() {
 // 导出组合后的设置页面组件
 export default function SettingsPage() {
   return (
-    <SettingsLayout>
+    <ToastProvider>
       <SettingsContent />
-    </SettingsLayout>
+      <Toaster />
+    </ToastProvider>
   );
 }

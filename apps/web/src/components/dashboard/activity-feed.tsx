@@ -1,6 +1,5 @@
 // src/components/activity-feed.tsx
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, ScrollArea } from "@telegram-bot/ui"
 import { useIntl } from "react-intl"
 import React from "react"
 

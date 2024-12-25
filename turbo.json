@@ -9,7 +9,9 @@
         "^build"
       ],
       "outputs": [
-        "dist/**"
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**"
       ],
       "env": [
         "BOT_TOKEN",
@@ -30,7 +32,8 @@
     "lint": {
       "dependsOn": [
         "^build"
-      ]
+      ],
+      "outputs": ["lint-results/**"]
     },
     "test": {
       "dependsOn": [
@@ -42,6 +45,18 @@
     },
     "clean": {
       "cache": false
+    },
+    "type-check": {
+      "cache": true,
+      "dependsOn": []
+    },
+    "deploy": {
+      "dependsOn": [
+        "build",
+        "test",
+        "lint"
+      ],
+      "outputs": []
     }
   }
 }

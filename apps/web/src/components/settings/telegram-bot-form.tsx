@@ -18,10 +18,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+  Input,
+  Button,
+  useToast
+} from "@telegram-bot/ui";
 
 /**
  * 组件的 Props 接口定义

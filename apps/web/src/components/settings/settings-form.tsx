@@ -4,7 +4,7 @@
 
 import { useState } from "react"
 import { useIntl } from 'react-intl';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@telegram-bot/ui"
 import UserProfile from "./user-profile"
 import NotificationPreferences from "./notification-preferences"
 import ApiKeysManagement from "./api-keys-management"

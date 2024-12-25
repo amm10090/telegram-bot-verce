@@ -5,9 +5,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useIntl } from 'react-intl'
-import { useState } from "react" // 添加 useState 导入
-import { Button } from "@/components/ui/button"
-import {
+import { useState } from "react"
+import { 
+  Button,
   Form,
   FormControl,
   FormDescription,
@@ -15,10 +15,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Toast } from "@/components/ui/toast"  // 修改为 Toast 组件
+  Input,
+  Textarea,
+  Toast
+} from "@telegram-bot/ui"
 import React from "react"
 
 // 定义表单验证模式

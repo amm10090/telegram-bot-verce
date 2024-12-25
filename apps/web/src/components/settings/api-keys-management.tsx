@@ -25,28 +25,21 @@ import {
   AlertCircle 
 } from 'lucide-react'
 import { useIntl } from 'react-intl'
-import { useToast } from "@/hooks/use-toast"
-
-// 导入UI组件
-import { Button } from "@/components/ui/button"
-import {
+import { 
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import {
+  Input,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -54,19 +47,16 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@/components/ui/dialog"
-import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@/components/ui/alert"
+  useToast
+} from "@telegram-bot/ui"
 
 // 导入Bot表单组件和相关服务
 import { TelegramBotForm } from "./telegram-bot-form"

@@ -1,6 +1,5 @@
 // src/components/bot-status-overview.tsx
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from "@telegram-bot/ui"
 import { Bot, CheckCircle, XCircle, Users, MessageCircle } from 'lucide-react'
 import { useIntl } from "react-intl"
 import React from "react"

@@ -206,7 +206,7 @@ class ApiClient {
         };
     }
 
-    // 实现带有指数退避的重试机制
+    // 实现带有指数��的重试机制
     private async retryWithBackoff<T>(
         operation: () => Promise<T>,
         retryCount: number = ApiConfig.RETRY_COUNT
@@ -250,8 +250,9 @@ export class TelegramBotService {
     private readonly logger: Console;
 
     constructor() {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-        this.client = new ApiClient(`${baseUrl}/api/bot/telegram`);
+        // 使用 NEXT_PUBLIC_ 前缀的环境变量
+        const baseUrl = '/api/bot/telegram';
+        this.client = new ApiClient(baseUrl);
         this.logger = console;
     }
 
@@ -429,7 +430,7 @@ export class TelegramBotService {
     ): response is ApiResponse<RawBotData[]> {
         // 首先检查基本的响应结构
         if (!response || typeof response !== 'object') {
-            this.logger.warn('响应不是一个有效的对象');
+            this.logger.warn('响应不是一个效的对象');
             return false;
         }
 

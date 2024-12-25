@@ -1,5 +1,5 @@
 // src/components/message-volume-chart.tsx
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@telegram-bot/ui"
 import { useIntl } from "react-intl"
 import React, { useState, useCallback, useMemo } from "react"
 import { 
@@ -179,7 +179,7 @@ export default function MessageVolumeChart() {
               axisLine={false}
               tickFormatter={formatValue}
               domain={[
-                minValue - valueRange * 0.1, // 下限留出10%空间
+                minValue - valueRange * 0.1, // 下限留出10%空���
                 maxValue + valueRange * 0.1  // 上限留出10%空间
               ]}
             />

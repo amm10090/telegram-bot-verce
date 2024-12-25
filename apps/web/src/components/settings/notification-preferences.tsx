@@ -6,9 +6,9 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useIntl } from 'react-intl'
 import React, { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
+import { 
+  Button,
+  Checkbox,
   Form,
   FormControl,
   FormDescription,
@@ -16,16 +16,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Card } from "@/components/ui/card"
-import {
+  Card,
   Toast,
   ToastProvider,
   ToastTitle,
   ToastDescription,
   ToastViewport,
-} from "@/components/ui/toast"
-import { useToast } from "@/hooks/use-toast" // 导入 useToast hook
+  useToast
+} from "@telegram-bot/ui"
 
 // Zod 验证模式和类型定义保持不变...
 const notificationsFormSchema = z.object({

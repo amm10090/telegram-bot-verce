@@ -12,20 +12,41 @@
         "build": "turbo run build",
         "lint": "turbo run lint",
         "test": "turbo run test",
-        "clean": "turbo run clean",
+        "clean": "turbo run clean && pnpm -r exec rm -rf node_modules && rm -rf node_modules",
+        "type-check": "turbo run type-check",
+        "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+        "prepare": "husky install",
         "dev:web": "turbo run dev --filter=@telegram-bot/web",
-        "build:web": "turbo run build --filter=@telegram-bot/Web",
-        "lint:web": "turbo run lint --filter=@telegram-bot/Web",
-        "tree:web": "treee -I \"node_modules\" -L 6 -d ./ > web.md"
+        "build:web": "turbo run build --filter=@telegram-bot/web",
+        "lint:web": "turbo run lint --filter=@telegram-bot/web",
+        "tree:web": "treee -I \"node_modules\" -L 6 -d ./ > web.md",
+        "preinstall": "npx only-allow pnpm"
     },
     "devDependencies": {
-        "husky": "^8.0.3",
-        "prettier": "^2.8.8",
-        "tree-cli": "^0.6.7",
-        "turbo": "^2.3.3",
-        "typescript": "^5.0.0"
+        "@commitlint/cli": "18.4.3",
+        "@commitlint/config-conventional": "18.4.3",
+        "eslint": "8.56.0",
+        "husky": "8.0.3",
+        "lint-staged": "15.2.0",
+        "prettier": "2.8.8",
+        "tree-cli": "0.6.7",
+        "turbo": "1.11.2",
+        "typescript": "5.3.3"
     },
     "dependencies": {
-        "tree-node-cli": "^1.6.0"
+        "tree-node-cli": "1.6.0"
+    },
+    "lint-staged": {
+        "*.{js,jsx,ts,tsx}": [
+            "prettier --write",
+            "eslint --fix"
+        ],
+        "*.{json,md}": [
+            "prettier --write"
+        ]
+    },
+    "engines": {
+        "node": ">=18.0.0",
+        "pnpm": ">=9.0.0"
     }
 }

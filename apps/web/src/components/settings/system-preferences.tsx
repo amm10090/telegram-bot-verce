@@ -6,8 +6,8 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useIntl } from 'react-intl'
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import {
+import { 
+  Button,
   Form,
   FormControl,
   FormDescription,
@@ -15,16 +15,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Toast } from "@/components/ui/toast"
+  Switch,
+  Toast
+} from "@telegram-bot/ui"
 import React from "react"
 
 // 使用Zod定义系统设置的验证模式

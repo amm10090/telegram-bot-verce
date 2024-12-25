@@ -1,5 +1,5 @@
 // src/components/dashboard-metrics.tsx
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@telegram-bot/ui"
 import { Users, MessageCircle, Bot, AlertTriangle } from 'lucide-react'
 import { useIntl } from "react-intl"
 import React from "react"

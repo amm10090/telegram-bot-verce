@@ -7,8 +7,8 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useIntl } from 'react-intl'
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import {
+import { 
+  Button,
   Form,
   FormControl,
   FormDescription,
@@ -16,10 +16,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Toast } from "@/components/ui/toast"
+  Input,
+  Switch,
+  Toast
+} from "@telegram-bot/ui"
 import React from "react"
 
 // 定义安全设置表单的验证模式
