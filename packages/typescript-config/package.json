@@ -1,9 +1,9 @@
 {
-  "name": "@telegram-bot/typescript-config",
-  "version": "0.0.1",
+  "name": "@workspace/typescript-config",
+  "version": "0.0.0",
   "private": true,
-  "files": [
-    "base.json",
-    "react-library.json"
-  ]
+  "license": "PROPRIETARY",
+  "publishConfig": {
+    "access": "public"
+  }
 }

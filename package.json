@@ -1,55 +1,22 @@
 {
-  "name": "telegram-bot-app",
-  "version": "1.0.0",
+  "name": "shadcn-ui-monorepo",
+  "version": "0.0.1",
   "private": true,
-  "packageManager": "pnpm@9.15.0",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "clean": "turbo run clean && pnpm -r exec rm -rf node_modules && rm -rf node_modules",
-    "type-check": "turbo run type-check",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
-    "prepare": "husky install",
-    "dev:web": "turbo run dev --filter=@telegram-bot/web",
-    "build:web": "turbo run build --filter=@telegram-bot/web",
-    "lint:web": "turbo run lint --filter=@telegram-bot/web",
-    "tree:web": "treee -I \"node_modules\" -L 6 -d ./ > web.md",
-    "preinstall": "npx only-allow pnpm"
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
-    "@commitlint/cli": "18.4.3",
-    "@commitlint/config-conventional": "18.4.3",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "eslint": "8.57.1",
-    "eslint-plugin-react": "7.33.2",
-    "husky": "8.0.3",
-    "lint-staged": "15.2.0",
-    "prettier": "2.8.8",
-    "tree-cli": "0.6.7",
-    "turbo": "1.11.2",
-    "typescript": "5.3.3"
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "prettier": "^3.2.5",
+    "turbo": "^2.3.0",
+    "typescript": "5.5.4"
   },
-  "dependencies": {
-    "tree-node-cli": "1.6.0"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "prettier --write",
-      "eslint --fix"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
-    ]
-  },
+  "packageManager": "pnpm@9.12.3",
   "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=20"
   }
 }
