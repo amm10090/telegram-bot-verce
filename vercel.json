@@ -13,5 +13,10 @@
   "ignoreCommand": "git diff HEAD^ HEAD --quiet ./apps/web/",
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
   }
 } 
