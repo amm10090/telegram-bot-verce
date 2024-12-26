@@ -10,7 +10,7 @@
       "v1": false
     }
   },
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet ./apps/web/",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet",
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
   },
