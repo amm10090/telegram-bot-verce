@@ -117,7 +117,7 @@ export default function NotificationPreferences() {
 
   return (
     <Card className="min-w-0">
-      <Form {...form}>
+      <Form {...form as any}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-3">
             {/* 通讯邮件选项 */}
