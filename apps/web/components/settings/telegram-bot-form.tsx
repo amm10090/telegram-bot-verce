@@ -28,8 +28,8 @@ import { useToast } from "@workspace/ui/hooks/use-toast";
  * 现在使用新的 Bot 类型替换原来的 ApiKey 类型
  */
 interface TelegramBotFormProps {
-  initialData?: Bot | null; // 使用新的 Bot 类型
-  onSuccess: (botData: Bot) => void; // 回调函数也使用新的 Bot 类型
+  initialData?: Bot;
+  onSuccess: (data: Bot) => void;
 }
 
 /**
@@ -80,7 +80,12 @@ export function TelegramBotForm({
   // 初始化表单
   const form = useForm<TelegramBotFormValues>({
     resolver: zodResolver(telegramBotFormSchema),
-    defaultValues,
+    defaultValues: {
+      botName: initialData?.name || "",
+      apiKey: initialData?.apiKey || "",
+      description: initialData?.description || "",
+    },
+    shouldUnregister: false
   });
 
   /**
@@ -122,7 +127,7 @@ export function TelegramBotForm({
         // 显示成功提示
         toast({
           title: initialData ? "更新成功" : "添加成功",
-          description: `Bot ${data.botName} 已成功${
+          description: `Bot ${data.botName} 已成���${
             initialData ? "更新" : "添加"
           }！`,
         });
@@ -153,11 +158,11 @@ export function TelegramBotForm({
 
   // 渲染表单界面
   return (
-    <Form {...form}>
+    <div>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Bot名称输入字段 */}
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="botName"
           render={({ field }) => (
             <FormItem>
@@ -179,7 +184,7 @@ export function TelegramBotForm({
 
         {/* API密钥输入字段 */}
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="apiKey"
           render={({ field }) => (
             <FormItem>
@@ -202,7 +207,7 @@ export function TelegramBotForm({
 
         {/* 描述输入字段（可选） */}
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="description"
           render={({ field }) => (
             <FormItem>
@@ -229,6 +234,6 @@ export function TelegramBotForm({
             : (initialData ? "更新" : "添加") + " Telegram Bot"}
         </Button>
       </form>
-    </Form>
+    </div>
   );
 }

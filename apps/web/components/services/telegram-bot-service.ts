@@ -8,7 +8,9 @@ import {
     Bot,
     RawBotData,
     EnhancedBotData,
-    BotCreateUpdateData
+    BotCreateUpdateData,
+    BotApiResponse,
+    BotListResponse
 } from '../../types/bot';
 
 // API配置常量，使用 const enum 提升性能
@@ -29,7 +31,7 @@ const enum ErrorType {
     UNKNOWN = 'UNKNOWN'      // 未知错误：其他未分类错误
 }
 
-// HTTP状态码映射，用于统一状态码处理
+// HTTP状态码映射，用于统一状态码���理
 const enum HttpStatus {
     OK = 200,               // 请求成功
     BAD_REQUEST = 400,      // 请求参数错误
@@ -206,7 +208,7 @@ class ApiClient {
         };
     }
 
-    // 实现带有指数��的重试机制
+    // 实现带有指数重试机制
     private async retryWithBackoff<T>(
         operation: () => Promise<T>,
         retryCount: number = ApiConfig.RETRY_COUNT
@@ -244,7 +246,7 @@ class ApiClient {
     }
 }
 
-// Telegram Bot服务类，处理所有Bot相关的业务逻辑
+// Telegram Bot服务类，理所有Bot相关的业务逻辑
 export class TelegramBotService {
     private readonly client: ApiClient;
     private readonly logger: Console;
@@ -285,7 +287,7 @@ export class TelegramBotService {
             sortOrder?: 'asc' | 'desc';
         },
         signal?: AbortSignal
-    ): Promise<PaginatedApiResponse<Bot[]>> {
+    ): Promise<BotListResponse> {
         try {
             const defaultParams = {
                 page: 1,
@@ -307,7 +309,7 @@ export class TelegramBotService {
             });
 
             // 发送请求获取Bot列表
-            const response = await this.client.request<ApiResponse<RawBotData[]>>(
+            const response = await this.client.request<RawBotData[]>(
                 `/bots?${queryParams.toString()}`,
                 'GET',
                 undefined,
@@ -340,7 +342,7 @@ export class TelegramBotService {
             }
 
             // 确保 response.data 是数组
-            const rawBots = Array.isArray(response.data) ? response.data : [];
+            const rawBots: RawBotData[] = Array.isArray(response.data) ? response.data : [];
 
             // 处理数据转换
             const processedBots = await Promise.all(
@@ -427,10 +429,10 @@ export class TelegramBotService {
     // 私有辅助方法
     private isValidBotResponse(
         response: any
-    ): response is ApiResponse<RawBotData[]> {
+    ): response is ApiResponse<Bot[]> {
         // 首先检查基本的响应结构
         if (!response || typeof response !== 'object') {
-            this.logger.warn('响应不是一个效的对象');
+            this.logger.warn('响���不是一个效的对象');
             return false;
         }
 
@@ -455,7 +457,7 @@ export class TelegramBotService {
         if (!Array.isArray(response.data)) {
             // 尝试检查是否是嵌套的数据结构
             if (response.data.data && Array.isArray(response.data.data)) {
-                response.data = response.data.data; // 重新赋值到正确的结构
+                response.data = response.data.data; // 新赋值到正确的结构
                 return true;
             }
             this.logger.warn('data 字段不是数组');
@@ -469,7 +471,7 @@ export class TelegramBotService {
     private isValidRawBotData(data: any): data is RawBotData {
         return (
             data &&
-            typeof data._id === 'string' &&
+            (typeof data._id === 'string' || typeof data.id === 'string') &&
             typeof data.name === 'string' &&
             typeof data.apiKey === 'string' &&
             typeof data.isEnabled === 'boolean'

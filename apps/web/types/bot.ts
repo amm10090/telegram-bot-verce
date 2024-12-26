@@ -7,7 +7,7 @@
  */
 export interface ApiResponse<T = any> {
     success: boolean;        // 请求是否成功
-    data?: T;               // 响应数据
+    data: T;               // 响应数据
     message?: string;       // 消息提示
     error?: any;           // 错误详情
     errorCode?: string;    // 业务错误代码
@@ -39,6 +39,7 @@ export interface Bot {
     status: 'active' | 'inactive'; // Bot状态
     createdAt: string;            // 创建时间
     lastUsed?: string;            // 最后使用时间，可选
+    description?: string;         // Bot描述，可选
 }
 
 /**
@@ -104,6 +105,22 @@ export interface TableBot extends Bot {
  * Bot的API响应格式
  * 专门用于处理Bot相关的API响应
  */
-export interface BotListResponse extends ApiResponse<RawBotData[]> {
-    // 继承自ApiResponse，但指定data为RawBotData数组
+export interface BotApiResponse<T = RawBotData[]> extends ApiResponse<T> {
+    success: boolean;
+    data: T;
+    message?: string;
+    error?: any;
+    total?: number;
+    page?: number;
+    pageSize?: number;
+}
+
+/**
+ * Bot的列表响应格式
+ */
+export interface BotListResponse extends Omit<PaginatedApiResponse<Bot[]>, 'data'> {
+    data: Bot[];
+    total: number;
+    page: number;
+    pageSize: number;
 }

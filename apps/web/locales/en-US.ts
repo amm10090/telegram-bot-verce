@@ -497,4 +497,34 @@ export default {
   "common.hide": "Hide",
   "common.enable": "Enable",
   "common.disable": "Disable",
+
+  // Bot Configuration Page
+  "bots.configuration.title": "Bot Configuration",
+  "bots.configuration.description": "Manage your bot features and settings",
+  
+  // Feature Cards
+  "bots.features.menu.title": "Menu Settings",
+  "bots.features.menu.description": "Configure bot commands and responses",
+  
+  "bots.features.keywords.title": "Keyword Replies",
+  "bots.features.keywords.description": "Set up auto-reply rules and triggers",
+  
+  "bots.features.users.title": "User Management",
+  "bots.features.users.description": "View and manage user TGID information",
+  
+  "bots.features.settings.title": "Basic Settings",
+  "bots.features.settings.description": "Configure basic bot parameters and behavior",
+  
+  // Quick Start Guide
+  "bots.quickStart.title": "Quick Start",
+  "bots.quickStart.description": "Follow these steps to start configuring your bot",
+  
+  "bots.quickStart.step1.title": "Set Up Menu Commands",
+  "bots.quickStart.step1.description": "Configure basic command menu for easy user interaction",
+  
+  "bots.quickStart.step2.title": "Configure Keywords",
+  "bots.quickStart.step2.description": "Add keyword trigger rules for automated responses",
+  
+  "bots.quickStart.step3.title": "Manage Users",
+  "bots.quickStart.step3.description": "View user list, manage permissions and interaction data",
 } as const;

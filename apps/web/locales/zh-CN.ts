@@ -139,7 +139,7 @@ const zhCN = {
   "common.show": "显示",
   "common.hide": "隐藏",
   "common.enable": "启用",
-  "common.disable": "禁用",
+  "common.disable": "��用",
   "common.searchPlaceholder": "搜索...",
 
   // 通用状态
@@ -182,7 +182,7 @@ const zhCN = {
 
   // 确认对话框
   "dialog.confirm.title": "确认",
-  "dialog.confirm.message": "确定要继���吗？",
+  "dialog.confirm.message": "确定要继续吗？",
   "dialog.confirm.ok": "确定",
   "dialog.confirm.cancel": "取消",
 
@@ -214,8 +214,8 @@ const zhCN = {
   "bots.table.menu.delete": "删除",
   "bots.table.menu.restart": "重启",
   "bots.table.menu.stop": "停止",
-  "bots.table.menu.logs": "查看日志",
-  "bots.table.menu.settings": "设��",
+  "bots.table.menu.logs": "查看���志",
+  "bots.table.menu.settings": "设置",
 
   // 设置页面
   "settings.title": "设置",
@@ -244,7 +244,7 @@ const zhCN = {
   "settings.profile.email.description": "我们将使用此邮箱发送重要通知",
   "settings.profile.bio": "个人简介",
   "settings.profile.bio.placeholder": "介绍一下您自己",
-  "settings.profile.bio.description": "您可以使用 @ 提及其他用户和组织",
+  "settings.profile.bio.description": "您可以使用 @ ��及其他用户和组织",
   "settings.profile.button.update": "更新个人资料",
 
   // 通知设置
@@ -371,7 +371,33 @@ const zhCN = {
   // 设置页面标题
   "settings.apiKeys.title": "API 密钥管理",
   "settings.notifications.title": "通知设置",
-
+  "bots.configuration.title": "机器人配置",
+  "bots.configuration.description": "管理您的机器人功能和设置",
+  
+  "bots.features.menu.title": "菜单设置",
+  "bots.features.menu.description": "配置机器人的命令菜单和响应",
+  
+  "bots.features.keywords.title": "关键词回复",
+  "bots.features.keywords.description": "设置自动回复规则和触发条件",
+  
+  "bots.features.users.title": "用户管理",
+  "bots.features.users.description": "查看和管理用户 TGID 信息",
+  
+  "bots.features.settings.title": "基础设置",
+  "bots.features.settings.description": "配置机器人的基本参数和行为",
+  
+  "bots.quickStart.title": "快速入门",
+  "bots.quickStart.description": "按照以下步骤开始配置您的机器人",
+  
+  "bots.quickStart.step1.title": "设置菜单命令",
+  "bots.quickStart.step1.description": "配置机器人的基本命令菜单，让用户可以轻松使用",
+  
+  "bots.quickStart.step2.title": "配置关键词",
+  "bots.quickStart.step2.description": "添加关键词触发规则，实现自动回复功能",
+  
+  "bots.quickStart.step3.title": "管理用户",
+  "bots.quickStart.step3.description": "查看用户列表，管理用户权限和互动数据"
+  
 } as const;
 
 export default zhCN; 

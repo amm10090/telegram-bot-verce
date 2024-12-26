@@ -1,6 +1,8 @@
 "use client"
 
+// 导入必要的 React 和 类型定义
 import * as React from "react"
+import type { ReactNode } from "react"
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -12,7 +14,11 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  Row,
+  Table as TableInstance,
 } from "@tanstack/react-table"
+
+// 导入图标组件
 import { 
   ArrowUpDown, 
   ChevronDown, 
@@ -24,7 +30,11 @@ import {
   Check,
   AlertCircle 
 } from 'lucide-react'
+
+// 导入国际化工具
 import { useIntl } from 'react-intl'
+
+// 导入 UI 组件
 import { Button } from "@workspace/ui/components/button"
 import {
   DropdownMenu,
@@ -66,25 +76,24 @@ import {
 } from "@workspace/ui/components/alert"
 import { useToast } from "@workspace/ui/hooks/use-toast"
 
-// 导入Bot表单组件和相关服务
+// 导入自定义组件和服务
 import { TelegramBotForm } from "./telegram-bot-form"
 import { telegramBotService } from '../services/telegram-bot-service'
-import type { Bot,RawBotData  } from '../../types/bot'
+import type { Bot, RawBotData, TableBot } from '../../types/bot'
 
-// 表格数据接口定义,扩展Bot类型添加表格显示所需的字段
-interface TableBot extends Bot {
-  type: 'telegram' | 'other'
-}
+// 将原始Bot数据转换为表格显示所需的格式
+const convertBotToTableData = (bot: Bot | RawBotData): TableBot => ({
+  id: '_id' in bot ? bot._id : bot.id,
+  name: bot.name,
+  apiKey: bot.apiKey,
+  isEnabled: bot.isEnabled,
+  status: bot.status as 'active' | 'inactive' || (bot.isEnabled ? 'active' : 'inactive'),
+  createdAt: bot.createdAt,
+  lastUsed: bot.lastUsed,
+  type: 'telegram' as const,
+})
 
-// 将Bot数据转换为表格数据的函数
-const convertBotToTableData = (bot: Bot): TableBot => {
-  return {
-    ...bot,
-    type: 'telegram', // 所有Bot都是Telegram类型
-  }
-}
-
-// 创建表格列配置的函数
+// 创建表格列配置函数
 function createColumns(
   intl: ReturnType<typeof useIntl>,
   copyKey: (key: string) => Promise<void>,
@@ -92,7 +101,7 @@ function createColumns(
   handleDeleteBot: (id: string) => void
 ): ColumnDef<TableBot>[] {
   return [
-    // 名称列
+    // 名称列配置
     {
       accessorKey: "name",
       header: ({ column }) => (
@@ -122,7 +131,7 @@ function createColumns(
         </div>
       ),
     },
-    // API密钥列
+    // API密钥列配置
     {
       accessorKey: "apiKey",
       header: () => intl.formatMessage({ id: "apiKeys.table.key" }),
@@ -146,7 +155,7 @@ function createColumns(
         )
       },
     },
-    // 类型列
+    // Bot类型列配置
     {
       accessorKey: "type",
       header: () => intl.formatMessage({ id: "apiKeys.table.type" }),
@@ -159,7 +168,7 @@ function createColumns(
         )
       },
     },
-    // 最后使用时间列
+    // 最后使用时间列配置
     {
       accessorKey: "lastUsed",
       header: () => intl.formatMessage({ id: "apiKeys.table.lastUsed" }),
@@ -180,7 +189,7 @@ function createColumns(
         )
       },
     },
-    // 操作列
+    // 操作列配置
     {
       id: "actions",
       cell: ({ row }) => {
@@ -231,8 +240,9 @@ function createColumns(
   ]
 }
 
-// 主组件
+// 主组件定义
 export default function ApiKeysManagement() {
+  // 初始化 hooks
   const intl = useIntl()
   const { toast } = useToast()
   
@@ -245,7 +255,7 @@ export default function ApiKeysManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false)
 
-  // 表格状态
+  // 表格状态管理
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -273,9 +283,18 @@ export default function ApiKeysManagement() {
   }
 
   // 处理添加新Bot
-  const handleAddBot = async (newBot: Bot) => {
+  const handleAddBot = async (botData: Bot) => {
     try {
-      // 转换为表格数据格式
+      const newBot = {
+        _id: botData.id,
+        name: botData.name,
+        apiKey: botData.apiKey,
+        isEnabled: botData.isEnabled,
+        status: botData.status,
+        createdAt: botData.createdAt,
+        lastUsed: botData.lastUsed
+      } as RawBotData;
+      
       const tableBot = convertBotToTableData(newBot)
       setBots(prevBots => [...prevBots, tableBot])
       setIsAddDialogOpen(false)
@@ -291,12 +310,22 @@ export default function ApiKeysManagement() {
     }
   }
 
-  // 处理更新Bot
-  const handleUpdateBot = async (updatedBot: Bot) => {
+  // 处理��新Bot
+  const handleUpdateBot = async (botData: Bot) => {
     try {
+      const updatedBot = {
+        _id: botData.id,
+        name: botData.name,
+        apiKey: botData.apiKey,
+        isEnabled: botData.isEnabled,
+        status: botData.status,
+        createdAt: botData.createdAt,
+        lastUsed: botData.lastUsed
+      } as RawBotData;
+      
       const tableBot = convertBotToTableData(updatedBot)
       setBots(prevBots => prevBots.map(bot => 
-        bot.id === updatedBot.id ? tableBot : bot
+        bot.id === tableBot.id ? tableBot : bot
       ))
       setIsEditDialogOpen(false)
       toast({
@@ -329,14 +358,14 @@ export default function ApiKeysManagement() {
     }
   }
 
-  // 初始化表格配置
+  // 初始化表格列配置
   const columns = React.useMemo(
     () => createColumns(intl, copyKey, openEditDialog, handleDeleteBot),
     [intl]
   )
 
   // 配置表格实例
-  const table = useReactTable({
+  const table: TableInstance<TableBot> = useReactTable({
     data: bots,
     columns,
     onSortingChange: setSorting,
@@ -353,70 +382,161 @@ export default function ApiKeysManagement() {
     },
   })
 
-// 获取Bot列表数据
-// 获取Bot列表数据
-React.useEffect(() => {
-  const fetchBots = async () => {
-    try {
-      setLoading(true)
-      console.log('开始获取Bot列表数据...')
-      
-      const response = await telegramBotService.getAllBots()
-      console.log('API响应数据:', response)
-      
-      if (response.success && Array.isArray(response.data)) {
-        console.log('获取到的Bot数组:', response.data)
+  // 获取Bot列表数据
+  React.useEffect(() => {
+    const fetchBots = async () => {
+      try {
+        setLoading(true)
+        const response = await telegramBotService.getAllBots()
         
-        // 确保响应数据符合RawBotData类型
-        const rawBots = response.data as unknown as RawBotData[]
-        
-        // 第一步：转换原始数据为Bot类型
-        const botsData: Bot[] = rawBots.map((rawBot) => {
-          // 规范化状态字段
-          const normalizedStatus = (() => {
-            if (rawBot.status === 'active' || rawBot.status === 'inactive') {
-              return rawBot.status as 'active' | 'inactive'
-            }
-            return rawBot.isEnabled ? 'active' as const : 'inactive' as const
-          })()
-
-          // 创建符合Bot接口的对象
-          return {
-            id: rawBot._id,
-            name: rawBot.name,
-            apiKey: rawBot.apiKey,
-            isEnabled: rawBot.isEnabled,
-            status: normalizedStatus,  // 使用规范化后的状态
-            createdAt: rawBot.createdAt,
-            lastUsed: rawBot.lastUsed
-          }
-        })
-
-        // 第二步：转换Bot类型为TableBot类型
-        const tableBots: TableBot[] = botsData.map(bot => convertBotToTableData(bot))
-        
-        console.log('转换后的表格数据:', tableBots)
-        setBots(tableBots)
-        setError(null)
-      } else {
-        console.error('获取到的数据格式不正确:', response.data)
-        setError(intl.formatMessage({ id: "apiKeys.error.invalidData" }))
+        if (response.success && Array.isArray(response.data)) {
+          const tableBots = response.data.map(convertBotToTableData)
+          setBots(tableBots)
+          setError(null)
+        } else {
+          setError(intl.formatMessage({ id: "apiKeys.error.invalidData" }))
+        }
+      } catch (err) {
+        console.error('数据获取错误:', err)
+        setError(intl.formatMessage({ id: "apiKeys.error.fetch" }))
+      } finally {
+        setLoading(false)
       }
-    } catch (err) {
-      console.error('获取数据异常:', err)
-      setError(intl.formatMessage({ id: "apiKeys.error.fetch" }))
-    } finally {
-      setLoading(false)
     }
-  }
 
-  fetchBots()
-}, [intl])
+    fetchBots()
+  }, [intl])
 
+  // 处理表格筛选
   const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     table.getColumn("name")?.setFilterValue(event.target.value)
   }
 
+  // 渲染表格头部
+  const renderTableHeader = () => (
+    <TableHeader>
+      {table.getHeaderGroups().map((headerGroup) => (
+        <TableRow key={headerGroup.id}>
+          {headerGroup.headers.map((header) => (
+            <TableHead key={header.id}>
+              {header.isPlaceholder ? null : (
+                <div>
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                </div>
+              )}
+            </TableHead>
+          ))}
+        </TableRow>
+      ))}
+    </TableHeader>
+  )
+
+  // 渲染表格主体
+  const renderTableBody = () => (
+    <TableBody>
+      {loading ? (
+        // 加载状态显示
+        <TableRow>
+          <TableCell colSpan={columns.length} className="h-24 text-center">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+              <span>{intl.formatMessage({ id: "common.loading" })}</span>
+            </div>
+          </TableCell>
+        </TableRow>
+      ) : table.getRowModel().rows?.length ? (
+        // 数据行渲染
+        table.getRowModel().rows.map((row) => (
+          <TableRow
+            key={row.id}
+            data-state={row.getIsSelected() && "selected"}
+            className="group hover:bg-muted/50 transition-colors"
+          >
+            {row.getVisibleCells().map((cell) => (
+              <TableCell key={cell.id}>
+                <div>
+                  {flexRender(
+                    cell.column.columnDef.cell,
+                    cell.getContext()
+                  )}
+                </div>
+              </TableCell>
+            ))}
+          </TableRow>
+        ))
+      ) : (
+        // 空数据状态显示
+        <TableRow>
+          <TableCell colSpan={columns.length} className="h-24 text-center">
+            <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
+              <div className="rounded-full border p-3">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <div>
+                {table.getColumn("name")?.getFilterValue()
+                  ? intl.formatMessage({ id: "apiKeys.table.noResults" })
+                  : intl.formatMessage({ id: "apiKeys.table.empty" })}
+              </div>
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
+    </TableBody>
+  )
+
+  // 渲染分页控件
+  const renderPagination = () => (
+    <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* 分页信息显示 */}
+      <div className="text-sm text-muted-foreground order-2 sm:order-1">
+        {intl.formatMessage(
+          { id: "common.pageInfo" },
+          {
+            current: table.getState().pagination.pageIndex + 1,
+            total: Math.ceil(
+              table.getFilteredRowModel().rows.length /
+                table.getState().pagination.pageSize
+            ),
+          }
+        )}
+      </div>
+      
+      {/* 分页按钮组 */}
+      <div className="flex items-center space-x-2 order-1 sm:order-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+          className="h-8 w-8 p-0"
+          aria-label={intl.formatMessage({ id: "common.previousPage" })}
+        >
+          <ChevronDown className="h-4 w-4 rotate-90" />
+        </Button>
+        <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+          {intl.formatMessage(
+            { id: "common.pageNumber" },
+            { number: table.getState().pagination.pageIndex + 1 }
+          )}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+          className="h-8 w-8 p-0"
+          aria-label={intl.formatMessage({ id: "common.nextPage" })}
+        >
+          <ChevronDown className="h-4 w-4 -rotate-90" />
+        </Button>
+      </div>
+    </div>
+  )
+
+  // 返回主要UI结构
   return (
     <Card>
       <CardHeader>
@@ -428,7 +548,7 @@ React.useEffect(() => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* 错误提示 */}
+        {/* 错误提示显示 */}
         {error && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
@@ -438,7 +558,8 @@ React.useEffect(() => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-       {/* 工具栏 */}
+
+        {/* 工具栏区域 */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between mb-4">
           {/* 搜索框 */}
           <div className="flex-1 max-w-sm">
@@ -449,7 +570,8 @@ React.useEffect(() => {
               className="w-full"
             />
           </div>
-          {/* 添加新Bot按钮 */}
+
+          {/* 添加新Bot按钮和对话框 */}
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="shrink-0">
@@ -476,126 +598,15 @@ React.useEffect(() => {
           <div className="min-w-full inline-block align-middle">
             <div className="overflow-hidden border rounded-lg mx-6">
               <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id}>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {/* 加载状态 */}
-                  {loading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
-                        className="h-24 text-center"
-                      >
-                        <div className="flex items-center justify-center space-x-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-                          <span>{intl.formatMessage({ id: "common.loading" })}</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : table.getRowModel().rows?.length ? (
-                    // 数据行渲染
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        data-state={row.getIsSelected() && "selected"}
-                        className="group hover:bg-muted/50 transition-colors"
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    // 空状态
-                    <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
-                        className="h-24 text-center"
-                      >
-                        <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
-                          <div className="rounded-full border p-3">
-                            <AlertCircle className="h-6 w-6" />
-                          </div>
-                          <div>
-                            {table.getColumn("name")?.getFilterValue()
-                              ? intl.formatMessage({ id: "apiKeys.table.noResults" })
-                              : intl.formatMessage({ id: "apiKeys.table.empty" })}
-                          </div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
+                {renderTableHeader()}
+                {renderTableBody()}
               </Table>
             </div>
           </div>
         </div>
 
-        {/* 分页控制 */}
-        <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* 分页信息 */}
-          <div className="text-sm text-muted-foreground order-2 sm:order-1">
-            {intl.formatMessage(
-              { id: "common.pageInfo" },
-              {
-                current: table.getState().pagination.pageIndex + 1,
-                total: Math.ceil(
-                  table.getFilteredRowModel().rows.length /
-                    table.getState().pagination.pageSize
-                ),
-              }
-            )}
-          </div>
-          
-          {/* 分页按钮组 */}
-          <div className="flex items-center space-x-2 order-1 sm:order-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="h-8 w-8 p-0"
-              aria-label={intl.formatMessage({ id: "common.previousPage" })}
-            >
-              <ChevronDown className="h-4 w-4 rotate-90" />
-            </Button>
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-              {intl.formatMessage(
-                { id: "common.pageNumber" },
-                { number: table.getState().pagination.pageIndex + 1 }
-              )}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="h-8 w-8 p-0"
-              aria-label={intl.formatMessage({ id: "common.nextPage" })}
-            >
-              <ChevronDown className="h-4 w-4 -rotate-90" />
-            </Button>
-          </div>
-        </div>
+        {/* 分页控件区域 */}
+        {renderPagination()}
 
         {/* 编辑对话框 */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -629,10 +640,7 @@ React.useEffect(() => {
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsDeleteDialogOpen(false)}
-              >
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
                 {intl.formatMessage({ id: "common.cancel" })}
               </Button>
               <Button

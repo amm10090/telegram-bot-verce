@@ -12,12 +12,11 @@
       "@lib/*": ["./lib/*"],
       "@types/*": ["./types/*"],
       "@utils/*": ["./utils/*"],
-      "@ThemeContext/*": ["./contexts/*"],
-      "@LanguageSwitcher/*": ["./components/*"],
-      "@LocaleContext/*": ["./contexts/*"],
-      "@dashboardpage/*": ["./app/*"],
-      "@bot-management-table/*": ["./app/*"],
-      "@settingspage/*": ["./app/*"]
+      "@ThemeContext/*": ["./contexts/theme/*"],
+      "@LanguageSwitcher/*": ["./components/LanguageSwitcher/*"],
+      "@LocaleContext/*": ["./contexts/locale/*"],
+      "@dashboardpage/*": ["./app/dashboard/*"],
+      "@settingspage/*": ["./app/settings/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
