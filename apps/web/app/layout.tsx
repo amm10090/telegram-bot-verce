@@ -1,30 +1,23 @@
-import { Geist, Geist_Mono } from "next/font/google"
+import React from 'react';
+import type { Metadata } from 'next';
+import '../styles/globals.css';
+import ClientProvider from '../components/ClientProvider';
 
-import "@workspace/ui/globals.css"
-import { Providers } from "@/components/providers"
-
-const fontSans = Geist({
-  subsets: ["latin"],
-  variable: "--font-sans",
-})
-
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-})
+export const metadata: Metadata = {
+  title: 'TG Bot Management',
+  description: 'Telegram Bot Management System',
+};
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
-      >
-        <Providers>{children}</Providers>
+    <html lang="zh" suppressHydrationWarning>
+      <body>
+        <ClientProvider>{children}</ClientProvider>
       </body>
     </html>
-  )
+  );
 }

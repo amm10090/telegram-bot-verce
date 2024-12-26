@@ -1,10 +1,16 @@
 {
   "extends": "@workspace/typescript-config/react-library.json",
   "compilerOptions": {
-    //"outDir": "dist"
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
-      "@workspace/ui/*": ["./src/*"]
+      "@workspace/ui/components/*": ["./src/components/*"],
+      "@workspace/ui/hooks/*": ["./src/hooks/*"],
+      "@workspace/ui/lib/*": ["./src/lib/*"],
+      "@workspace/ui/styles/*": ["./src/styles/*"]
     }
   },
   "include": ["."],
