@@ -49,11 +49,14 @@ const nextConfig = {
     // 添加路径别名配置
     config.resolve.alias = {
       ...config.resolve.alias,
+      '@': path.join(__dirname),
       '@components': path.join(__dirname, 'components'),
       '@lib': path.join(__dirname, 'lib'),
       '@utils': path.join(__dirname, 'utils'),
       '@hooks': path.join(__dirname, 'hooks'),
       '@contexts': path.join(__dirname, 'contexts'),
+      '@LocaleContext': path.join(__dirname, 'contexts'),
+      '@ThemeContext': path.join(__dirname, 'contexts')
     };
     return config;
   },

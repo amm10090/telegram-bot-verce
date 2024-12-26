@@ -1,9 +1,9 @@
 // src/components/LanguageSwitcher.tsx
 import React, { useCallback } from 'react';
-import { useLocale } from '@LocaleContext/LocaleContext';
+import { useLocale } from '@contexts/LocaleContext';
 import { useIntl } from 'react-intl';
 import type { SupportedLocales } from '../types/locale';
-import { cn } from "@/lib/utils";
+import { cn } from "@lib/utils";
 import { ChevronDown } from 'lucide-react';
 
 // 定义支持的语言配置

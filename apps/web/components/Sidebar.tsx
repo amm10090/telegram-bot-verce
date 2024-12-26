@@ -3,7 +3,7 @@ import React, { useCallback } from 'react';
 import Link from 'next/link';
 import { Home, MessageCircle, Settings, Moon, Sun } from 'lucide-react';
 import { useIntl } from 'react-intl';
-import { useTheme } from '@ThemeContext/ThemeContext';
+import { useTheme } from '@contexts/ThemeContext';
 import { useRoutePreload } from '@hooks/useRoutePreload';
 
 // 导航项接口定义
