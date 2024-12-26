@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "pnpm install && pnpm build",
-  "installCommand": "pnpm install --production=false",
+  "buildCommand": "pnpm install --no-frozen-lockfile && pnpm build",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": "nextjs",
   "outputDirectory": "apps/web/.next",
   "git": {
