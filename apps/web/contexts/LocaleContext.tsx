@@ -30,25 +30,27 @@ export function LocaleProvider({
   children,
   defaultLocale = 'en-US'
 }: LocaleProviderProps) {
-  // 初始化使用默认语言
-  const [locale, setLocale] = useState<SupportedLocales>(defaultLocale);
-
-  // 在客户端加载时从 localStorage 获取语言设置
-  useEffect(() => {
-    try {
-      const savedLocale = localStorage.getItem('locale');
-      if (savedLocale && (savedLocale === 'en-US' || savedLocale === 'zh-CN')) {
-        setLocale(savedLocale);
+  // 从 localStorage 读取保存的语言设置
+  const [locale, setLocale] = useState<SupportedLocales>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedLocale = localStorage.getItem('locale');
+        if (savedLocale && (savedLocale === 'en-US' || savedLocale === 'zh-CN')) {
+          return savedLocale as SupportedLocales;
+        }
+      } catch (error) {
+        console.warn('Failed to read locale from localStorage:', error);
       }
-    } catch (error) {
-      console.warn('Failed to access localStorage:', error);
     }
-  }, []);
+    return defaultLocale;
+  });
 
   // 当语言改变时保存到 localStorage
   useEffect(() => {
     try {
       localStorage.setItem('locale', locale);
+      // 设置 HTML lang 属性
+      document.documentElement.lang = locale.toLowerCase();
     } catch (error) {
       console.warn('Failed to save locale to localStorage:', error);
     }

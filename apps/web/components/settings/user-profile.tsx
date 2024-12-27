@@ -2,7 +2,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import * as z from "zod";
 import { useIntl } from "react-intl";
 import { useState } from "react";
@@ -91,21 +91,13 @@ export default function UserProfile() {
   }
 
   return (
-    <Form {...form}>
+    <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* 用户名输入字段 */}
         <FormField
           control={form.control}
           name="username"
-          render={({
-            field,
-          }: {
-            field: {
-              name: string;
-              value: string;
-              onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-            };
-          }) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>
                 {intl.formatMessage({ id: "profile.username.label" })}
@@ -130,15 +122,7 @@ export default function UserProfile() {
         <FormField
           control={form.control}
           name="email"
-          render={({
-            field,
-          }: {
-            field: {
-              name: string;
-              value: string;
-              onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-            };
-          }) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>
                 {intl.formatMessage({ id: "profile.email.label" })}
@@ -163,15 +147,7 @@ export default function UserProfile() {
         <FormField
           control={form.control}
           name="bio"
-          render={({
-            field,
-          }: {
-            field: {
-              name: string;
-              value: string;
-              onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-            };
-          }) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>
                 {intl.formatMessage({ id: "profile.bio.label" })}
@@ -218,6 +194,6 @@ export default function UserProfile() {
           </div>
         </Toast>
       </form>
-    </Form>
+    </FormProvider>
   );
 }

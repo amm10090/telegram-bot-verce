@@ -2,12 +2,13 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm, type Control } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useIntl } from 'react-intl'
 import { useState } from "react"
 import { Button } from "@workspace/ui/components/button"
 import {
+  Form,
   FormControl,
   FormDescription,
   FormField,
@@ -20,7 +21,6 @@ import { Switch } from "@workspace/ui/components/switch"
 import { Toast } from "@workspace/ui/components/toast"
 import React from "react"
 
-// 定义安全设置表单的验证模式
 const securityFormSchema = z.object({
   currentPassword: z.string().min(8, {
     message: "密码至少需要8个字符。",
@@ -44,17 +44,13 @@ const defaultValues: Partial<SecurityFormValues> = {
   twoFactorAuth: false,
 }
 
-type FormFieldContextValue = {
-  control: Control<SecurityFormValues>
-}
-
 export default function SecuritySettings() {
   const intl = useIntl()
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
   const [toastType, setToastType] = useState<'success' | 'error'>('success')
 
-  const methods = useForm<SecurityFormValues>({
+  const form = useForm<SecurityFormValues>({
     resolver: zodResolver(securityFormSchema),
     defaultValues,
   })
@@ -81,11 +77,10 @@ export default function SecuritySettings() {
   }
 
   return (
-    <div className="space-y-8">
-      <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-8">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
-          // @ts-ignore - Temporary fix for type incompatibility
-          control={methods.control}
+          control={form.control}
           name="currentPassword"
           render={({ field }) => (
             <FormItem>
@@ -101,8 +96,7 @@ export default function SecuritySettings() {
         />
 
         <FormField
-          // @ts-ignore - Temporary fix for type incompatibility
-          control={methods.control}
+          control={form.control}
           name="newPassword"
           render={({ field }) => (
             <FormItem>
@@ -118,8 +112,7 @@ export default function SecuritySettings() {
         />
 
         <FormField
-          // @ts-ignore - Temporary fix for type incompatibility
-          control={methods.control}
+          control={form.control}
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
@@ -135,8 +128,7 @@ export default function SecuritySettings() {
         />
 
         <FormField
-          // @ts-ignore - Temporary fix for type incompatibility
-          control={methods.control}
+          control={form.control}
           name="twoFactorAuth"
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
@@ -178,6 +170,6 @@ export default function SecuritySettings() {
           {toastMessage}
         </div>
       </Toast>
-    </div>
+    </Form>
   )
 }

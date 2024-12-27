@@ -139,7 +139,7 @@ const zhCN = {
   "common.show": "显示",
   "common.hide": "隐藏",
   "common.enable": "启用",
-  "common.disable": "��用",
+  "common.disable": "禁用",
   "common.searchPlaceholder": "搜索...",
 
   // 通用状态
@@ -214,7 +214,7 @@ const zhCN = {
   "bots.table.menu.delete": "删除",
   "bots.table.menu.restart": "重启",
   "bots.table.menu.stop": "停止",
-  "bots.table.menu.logs": "查看���志",
+  "bots.table.menu.logs": "查看日志",
   "bots.table.menu.settings": "设置",
 
   // 设置页面
@@ -244,7 +244,7 @@ const zhCN = {
   "settings.profile.email.description": "我们将使用此邮箱发送重要通知",
   "settings.profile.bio": "个人简介",
   "settings.profile.bio.placeholder": "介绍一下您自己",
-  "settings.profile.bio.description": "您可以使用 @ ��及其他用户和组织",
+  "settings.profile.bio.description": "您可以使用 @ 及其他用户和组织",
   "settings.profile.button.update": "更新个人资料",
 
   // 通知设置
@@ -276,14 +276,30 @@ const zhCN = {
   "apiKeys.actions.add": "添加 API 密钥",
   "apiKeys.error.invalidData": "API 密钥数据无效",
   "apiKeys.table.name": "名称",
-  "apiKeys.table.key": "API 密钥",
+  "apiKeys.table.apiKey": "API 密钥",
   "apiKeys.table.type": "类型",
-  "apiKeys.table.lastUsed": "最后使用时间",
+  "apiKeys.table.actions": "最后使用时间",
   "apiKeys.table.status": "状态",
   "apiKeys.table.permissions": "权限",
   "apiKeys.table.expiresAt": "过期时间",
-  "apiKeys.table.empty": "暂无 API 密钥",
+  "apiKeys.table.noData": "暂无 API 密钥",
+  "apiKeys.delete.description": "确定要删除此 API 密钥吗？此操作无法撤销。",
+  "apiKeys.delete.title": "删除 API 密钥",
   "apiKeys.status.active": "活跃",
+  "apiKeys.actions.copy": "复制",
+  "apiKeys.actions.refresh": "刷新",
+  "apiKeys.actions.delete": "删除",
+  // 机器人表单
+  "bot.form.name": "名称",
+  "bot.form.token": "令牌",
+  "bot.form.description": "描述",
+  "bot.form.tokenDescription": "请输入您的机器人令牌",
+  "bot.form.descriptionDescription": "请输入您的机器人描述",
+  "bot.form.nameDescription": "请输入您的机器人名称",
+  "bot.form.namePlaceholder": "请输入您的机器人名称",
+  "bot.form.tokenPlaceholder": "请输入您的机器人令牌",
+  "bot.form.descriptionPlaceholder": "请输入您的机器人描述",
+  "common.processing": "处理中...",
   "apiKeys.status.expired": "已过期",
   "apiKeys.status.revoked": "已撤销",
   "apiKeys.type.read": "只读",
@@ -302,8 +318,11 @@ const zhCN = {
   "apiKeys.error.invalidType": "API 密钥类型无效",
   "apiKeys.error.invalidPermissions": "权限设置无效",
   "apiKeys.error.invalidExpiry": "过期时间无效",
-
+//机器人状态
+"common.status.active": "活跃",
   // 系统设置
+  "error.title": "错误",
+  "error.loadBots": "加载机器人失败",
   "settings.system.title": "系统偏好设置",
   "preferences.theme.label": "主题",
   "preferences.theme.description": "选择您喜欢的主题外观",
@@ -322,6 +341,7 @@ const zhCN = {
   "preferences.error.failed": "更新系统偏好设置失败",
   "preferences.language.english": "英语",
   "preferences.language.chinese": "中文",
+  "preferences.success.saved": "系统偏好设置已成功保存",
 
   // 安全设置
   "settings.security.title": "安全设置",
@@ -396,8 +416,25 @@ const zhCN = {
   "bots.quickStart.step2.description": "添加关键词触发规则，实现自动回复功能",
   
   "bots.quickStart.step3.title": "管理用户",
-  "bots.quickStart.step3.description": "查看用户列表，管理用户权限和互动数据"
-  
+  "bots.quickStart.step3.description": "查看用户列表，管理用户权限和互动数据",
+
+  // Bot 搜索
+  'bot.search.placeholder': '搜索Bot...',
+  'bot.search.type': '搜索类型',
+  'bot.search.type.name': '按名称',
+  'bot.search.type.token': '按Token',
+  'bot.search.type.all': '全部',
+  'bot.search.button': '搜索',
+
+  // Webhook 管理
+  'webhook.url.placeholder': '输入Webhook URL',
+  'webhook.actions.set': '设置Webhook',
+  'webhook.actions.delete': '删除Webhook',
+  'webhook.success.set': 'Webhook设置成功',
+  'webhook.success.delete': 'Webhook删除成功',
+  'webhook.error.load': '加载Webhook信息失败',
+  'webhook.error.set': '设置Webhook失败',
+  'webhook.error.delete': '删除Webhook失败'
 } as const;
 
 export default zhCN; 

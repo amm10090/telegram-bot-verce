@@ -32,8 +32,20 @@ export function ThemeProvider({
   enableSystem = true,
   disableTransitionOnChange = false
 }: ThemeProviderProps) {
-  // 初始化时使用默认主题
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
+  // 从 localStorage 读取保存的主题设置
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
+          return savedTheme as Theme;
+        }
+      } catch (error) {
+        console.warn('Failed to read theme from localStorage:', error);
+      }
+    }
+    return defaultTheme;
+  });
   
   // 应用主题到 HTML 元素
   const applyTheme = (newTheme: Theme) => {

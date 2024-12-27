@@ -13,26 +13,38 @@ interface ClientLayoutProps {
 }
 
 // 错误边界组件
-function ErrorBoundary({ children }: { children: React.ReactNode }) {
-  const [hasError, setHasError] = useState(false);
-
-  if (hasError) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center p-4">
-          <h2 className="text-2xl font-bold mb-4">抱歉，出现了一些问题</h2>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-          >
-            刷新页面
-          </button>
-        </div>
-      </div>
-    );
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
   }
 
-  return children;
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center p-4">
+            <h2 className="text-2xl font-bold mb-4">抱歉，出现了一些问题</h2>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              刷新页面
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 // 加载状态组件

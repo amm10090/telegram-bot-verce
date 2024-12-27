@@ -1,126 +1,129 @@
 // apps/web/src/types/bot.ts
 
-/**
- * API响应的标准格式
- * 使用泛型T来定义响应数据的类型
- * @template T - 响应数据的类型
- */
-export interface ApiResponse<T = any> {
-    success: boolean;        // 请求是否成功
-    data: T;               // 响应数据
-    message?: string;       // 消息提示
-    error?: any;           // 错误详情
-    errorCode?: string;    // 业务错误代码
+import { Document, Model, Types } from 'mongoose';
+
+// Bot 命令接口
+export interface BotCommand {
+  command: string;
+  description: string;
 }
 
-/**
- * Telegram Bot的基本信息
- * 这个接口定义了从Telegram API获取的Bot信息结构
- */
-export interface BotInfo {
-    id: number;                           // Bot的Telegram ID
-    is_bot: boolean;                      // 是否是Bot账号
-    first_name: string;                   // Bot的显示名称
-    username: string;                     // Bot的用户名
-    can_join_groups: boolean;             // 是否可以加入群组
-    can_read_all_group_messages: boolean; // 是否可以读取所有群组消息
-    supports_inline_queries: boolean;      // 是否支持内联查询
+// Bot 设置接口
+export interface BotSettings {
+  webhookUrl?: string;
+  commands?: BotCommand[];
+  allowedUpdates?: string[];
+  customizations?: Record<string, unknown>;
 }
 
-/**
- * 系统中Bot的基本数据结构
- * 定义了在我们系统中存储的Bot信息
- */
-export interface Bot {
-    id: string;                   // 系统中的唯一标识符
-    name: string;                 // Bot名称
-    apiKey: string;               // API密钥
-    isEnabled: boolean;           // 是否启用
-    status: 'active' | 'inactive'; // Bot状态
-    createdAt: string;            // 创建时间
-    lastUsed?: string;            // 最后使用时间，可选
-    description?: string;         // Bot描述，可选
+// 基础 Bot 接口
+export interface IBot {
+  name: string;
+  token: string;
+  apiKey: string;
+  isEnabled: boolean;
+  status: 'active' | 'inactive';
+  userId: Types.ObjectId;
+  settings?: BotSettings;
+  createdAt: Date;
+  updatedAt: Date;
+  lastUsed?: Date;
 }
 
-/**
- * API返回的原始Bot数据结构
- * 定义了从MongoDB直接获取的原始数据格式
- */
-export interface RawBotData {
-    _id: string;           // MongoDB的默认ID字段
-    name: string;          // Bot名称
-    apiKey: string;        // API密钥
-    isEnabled: boolean;    // 是否启用
-    status?: string;       // Bot状态，可选
-    createdAt: string;     // 创建时间
-    lastUsed?: string;     // 最后使用时间，可选
-}
-// 扩展ApiResponse接口，添加分页支持
-export interface PaginatedApiResponse<T> extends ApiResponse<T> {
-    total: number;         // 数据总数
-    page: number;         // 当前页码
-    pageSize: number;     // 每页数据条数
+// Mongoose Document 类型
+export interface IBotDocument extends IBot, Document {
+  id: string;
 }
 
-// 扩展现有的Bot数据接口，添加元数据支持
-export interface EnhancedBotData extends RawBotData {
-    metadata?: {
-        lastChecked?: string;    // 最后检查时间
-        lastActive?: string;     // 最后活跃时间
-        // 其他元数据字段可以在此扩展
-    };
+// API 请求体类型
+export interface BotCreateInput {
+  name: string;
+  token: string;
+  settings?: BotSettings;
 }
 
-/**
- * API的嵌套响应结构
- * 定义了API返回的多层嵌套数据结构
- */
-export interface ApiNestedResponse {
-    success: boolean;                  // 请求是否成功
-    data: {
-        data: RawBotData[];           // Bot数据数组
-        message?: string;             // 数据层消息，可选
-    };
-    message?: string;                 // 响应层消息，可选
+export interface BotUpdateInput {
+  name?: string;
+  token?: string;
+  isEnabled?: boolean;
+  settings?: BotSettings;
 }
 
-/**
- * Bot创建/更新请求的数据结构
- */
-export interface BotCreateUpdateData {
-    name: string;           // Bot名称
-    apiKey: string;         // API密钥
-    isEnabled: boolean;     // 是否启用
+// API 响应类型
+export interface BotResponse {
+  id: string;
+  name: string;
+  token: string;
+  apiKey: string;
+  isEnabled: boolean;
+  status: 'active' | 'inactive';
+  settings?: BotSettings;
+  createdAt: string;
+  updatedAt: string;
+  lastUsed?: string;
 }
 
-/**
- * 表格显示用的Bot数据结构
- * 扩展自基础Bot接口，添加了表格显示所需的额外字段
- */
-export interface TableBot extends Bot {
-    type: 'telegram' | 'other';    // Bot类型，用于表格显示
+// 分页查询参数
+export interface BotQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: 'active' | 'inactive';
+  sortBy?: keyof IBot;
+  sortOrder?: 'asc' | 'desc';
 }
 
-/**
- * Bot的API响应格式
- * 专门用于处理Bot相关的API响应
- */
-export interface BotApiResponse<T = RawBotData[]> extends ApiResponse<T> {
-    success: boolean;
-    data: T;
-    message?: string;
-    error?: any;
-    total?: number;
-    page?: number;
-    pageSize?: number;
-}
-
-/**
- * Bot的列表响应格式
- */
-export interface BotListResponse extends Omit<PaginatedApiResponse<Bot[]>, 'data'> {
-    data: Bot[];
+// API 响应包装器
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+  pagination?: {
     total: number;
     page: number;
-    pageSize: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// 分页结果接口
+export interface PaginateResult<T> {
+  docs: T[];
+  totalDocs: number;
+  limit: number;
+  totalPages: number;
+  page: number;
+  pagingCounter: number;
+  hasPrevPage: boolean;
+  hasNextPage: boolean;
+  prevPage: number | null;
+  nextPage: number | null;
+}
+
+// 分页选项接口
+export interface PaginateOptions {
+  page?: number;
+  limit?: number;
+  sort?: { [key: string]: number };
+  lean?: boolean;
+  select?: string | object;
+  populate?: string | object;
+}
+
+// 扩展的 Model 接口
+export interface IBotModel extends Model<IBotDocument> {
+  paginate(
+    query: any,
+    options: PaginateOptions
+  ): Promise<PaginateResult<IBotDocument>>;
+}
+
+export interface PaginatedApiResponse<T> extends ApiResponse<T[]> {
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
