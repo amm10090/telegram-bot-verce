@@ -1,25 +1,28 @@
 import { NextResponse } from "next/server";
-import { ApiResponse, Bot } from "@/types/bot";
+import { ApiResponse, IBot } from "@/types/bot";
+import { Types } from "mongoose";
 
 // 模拟数据，实际应用中应该从数据库获取
-const mockBots: Bot[] = [
+const mockBots: Partial<IBot>[] = [
   {
-    id: "1",
     name: "Welcome Bot",
-    apiKey: "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+    token: "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+    apiKey: "bot_abc123",
     isEnabled: true,
     status: "active",
-    createdAt: new Date().toISOString(),
-    description: "A bot to welcome new members"
+    userId: new Types.ObjectId(),
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
-    id: "2",
     name: "Support Bot",
-    apiKey: "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew22",
+    token: "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew22",
+    apiKey: "bot_def456",
     isEnabled: false,
     status: "inactive",
-    createdAt: new Date().toISOString(),
-    description: "A bot to handle support requests"
+    userId: new Types.ObjectId(),
+    createdAt: new Date(),
+    updatedAt: new Date()
   }
 ];
 
@@ -28,7 +31,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const botIndex = mockBots.findIndex(bot => bot.id === params.id);
+    const botIndex = mockBots.findIndex((bot, index) => index === parseInt(params.id) - 1);
     if (botIndex === -1) {
       return NextResponse.json(
         {
