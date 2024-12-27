@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import mongoosePaginate from 'mongoose-paginate-v2';
 import type { IBotDocument, IBotModel } from '@/types/bot';
 
+// 定义 Bot Schema
 const botSchema = new mongoose.Schema<IBotDocument>(
   {
     name: { type: String, required: true },
@@ -29,6 +30,15 @@ const botSchema = new mongoose.Schema<IBotDocument>(
 // 添加分页插件
 botSchema.plugin(mongoosePaginate);
 
-// 导出模型
-const BotModel = (mongoose.models.Bot || mongoose.model<IBotDocument, IBotModel>('Bot', botSchema)) as IBotModel;
+// 确保模型只被注册一次
+let BotModel: IBotModel;
+
+try {
+  // 尝试获取已存在的模型
+  BotModel = mongoose.model<IBotDocument, IBotModel>('Bot');
+} catch {
+  // 如果模型不存在，则创建新模型
+  BotModel = mongoose.model<IBotDocument, IBotModel>('Bot', botSchema);
+}
+
 export default BotModel; 

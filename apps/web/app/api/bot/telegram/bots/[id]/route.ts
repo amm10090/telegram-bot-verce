@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import mongoose, { Model } from 'mongoose';
+import BotModel from '@/models/bot';
+import { ApiResponse, BotResponse } from '@/types/bot';
 import { isValidObjectId } from 'mongoose';
-import type { IBotDocument } from '@/types/bot';
 
-// 获取正确类型的模型
-const BotModel: Model<IBotDocument> = mongoose.models.Bot || mongoose.model<IBotDocument>('Bot');
+// 将 Bot 文档转换为 API 响应格式
+function transformBotToResponse(bot: any): BotResponse {
+  return {
+    id: bot._id.toString(),
+    name: bot.name,
+    token: bot.token,
+    apiKey: bot.apiKey,
+    isEnabled: bot.isEnabled,
+    status: bot.status,
+    settings: bot.settings,
+    createdAt: bot.createdAt.toISOString(),
+    updatedAt: bot.updatedAt.toISOString(),
+    lastUsed: bot.lastUsed?.toISOString(),
+  };
+}
 
-/**
- * GET /api/bot/telegram/bots/[id]
- * 获取单个 Bot 详情
- */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -33,7 +42,7 @@ export async function GET(
     await connectDB();
 
     // 查找 Bot
-    const bot = await (BotModel as Model<IBotDocument>).findById(id).lean();
+    const bot = await BotModel.findById(id).lean();
     if (!bot) {
       return NextResponse.json(
         {
@@ -47,7 +56,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: bot,
+      data: transformBotToResponse(bot),
       message: '获取成功',
     });
   } catch (error) {
@@ -56,18 +65,14 @@ export async function GET(
       {
         success: false,
         message: '获取 Bot 详情失败',
-        error: '服务器错误',
+        error: error instanceof Error ? error.message : '服务器错误',
       },
       { status: 500 }
     );
   }
 }
 
-/**
- * PUT /api/bot/telegram/bots/[id]
- * 更新 Bot
- */
-export async function PUT(
+export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ): Promise<NextResponse> {
@@ -89,9 +94,14 @@ export async function PUT(
 
     await connectDB();
 
-    // 检查 Bot 是否存在
-    const existingBot = await (BotModel as Model<IBotDocument>).findById(id).lean();
-    if (!existingBot) {
+    // 查找并更新 Bot
+    const bot = await BotModel.findByIdAndUpdate(
+      id,
+      { $set: body },
+      { new: true }
+    ).lean();
+
+    if (!bot) {
       return NextResponse.json(
         {
           success: false,
@@ -102,34 +112,9 @@ export async function PUT(
       );
     }
 
-    // 如果更新包含 token，检查是否与其他 Bot 冲突
-    if (body.token && body.token !== existingBot.token) {
-      const tokenExists = await (BotModel as Model<IBotDocument>).findOne({
-        token: body.token,
-        _id: { $ne: id },
-      }).lean();
-      if (tokenExists) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: '该 Token 已被其他 Bot 使用',
-            error: 'Token 重复',
-          },
-          { status: 409 }
-        );
-      }
-    }
-
-    // 更新 Bot
-    const updatedBot = await (BotModel as Model<IBotDocument>).findByIdAndUpdate(
-      id,
-      { $set: body },
-      { new: true, runValidators: true, lean: true }
-    );
-
     return NextResponse.json({
       success: true,
-      data: updatedBot,
+      data: transformBotToResponse(bot),
       message: '更新成功',
     });
   } catch (error) {
@@ -138,17 +123,13 @@ export async function PUT(
       {
         success: false,
         message: '更新 Bot 失败',
-        error: '服务器错误',
+        error: error instanceof Error ? error.message : '服务器错误',
       },
       { status: 500 }
     );
   }
 }
 
-/**
- * DELETE /api/bot/telegram/bots/[id]
- * 删除 Bot
- */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -170,9 +151,10 @@ export async function DELETE(
 
     await connectDB();
 
-    // 查找并删除 Bot
-    const deletedBot = await (BotModel as Model<IBotDocument>).findByIdAndDelete(id).lean();
-    if (!deletedBot) {
+    // 删除 Bot
+    const bot = await BotModel.findByIdAndDelete(id).lean();
+
+    if (!bot) {
       return NextResponse.json(
         {
           success: false,
@@ -185,7 +167,6 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      data: deletedBot,
       message: '删除成功',
     });
   } catch (error) {
@@ -194,81 +175,7 @@ export async function DELETE(
       {
         success: false,
         message: '删除 Bot 失败',
-        error: '服务器错误',
-      },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * PATCH /api/bot/telegram/bots/[id]
- * 更新 Bot 状态
- */
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-): Promise<NextResponse> {
-  try {
-    const { id } = params;
-    const body = await req.json();
-
-    // 验证 ID 格式
-    if (!isValidObjectId(id)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: '无效的 Bot ID',
-          error: 'ID 格式错误',
-        },
-        { status: 400 }
-      );
-    }
-
-    // 验证请求体
-    if (typeof body.isEnabled !== 'boolean') {
-      return NextResponse.json(
-        {
-          success: false,
-          message: '无效的状态值',
-          error: '参数错误',
-        },
-        { status: 400 }
-      );
-    }
-
-    await connectDB();
-
-    // 更新 Bot 状态
-    const updatedBot = await (BotModel as Model<IBotDocument>).findByIdAndUpdate(
-      id,
-      { $set: { isEnabled: body.isEnabled } },
-      { new: true, lean: true }
-    );
-
-    if (!updatedBot) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: '未找到指定的 Bot',
-          error: 'Bot 不存在',
-        },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: updatedBot,
-      message: '状态更新成功',
-    });
-  } catch (error) {
-    console.error('更新 Bot 状态失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: '更新 Bot 状态失败',
-        error: '服务器错误',
+        error: error instanceof Error ? error.message : '服务器错误',
       },
       { status: 500 }
     );
