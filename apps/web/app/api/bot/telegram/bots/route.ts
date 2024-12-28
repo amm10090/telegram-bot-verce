@@ -77,7 +77,6 @@ export async function GET(req: NextRequest) {
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .populate('menus')
       .lean();
 
     // 计算分页信息

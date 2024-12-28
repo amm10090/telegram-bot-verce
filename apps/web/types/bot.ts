@@ -25,6 +25,7 @@ export interface IBot {
   status: 'active' | 'inactive';
   userId: Types.ObjectId;
   settings?: BotSettings;
+  menus: MenuItem[];
   createdAt: Date;
   updatedAt: Date;
   lastUsed?: Date;
@@ -126,4 +127,11 @@ export interface PaginatedApiResponse<T> extends ApiResponse<T[]> {
     limit: number;
     totalPages: number;
   };
+}
+
+export interface MenuItem {
+  text: string;
+  command: string;
+  order: number;
+  isEnabled: boolean;
 }

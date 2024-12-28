@@ -2,6 +2,14 @@ import mongoose from 'mongoose';
 import mongoosePaginate from 'mongoose-paginate-v2';
 import type { IBotDocument, IBotModel } from '@/types/bot';
 
+// 定义菜单项 Schema
+const menuItemSchema = new mongoose.Schema({
+  text: { type: String, required: true },
+  command: { type: String, required: true },
+  order: { type: Number, default: 0 },
+  isEnabled: { type: Boolean, default: true }
+});
+
 // 定义 Bot Schema
 const botSchema = new mongoose.Schema<IBotDocument>(
   {
@@ -20,6 +28,7 @@ const botSchema = new mongoose.Schema<IBotDocument>(
       allowedUpdates: [String],
       customizations: mongoose.Schema.Types.Mixed
     },
+    menus: [menuItemSchema],
     lastUsed: { type: Date }
   },
   {

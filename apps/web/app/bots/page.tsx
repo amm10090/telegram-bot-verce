@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useIntl } from "react-intl";
 import { useRouter } from "next/navigation";
 import {
@@ -74,35 +74,44 @@ export default function BotsPage() {
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
   const [bots, setBots] = useState<BotResponse[]>([]);
   const [loading, setLoading] = useState(false);
+  const isLoadingRef = useRef(false);
 
   // 加载机器人列表
-  useEffect(() => {
-    const loadBots = async () => {
-      try {
-        setLoading(true);
-        const result = await botService.getAllBots();
-        if (result.success) {
-          setBots(result.data);
-        } else {
-          toast({
-            variant: "destructive",
-            title: intl.formatMessage({ id: "error.title" }),
-            description: result.message || intl.formatMessage({ id: "error.unknown" }),
-          });
-        }
-      } catch (error) {
+  const loadBots = useCallback(async () => {
+    // 如果正在加载，则跳过
+    if (isLoadingRef.current) {
+      return;
+    }
+
+    try {
+      isLoadingRef.current = true;
+      setLoading(true);
+      const result = await botService.getAllBots();
+      if (result.success) {
+        setBots(result.data);
+      } else {
         toast({
           variant: "destructive",
           title: intl.formatMessage({ id: "error.title" }),
-          description: intl.formatMessage({ id: "error.loading" }),
+          description: result.message || intl.formatMessage({ id: "error.unknown" }),
         });
-      } finally {
-        setLoading(false);
       }
-    };
-
-    loadBots();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: intl.formatMessage({ id: "error.title" }),
+        description: intl.formatMessage({ id: "error.loading" }),
+      });
+    } finally {
+      setLoading(false);
+      isLoadingRef.current = false;
+    }
   }, [intl, toast]);
+
+  // 组件挂载时加载数据
+  useEffect(() => {
+    loadBots();
+  }, [loadBots]);
 
   const handleFeatureClick = (feature: typeof botFeatures[0]) => {
     if (!selectedBotId) {
@@ -117,7 +126,7 @@ export default function BotsPage() {
     if (feature.id === "menu") {
       setIsMenuDrawerOpen(true);
     } else {
-      router.push(`${feature.href}?botId=${selectedBotId}`);
+      router.push(`${feature.href}/${selectedBotId}`);
     }
   };
 
@@ -141,7 +150,7 @@ export default function BotsPage() {
       <div className="mb-6">
         <Select
           value={selectedBotId || ""}
-          onValueChange={(value) => setSelectedBotId(value)}
+          onValueChange={setSelectedBotId}
         >
           <SelectTrigger className="w-[300px]">
             <SelectValue placeholder={intl.formatMessage({ id: "bots.select.placeholder" })} />
@@ -170,7 +179,7 @@ export default function BotsPage() {
                   ? "hover:border-primary/50 cursor-pointer" 
                   : "opacity-50 cursor-not-allowed"
               }`}
-              onClick={() => handleFeatureClick(feature)}
+              onClick={() => selectedBotId && handleFeatureClick(feature)}
             >
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -230,30 +239,16 @@ export default function BotsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="rounded-lg border p-4">
-                <h3 className="font-semibold mb-2">
-                  {intl.formatMessage({ id: "bots.quickStart.step1.title" })}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {intl.formatMessage({ id: "bots.quickStart.step1.description" })}
-                </p>
-              </div>
-              <div className="rounded-lg border p-4">
-                <h3 className="font-semibold mb-2">
-                  {intl.formatMessage({ id: "bots.quickStart.step2.title" })}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {intl.formatMessage({ id: "bots.quickStart.step2.description" })}
-                </p>
-              </div>
-              <div className="rounded-lg border p-4">
-                <h3 className="font-semibold mb-2">
-                  {intl.formatMessage({ id: "bots.quickStart.step3.title" })}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {intl.formatMessage({ id: "bots.quickStart.step3.description" })}
-                </p>
-              </div>
+              {[1, 2, 3].map((step) => (
+                <div key={`quickstart-step-${step}`} className="rounded-lg border p-4">
+                  <h3 className="font-semibold mb-2">
+                    {intl.formatMessage({ id: `bots.quickStart.step${step}.title` })}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {intl.formatMessage({ id: `bots.quickStart.step${step}.description` })}
+                  </p>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
