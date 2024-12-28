@@ -16,6 +16,13 @@ export interface BotSettings {
   customizations?: Record<string, unknown>;
 }
 
+// Bot菜单项接口
+export interface BotMenu {
+  text: string;
+  command: string;
+  order: number;
+}
+
 // 基础 Bot 接口
 export interface IBot {
   name: string;
@@ -25,7 +32,7 @@ export interface IBot {
   status: 'active' | 'inactive';
   userId: Types.ObjectId;
   settings?: BotSettings;
-  menus: MenuItem[];
+  menus?: BotMenu[];
   createdAt: Date;
   updatedAt: Date;
   lastUsed?: Date;
@@ -59,6 +66,7 @@ export interface BotResponse {
   isEnabled: boolean;
   status: 'active' | 'inactive';
   settings?: BotSettings;
+  menus?: BotMenu[];
   createdAt: string;
   updatedAt: string;
   lastUsed?: string;
@@ -127,11 +135,4 @@ export interface PaginatedApiResponse<T> extends ApiResponse<T[]> {
     limit: number;
     totalPages: number;
   };
-}
-
-export interface MenuItem {
-  text: string;
-  command: string;
-  order: number;
-  isEnabled: boolean;
 }

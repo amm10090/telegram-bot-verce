@@ -1,166 +1,182 @@
-import { NextResponse } from "next/server";
-import { z } from "zod";
-import { TelegramClient } from "@lib/telegram";
-import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import { NextRequest, NextResponse } from 'next/server';
+import { connectDB } from '@/lib/db';
+import BotModel from '@/models/bot';
+import { isValidObjectId } from 'mongoose';
 
-// 验证菜单项数据结构
-const menuItemSchema = z.object({
-  text: z.string().min(1, "菜单文本不能为空"),
-  command: z.string().optional(),
-  url: z.string().url("请输入有效的URL").optional().or(z.literal('')),
-});
-
-const menuSchema = z.array(menuItemSchema);
-
-// 确保菜单表结构存在
-async function ensureMenuStructure(botId: string) {
-  try {
-    // 检查是否已存在菜单
-    const existingMenuItems = await prisma.botMenu.findMany({
-      where: { botId },
-    });
-
-    // 如果不存在菜单项，创建默认菜单
-    if (existingMenuItems.length === 0) {
-      await prisma.botMenu.create({
-        data: {
-          botId,
-          text: "开始",
-          command: "/start",
-          order: 0,
-        }
-      });
-    }
-  } catch (error) {
-    console.error("创建菜单结构失败:", error);
-    throw error;
-  }
-}
-
+// 获取菜单列表
 export async function GET(
-  req: Request,
-  { params }: { params: { botId: string } }
+  req: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { botId } = params;
+    await connectDB();
 
-    // 确保菜单结构存在
-    await ensureMenuStructure(botId);
+    const { id } = params;
+    if (!isValidObjectId(id)) {
+      return NextResponse.json(
+        { success: false, message: '无效的Bot ID' },
+        { status: 400 }
+      );
+    }
 
-    // 获取菜单数据
-    const menuItems = await prisma.botMenu.findMany({
-      where: { botId },
-      orderBy: { order: 'asc' },
-      select: {
-        id: true,
-        text: true,
-        command: true,
-        url: true,
-        order: true,
-      }
-    });
+    const bot = await BotModel.findById(id).lean();
+    if (!bot) {
+      return NextResponse.json(
+        { success: false, message: 'Bot不存在' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: menuItems
+      data: bot.menus || [],
+      message: '获取菜单列表成功'
     });
   } catch (error) {
-    console.error("获取菜单失败:", error);
+    console.error('获取菜单列表失败:', error);
     return NextResponse.json(
-      { success: false, message: "获取菜单失败" },
+      {
+        success: false,
+        message: '获取菜单列表失败',
+        error: error instanceof Error ? error.message : '未知错误'
+      },
       { status: 500 }
     );
   }
 }
 
-export async function POST(
-  req: Request,
-  { params }: { params: { botId: string } }
+// 更新菜单列表
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { botId } = params;
-    const body = await req.json();
-    
-    // 验证请求数据
-    const validatedMenu = menuSchema.parse(body.menu);
+    await connectDB();
 
-    // 开启事务处理
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 删除旧菜单
-      await tx.botMenu.deleteMany({
-        where: { botId }
-      });
-
-      // 创建新菜单
-      const menuItems = validatedMenu.map((item, index) => ({
-        ...item,
-        botId,
-        order: index,
-      }));
-
-      await tx.botMenu.createMany({
-        data: menuItems
-      });
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "菜单更新成功"
-    });
-  } catch (error) {
-    console.error("更新菜单失败:", error);
-    if (error instanceof z.ZodError) {
+    const { id } = params;
+    if (!isValidObjectId(id)) {
       return NextResponse.json(
-        { success: false, message: "菜单数据格式错误", errors: error.errors },
+        { success: false, message: '无效的Bot ID' },
         { status: 400 }
       );
     }
+
+    const body = await req.json();
+    const { menus } = body;
+
+    if (!Array.isArray(menus)) {
+      return NextResponse.json(
+        { success: false, message: '无效的菜单数据' },
+        { status: 400 }
+      );
+    }
+
+    // 验证菜单数据格式
+    const isValidMenu = menus.every(menu => 
+      typeof menu.text === 'string' && 
+      typeof menu.command === 'string' && 
+      typeof menu.order === 'number'
+    );
+
+    if (!isValidMenu) {
+      return NextResponse.json(
+        { success: false, message: '菜单数据格式错误' },
+        { status: 400 }
+      );
+    }
+
+    // 使用事务更新菜单
+    const session = await BotModel.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const bot = await BotModel.findById(id).session(session);
+        if (!bot) {
+          throw new Error('BOT_NOT_FOUND');
+        }
+
+        bot.menus = menus;
+        await bot.save({ session });
+      });
+
+      await session.endSession();
+      return NextResponse.json({
+        success: true,
+        message: '更新菜单成功'
+      });
+    } catch (error) {
+      await session.endSession();
+      throw error;
+    }
+  } catch (error) {
+    console.error('更新菜单失败:', error);
+    if (error instanceof Error && error.message === 'BOT_NOT_FOUND') {
+      return NextResponse.json(
+        { success: false, message: 'Bot不存在' },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
-      { success: false, message: "更新菜单失败" },
+      {
+        success: false,
+        message: '更新菜单失败',
+        error: error instanceof Error ? error.message : '未知错误'
+      },
       { status: 500 }
     );
   }
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { botId: string } }
+// 删除菜单
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { botId } = params;
-    const body = await req.json();
-    
-    // 验证排序数据
-    const orderUpdates = z.array(z.object({
-      id: z.string(),
-      order: z.number().int().min(0)
-    })).parse(body.orders);
+    await connectDB();
 
-    // 批量更新排序
-    await Promise.all(
-      orderUpdates.map(update =>
-        prisma.botMenu.update({
-          where: { id: update.id },
-          data: { order: update.order }
-        })
-      )
-    );
-
-    return NextResponse.json({
-      success: true,
-      message: "菜单排序更新成功"
-    });
-  } catch (error) {
-    console.error("更新菜单排序失败:", error);
-    if (error instanceof z.ZodError) {
+    const { id } = params;
+    if (!isValidObjectId(id)) {
       return NextResponse.json(
-        { success: false, message: "排序数据格式错误", errors: error.errors },
+        { success: false, message: '无效的Bot ID' },
         { status: 400 }
       );
     }
+
+    const session = await BotModel.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const bot = await BotModel.findById(id).session(session);
+        if (!bot) {
+          throw new Error('BOT_NOT_FOUND');
+        }
+
+        bot.menus = [];
+        await bot.save({ session });
+      });
+
+      await session.endSession();
+      return NextResponse.json({
+        success: true,
+        message: '删除菜单成功'
+      });
+    } catch (error) {
+      await session.endSession();
+      throw error;
+    }
+  } catch (error) {
+    console.error('删除菜单失败:', error);
+    if (error instanceof Error && error.message === 'BOT_NOT_FOUND') {
+      return NextResponse.json(
+        { success: false, message: 'Bot不存在' },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
-      { success: false, message: "更新菜单排序失败" },
+      {
+        success: false,
+        message: '删除菜单失败',
+        error: error instanceof Error ? error.message : '未知错误'
+      },
       { status: 500 }
     );
   }

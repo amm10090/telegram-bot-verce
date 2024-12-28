@@ -60,20 +60,24 @@ export default function ApiKeysManagement() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const isLoadingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // 加载机器人列表
   const loadBots = useCallback(async () => {
-    // 如果正在加载，则跳过
-    if (isLoadingRef.current) {
-      return;
-    }
-
     try {
-      isLoadingRef.current = true;
+      // 如果有正在进行的请求，取消它
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // 创建新的 AbortController
+      abortControllerRef.current = new AbortController();
       setLoading(true);
 
-      const result = await botService.getAllBots();
+      const result = await botService.getAllBots(
+        undefined,
+        abortControllerRef.current.signal
+      );
 
       if (result.success) {
         setBots(result.data);
@@ -85,6 +89,11 @@ export default function ApiKeysManagement() {
         });
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        // 请求被取消，不做处理
+        return;
+      }
+      
       const errorMessage = error instanceof Error ? error.message : '未知错误';
       toast({
         variant: "destructive",
@@ -93,13 +102,19 @@ export default function ApiKeysManagement() {
       });
     } finally {
       setLoading(false);
-      isLoadingRef.current = false;
     }
   }, [intl, toast]);
 
   // 组件挂载时加载数据
   useEffect(() => {
     loadBots();
+
+    // 组件卸载时取消请求
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [loadBots]);
 
   // 使用 useCallback 优化其他函数

@@ -2,6 +2,24 @@ import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/db';
 import BotModel from '@/models/bot';
 import { isValidObjectId } from 'mongoose';
+import { BotResponse } from '@/types/bot';
+
+// 将数据库文档转换为API响应格式
+function transformBotToResponse(bot: any): BotResponse {
+  return {
+    id: bot._id.toString(),
+    name: bot.name,
+    token: bot.token,
+    apiKey: bot.apiKey,
+    isEnabled: bot.isEnabled,
+    status: bot.status,
+    settings: bot.settings,
+    menus: bot.menus || [],
+    createdAt: bot.createdAt.toISOString(),
+    updatedAt: bot.updatedAt.toISOString(),
+    lastUsed: bot.lastUsed?.toISOString(),
+  };
+}
 
 // 错误响应处理函数
 function errorResponse(status: number, message: string, error: string, details?: any) {
@@ -79,10 +97,13 @@ export async function GET(req: NextRequest) {
       .limit(limit)
       .lean();
 
+    // 转换响应格式
+    const transformedBots = bots.map(transformBotToResponse);
+
     // 计算分页信息
     const totalPages = Math.ceil(total / limit);
 
-    return successResponse(bots, '获取机器人列表成功', {
+    return successResponse(transformedBots, '获取机器人列表成功', {
       total,
       page,
       limit,
