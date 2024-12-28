@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import BotModel from '@/models/bot';
-import { ApiResponse } from '@/types/bot';
+import { ApiResponse, IBotDocument } from '@/types/bot';
 
 /**
  * 统一的错误响应处理
@@ -79,19 +79,36 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    // 检查 token 是否已存在
-    const existingBot = await BotModel.findOne({ token: body.token });
-    if (existingBot) {
-      return errorResponse('该 Bot Token 已被使用', 409);
+    // 使用会话创建Bot
+    const session = await BotModel.startSession();
+    let bot;
+
+    try {
+      await session.withTransaction(async () => {
+        // 检查 token 是否已存在
+        const existingBot = await BotModel.findOne({ token: body.token }).session(session);
+        if (existingBot) {
+          throw new Error('TOKEN_EXISTS');
+        }
+
+        // 创建新的 Bot
+        const newBots = await BotModel.create([{
+          ...body,
+          userId: body.userId, // 这里应该从认证中间件获取
+        }], { session });
+
+        bot = newBots[0];
+      });
+
+      await session.endSession();
+      return successResponse(bot, 'Bot 创建成功');
+    } catch (error) {
+      await session.endSession();
+      if (error instanceof Error && error.message === 'TOKEN_EXISTS') {
+        return errorResponse('该 Bot Token 已被使用', 409);
+      }
+      throw error;
     }
-
-    // 创建新的 Bot
-    const newBot = await BotModel.create({
-      ...body,
-      userId: body.userId, // 这里应该从认证中间件获取
-    });
-
-    return successResponse(newBot, 'Bot 创建成功');
   } catch (error) {
     console.error('创建 Bot 失败:', error);
     return errorResponse('创建 Bot 失败');
@@ -112,14 +129,32 @@ export async function PUT(req: NextRequest) {
 
     await connectDB();
 
-    const results = await Promise.all(
-      body.bots.map(async (bot: any) => {
-        if (!bot.id) return null;
-        return BotModel.findByIdAndUpdate(bot.id, bot, { new: true });
-      })
-    );
+    // 使用会话批量更新
+    const session = await BotModel.startSession();
+    const results: Array<IBotDocument | null> = [];
 
-    return successResponse(results.filter(Boolean));
+    try {
+      await session.withTransaction(async () => {
+        const updateResults = await Promise.all(
+          body.bots.map(async (bot: any) => {
+            if (!bot.id) return null;
+            const result = await BotModel.findByIdAndUpdate(
+              bot.id,
+              { $set: bot },
+              { new: true, session }
+            ).lean();
+            return result;
+          })
+        );
+        results.push(...updateResults.filter(Boolean));
+      });
+
+      await session.endSession();
+      return successResponse(results);
+    } catch (error) {
+      await session.endSession();
+      throw error;
+    }
   } catch (error) {
     console.error('批量更新 Bot 失败:', error);
     return errorResponse('批量更新 Bot 失败');

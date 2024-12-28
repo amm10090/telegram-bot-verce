@@ -72,7 +72,7 @@ export async function GET(
   }
 }
 
-export async function PATCH(
+export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ): Promise<NextResponse> {
@@ -94,35 +94,74 @@ export async function PATCH(
 
     await connectDB();
 
-    // 查找并更新 Bot
-    const bot = await BotModel.findByIdAndUpdate(
-      id,
-      { $set: body },
-      { new: true }
-    ).lean();
+    // 使用会话更新 Bot
+    const session = await BotModel.startSession();
+    let updatedBot;
 
-    if (!bot) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: '未找到指定的 Bot',
-          error: 'Bot 不存在',
-        },
-        { status: 404 }
-      );
+    try {
+      await session.withTransaction(async () => {
+        // 如果更新token，检查是否与其他Bot冲突
+        if (body.token) {
+          const existingBot = await BotModel.findOne({
+            _id: { $ne: id },
+            token: body.token
+          }).session(session);
+
+          if (existingBot) {
+            throw new Error('TOKEN_EXISTS');
+          }
+        }
+
+        // 更新Bot
+        updatedBot = await BotModel.findByIdAndUpdate(
+          id,
+          { $set: body },
+          { new: true, session }
+        ).lean();
+
+        if (!updatedBot) {
+          throw new Error('BOT_NOT_FOUND');
+        }
+      });
+
+      await session.endSession();
+      return NextResponse.json({
+        success: true,
+        data: transformBotToResponse(updatedBot),
+        message: '更新成功',
+      });
+    } catch (error) {
+      await session.endSession();
+      throw error;
     }
-
-    return NextResponse.json({
-      success: true,
-      data: transformBotToResponse(bot),
-      message: '更新成功',
-    });
   } catch (error) {
     console.error('更新 Bot 失败:', error);
+    if (error instanceof Error) {
+      if (error.message === 'TOKEN_EXISTS') {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Token已被其他Bot使用',
+            error: 'TOKEN_EXISTS',
+          },
+          { status: 400 }
+        );
+      }
+      if (error.message === 'BOT_NOT_FOUND') {
+        return NextResponse.json(
+          {
+            success: false,
+            message: '未找到指定的Bot',
+            error: 'BOT_NOT_FOUND',
+          },
+          { status: 404 }
+        );
+      }
+    }
     return NextResponse.json(
       {
         success: false,
-        message: '更新 Bot 失败',
+        message: '更新Bot失败',
         error: error instanceof Error ? error.message : '服务器错误',
       },
       { status: 500 }
@@ -151,30 +190,42 @@ export async function DELETE(
 
     await connectDB();
 
-    // 删除 Bot
-    const bot = await BotModel.findByIdAndDelete(id).lean();
+    // 使用会话删除Bot
+    const session = await BotModel.startSession();
+    try {
+      await session.withTransaction(async () => {
+        // 删除Bot
+        const result = await BotModel.findByIdAndDelete(id).session(session);
+        if (!result) {
+          throw new Error('BOT_NOT_FOUND');
+        }
+      });
 
-    if (!bot) {
+      await session.endSession();
+      return NextResponse.json({
+        success: true,
+        message: '删除成功',
+      });
+    } catch (error) {
+      await session.endSession();
+      throw error;
+    }
+  } catch (error) {
+    console.error('删除 Bot 失败:', error);
+    if (error instanceof Error && error.message === 'BOT_NOT_FOUND') {
       return NextResponse.json(
         {
           success: false,
-          message: '未找到指定的 Bot',
-          error: 'Bot 不存在',
+          message: '未找到指定的Bot',
+          error: 'BOT_NOT_FOUND',
         },
         { status: 404 }
       );
     }
-
-    return NextResponse.json({
-      success: true,
-      message: '删除成功',
-    });
-  } catch (error) {
-    console.error('删除 Bot 失败:', error);
     return NextResponse.json(
       {
         success: false,
-        message: '删除 Bot 失败',
+        message: '删除Bot失败',
         error: error instanceof Error ? error.message : '服务器错误',
       },
       { status: 500 }
