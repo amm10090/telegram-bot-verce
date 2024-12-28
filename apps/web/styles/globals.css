@@ -64,7 +64,7 @@
 		--card-foreground: 0 0% 100%;
 
 		/* 弹出层样式 */
-		--popover: 0 0% 11%;
+		--popover: 0 0% 13%;
 		--popover-foreground: 0 0% 100%;
 
 		/* 主次要颜色 - 保持简洁的黑白对比 */
@@ -85,13 +85,27 @@
 		--border: 0 0% 20%;
 		--input: 0 0% 20%;
 		--ring: 0 0% 80%;
+	}
 
-		/* 图表颜色 */
-		--chart-1: 0 0% 100%;
-		--chart-2: 142 71% 45%;
-		--chart-3: 201 96% 32%;
-		--chart-4: 280 61% 50%;
-		--chart-5: 323 72% 37%;
+	/* 暗色模式下的 Popover 样式增强 */
+	.dark [data-radix-popper-content-wrapper] {
+		background: hsl(0 0% 13%);
+		border: 1px solid hsl(0 0% 20%);
+		box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+	}
+
+	.dark .bg-popover {
+		background: hsl(0 0% 13%);
+		border: 1px solid hsl(0 0% 20%);
+	}
+
+	/* 暗色模式下的卡片增强 */
+	.dark .card,
+	.dark [class*="card-"] {
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+					0 1px 2px -1px rgba(0, 0, 0, 0.1),
+					inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
 	}
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useIntl } from "react-intl";
 import { useRouter } from "next/navigation";
 import {
@@ -8,7 +9,8 @@ import {
   MessageSquare,
   Users,
   Settings2,
-  ChevronRight
+  ChevronRight,
+  Plus
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -18,6 +20,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import { MenuSettings } from "@/components/features/menu-settings";
+import { TelegramBotService } from "@/components/services/telegram-bot-service";
+import type { BotResponse } from "@/types/bot";
+import { useToast } from "@workspace/ui/hooks/use-toast";
 
 // 示例数据
 const botFeatures = [
@@ -51,9 +64,62 @@ const botFeatures = [
   }
 ];
 
+const botService = new TelegramBotService();
+
 export default function BotsPage() {
   const intl = useIntl();
   const router = useRouter();
+  const { toast } = useToast();
+  const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
+  const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
+  const [bots, setBots] = useState<BotResponse[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // 加载机器人列表
+  useEffect(() => {
+    const loadBots = async () => {
+      try {
+        setLoading(true);
+        const result = await botService.getAllBots();
+        if (result.success) {
+          setBots(result.data);
+        } else {
+          toast({
+            variant: "destructive",
+            title: intl.formatMessage({ id: "error.title" }),
+            description: result.message || intl.formatMessage({ id: "error.unknown" }),
+          });
+        }
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: intl.formatMessage({ id: "error.title" }),
+          description: intl.formatMessage({ id: "error.loading" }),
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBots();
+  }, [intl, toast]);
+
+  const handleFeatureClick = (feature: typeof botFeatures[0]) => {
+    if (!selectedBotId) {
+      toast({
+        variant: "destructive",
+        title: intl.formatMessage({ id: "error.title" }),
+        description: intl.formatMessage({ id: "error.selectBot" }),
+      });
+      return;
+    }
+
+    if (feature.id === "menu") {
+      setIsMenuDrawerOpen(true);
+    } else {
+      router.push(`${feature.href}?botId=${selectedBotId}`);
+    }
+  };
 
   return (
     <div className="container mx-auto py-6">
@@ -66,6 +132,31 @@ export default function BotsPage() {
             {intl.formatMessage({ id: "bots.configuration.description" })}
           </p>
         </div>
+        <Button onClick={() => router.push("/settings")}>
+          <Plus className="mr-2 h-4 w-4" />
+          {intl.formatMessage({ id: "bots.actions.add" })}
+        </Button>
+      </div>
+
+      <div className="mb-6">
+        <Select
+          value={selectedBotId || ""}
+          onValueChange={(value) => setSelectedBotId(value)}
+        >
+          <SelectTrigger className="w-[300px]">
+            <SelectValue placeholder={intl.formatMessage({ id: "bots.select.placeholder" })} />
+          </SelectTrigger>
+          <SelectContent>
+            {bots.map((bot) => (
+              <SelectItem key={bot.id} value={bot.id}>
+                <div className="flex items-center gap-2">
+                  <BotIcon className="h-4 w-4" />
+                  <span>{bot.name}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -74,8 +165,12 @@ export default function BotsPage() {
           return (
             <Card
               key={feature.id}
-              className="group hover:border-primary/50 transition-colors cursor-pointer"
-              onClick={() => router.push(feature.href)}
+              className={`group transition-colors ${
+                selectedBotId 
+                  ? "hover:border-primary/50 cursor-pointer" 
+                  : "opacity-50 cursor-not-allowed"
+              }`}
+              onClick={() => handleFeatureClick(feature)}
             >
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -85,17 +180,19 @@ export default function BotsPage() {
                     </div>
                     <CardTitle>{intl.formatMessage({ id: feature.title })}</CardTitle>
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push(feature.href);
-                    }}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                  {selectedBotId && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFeatureClick(feature);
+                      }}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -107,6 +204,14 @@ export default function BotsPage() {
           );
         })}
       </div>
+
+      {selectedBotId && (
+        <MenuSettings
+          botId={selectedBotId}
+          isOpen={isMenuDrawerOpen}
+          onClose={() => setIsMenuDrawerOpen(false)}
+        />
+      )}
 
       <div className="mt-8">
         <Card>

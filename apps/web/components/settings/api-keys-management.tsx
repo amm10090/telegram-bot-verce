@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useIntl } from 'react-intl';
-import { Copy, RefreshCw, Trash, Plus } from 'lucide-react';
+import { Copy, RefreshCw, Trash, Plus, MoreHorizontal, Eye } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
 import {
   Card,
@@ -19,6 +19,11 @@ import {
   TableHeader,
   TableRow,
 } from '@workspace/ui/components/table';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@workspace/ui/components/popover";
 import { useToast } from '@workspace/ui/hooks/use-toast';
 import { TelegramBotService } from '@/components/services/telegram-bot-service';
 import type { BotResponse } from '@/types/bot';
@@ -234,83 +239,106 @@ export default function ApiKeysManagement() {
               {intl.formatMessage({ id: 'common.refresh' })}
             </Button>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  {intl.formatMessage({ id: 'apiKeys.table.name' })}
-                </TableHead>
-                <TableHead>
-                  {intl.formatMessage({ id: 'bot.form.token' })}
-                </TableHead>
-                <TableHead>
-                  {intl.formatMessage({ id: 'apiKeys.table.status' })}
-                </TableHead>
-                <TableHead className="text-right">
-                  {intl.formatMessage({ id: 'apiKeys.table.actions' })}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8">
-                    <div className="flex items-center justify-center">
-                      <RefreshCw className="h-6 w-6 animate-spin mr-2" />
-                      {intl.formatMessage({ id: 'common.loading' })}
-                    </div>
-                  </TableCell>
+                  <TableHead>{intl.formatMessage({ id: 'apiKeys.table.name' })}</TableHead>
+                  <TableHead className="hidden sm:table-cell">
+                    {intl.formatMessage({ id: 'bot.form.token' })}
+                  </TableHead>
+                  <TableHead className="w-[90px]">
+                    {intl.formatMessage({ id: 'apiKeys.table.status' })}
+                  </TableHead>
+                  <TableHead className="w-[100px] text-right">
+                    {intl.formatMessage({ id: 'apiKeys.table.actions' })}
+                  </TableHead>
                 </TableRow>
-              ) : bots.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    {intl.formatMessage({ id: 'apiKeys.table.noData' })}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                bots.map((bot) => (
+              </TableHeader>
+              <TableBody>
+                {bots.map((bot) => (
                   <TableRow key={bot.id}>
-                    <TableCell className="font-medium">{bot.name}</TableCell>
-                    <TableCell>
-                      <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">
-                        {bot.token}
-                      </code>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col sm:hidden gap-1">
+                        <span>{bot.name}</span>
+                        <code className="text-xs font-mono text-muted-foreground">
+                          {bot.token.split(':')[0]}
+                        </code>
+                      </div>
+                      <span className="hidden sm:block">{bot.name}</span>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell font-mono text-sm text-muted-foreground">
+                      {bot.token.split(':')[0]}
                     </TableCell>
                     <TableCell>
                       <Badge variant={bot.isEnabled ? 'default' : 'secondary'}>
-                        {bot.isEnabled
-                          ? intl.formatMessage({ id: 'common.status.active' })
-                          : intl.formatMessage({ id: 'common.status.inactive' })}
+                        {bot.isEnabled ? 
+                          intl.formatMessage({ id: 'common.status.active' }) :
+                          intl.formatMessage({ id: 'common.status.inactive' })
+                        }
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              className="h-8 w-8"
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span className="sr-only">查看密钥</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent 
+                            className="w-[min(calc(100vw-2rem),400px)] p-3 border bg-popover shadow-lg" 
+                            side="top" 
+                            align="end"
+                            sideOffset={5}
+                          >
+                            <div className="space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium text-sm text-muted-foreground">
+                                  {intl.formatMessage({ id: 'bot.form.token' })}
+                                </h4>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => copyApiKey(bot.token)}
+                                  className="h-8 w-8"
+                                >
+                                  <Copy className="h-4 w-4" />
+                                  <span className="sr-only">复制密钥</span>
+                                </Button>
+                              </div>
+                              <div className="bg-background/50 p-3 rounded-md border">
+                                <div className="max-w-full overflow-hidden">
+                                  <code className="text-sm font-mono text-foreground break-all whitespace-normal">{bot.token}</code>
+                                </div>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="icon"
-                          onClick={() => copyApiKey(bot.token)}
-                          title={intl.formatMessage({ id: 'apiKeys.actions.copy' })}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
+                          className="h-8 w-8"
                           onClick={() => {
                             setSelectedBotId(bot.id);
                             setShowDeleteDialog(true);
                           }}
-                          title={intl.formatMessage({ id: 'apiKeys.actions.delete' })}
                         >
                           <Trash className="h-4 w-4" />
+                          <span className="sr-only">删除</span>
                         </Button>
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </CardContent>
 
