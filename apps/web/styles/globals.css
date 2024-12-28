@@ -118,6 +118,22 @@
 		backdrop-filter: blur(20px);
 	}
 
+	/* 暗色模式下的导航链接样式 */
+	.dark nav a,
+	.dark nav button {
+		@apply text-muted-foreground hover:text-foreground transition-colors;
+	}
+
+	/* 暗色模式下导航链接的悬浮和激活状态 */
+	.dark nav a:hover,
+	.dark nav button:hover,
+	.dark nav a[aria-current="page"],
+	.dark nav .active {
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+		box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+		@apply text-white;
+	}
+
 	/* 暗色模式下的悬浮效果 */
 	.dark .card:hover,
 	.dark [class*="card-"]:hover {
