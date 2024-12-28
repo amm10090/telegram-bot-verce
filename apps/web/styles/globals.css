@@ -5,8 +5,8 @@
 /* 基础主题变量定义 */
 /* 主题切换动画 */
 * {
-	transition-property: background-color, border-color, color, fill, stroke;
-	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	transition-property: background-color, border-color, color, fill, stroke, backdrop-filter, box-shadow;
+	transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
 	transition-duration: 200ms;
 }
 @layer base {
@@ -55,38 +55,39 @@
 
 	/* 深色主题变量 */
 	.dark {
-		--background: 20 14.3% 4.1%;
-		--foreground: 0 0% 95%;
+		/* 主背景使用纯黑 */
+		--background: 0 0% 0%;
+		--foreground: 0 0% 100%;
 
-		/* 深色主题卡片样式 */
-		--card: 24 9.8% 10%;
-		--card-foreground: 0 0% 95%;
+		/* 卡片样式 - Apple风格的深灰 */
+		--card: 0 0% 11%;
+		--card-foreground: 0 0% 100%;
 
-		/* 深色主题弹出层样式 */
-		--popover: 0 0% 9%;
-		--popover-foreground: 0 0% 95%;
+		/* 弹出层样式 */
+		--popover: 0 0% 11%;
+		--popover-foreground: 0 0% 100%;
 
-		/* 深色主题主次要颜色 */
-		--primary: 0 0% 98%;
-		--primary-foreground: 240 5.9% 10%;
-		--secondary: 240 3.7% 15.9%;
-		--secondary-foreground: 0 0% 98%;
+		/* 主次要颜色 - 保持简洁的黑白对比 */
+		--primary: 0 0% 100%;
+		--primary-foreground: 0 0% 0%;
+		--secondary: 0 0% 15%;
+		--secondary-foreground: 0 0% 100%;
 
-		/* 深色主题静音和强调色 */
+		/* 静音和强调色 - 优雅的灰度层次 */
 		--muted: 0 0% 15%;
-		--muted-foreground: 240 5% 64.9%;
-		--accent: 12 6.5% 15.1%;
-		--accent-foreground: 0 0% 98%;
+		--muted-foreground: 0 0% 65%;
+		--accent: 0 0% 100%;
+		--accent-foreground: 0 0% 0%;
 
-		/* 深色主题功能性颜色 */
-		--destructive: 0 62.8% 30.6%;
-		--destructive-foreground: 0 0% 98%;
-		--border: 240 3.7% 15.9%;
-		--input: 240 3.7% 15.9%;
-		--ring: 240 4.9% 83.9%;
+		/* 功能性颜色 */
+		--destructive: 0 85% 60%;
+		--destructive-foreground: 0 0% 100%;
+		--border: 0 0% 20%;
+		--input: 0 0% 20%;
+		--ring: 0 0% 80%;
 
-		/* 深色主题图表颜色 */
-		--chart-1: 0 0% 98%;
+		/* 图表颜色 */
+		--chart-1: 0 0% 100%;
 		--chart-2: 142 71% 45%;
 		--chart-3: 201 96% 32%;
 		--chart-4: 280 61% 50%;
@@ -107,6 +108,25 @@
 		font-feature-settings: 'rlig' 1, 'calt' 1;
 	}
 
+	/* 暗色模式下的卡片增强 */
+	.dark .card,
+	.dark [class*="card-"] {
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+					0 1px 2px -1px rgba(0, 0, 0, 0.1),
+					inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+		backdrop-filter: blur(20px);
+	}
+
+	/* 暗色模式下的悬浮效果 */
+	.dark .card:hover,
+	.dark [class*="card-"]:hover {
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+		box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.15),
+					0 2px 3px -2px rgba(0, 0, 0, 0.15),
+					inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+	}
+
 	/* 滚动条美化 */
 	::-webkit-scrollbar {
 		width: 8px;
@@ -114,15 +134,15 @@
 	}
 
 	::-webkit-scrollbar-track {
-		@apply bg-accent/10;
+		@apply bg-secondary;
 	}
 
 	::-webkit-scrollbar-thumb {
-		@apply bg-accent/50 rounded-full;
+		@apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/30 transition-colors;
 	}
 
 	/* 文本选择样式 */
 	::selection {
-		@apply bg-primary/20 text-foreground;
+		@apply bg-accent/10 text-accent;
 	}
 }
