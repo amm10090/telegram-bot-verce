@@ -290,6 +290,7 @@ const zhCN = {
   "apiKeys.actions.refresh": "刷新",
   "apiKeys.actions.delete": "删除",
   // 机器人表单
+  "bot.created": "机器人已创建",
   "bot.form.name": "名称",
   "bot.form.token": "令牌",
   "bot.form.description": "描述",

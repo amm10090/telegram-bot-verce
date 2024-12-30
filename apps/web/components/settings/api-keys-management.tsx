@@ -231,18 +231,25 @@ export default function ApiKeysManagement() {
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isLoadingRef = useRef(false);  // 添加一个ref来跟踪加载状态
 
   // 加载机器人列表
-  const loadBots = useCallback(async () => {
+  const loadBots = useCallback(async (isManualRefresh = false) => {
+    // 如果已经在加载中且不是手动刷新，则跳过
+    if (isLoadingRef.current && !isManualRefresh) {
+      return;
+    }
+
     try {
-      // 如果有正在进行的请求，取消它
-      if (abortControllerRef.current) {
+      // 只有在手动刷新或有新请求时才取消之前的请求
+      if (isManualRefresh && abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
 
       // 创建新的 AbortController
       abortControllerRef.current = new AbortController();
       setLoading(true);
+      isLoadingRef.current = true;
 
       const result = await botService.getAllBots(
         undefined,
@@ -272,19 +279,26 @@ export default function ApiKeysManagement() {
       });
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [intl, toast]);
+  }, [intl, toast]); // 恢复必要的依赖
 
   // 组件挂载时加载数据
   useEffect(() => {
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    
     loadBots();
 
-    // 组件卸载时取消未完成的请求
+    // 组件卸载时才取消请求
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      controller.abort();
     };
+  }, [loadBots]);
+
+  // 处理手动刷新
+  const handleRefresh = useCallback(() => {
+    loadBots(true);
   }, [loadBots]);
 
   // 复制API密钥到剪贴板
@@ -409,7 +423,7 @@ export default function ApiKeysManagement() {
             <Button
               variant="outline"
               size="sm"
-              onClick={loadBots}
+              onClick={handleRefresh}
               disabled={loading}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />

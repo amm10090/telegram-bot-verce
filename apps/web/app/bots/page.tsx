@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useIntl } from "react-intl";
 import { useRouter } from "next/navigation";
 import {
@@ -76,56 +76,47 @@ export default function BotsPage() {
   const [bots, setBots] = useState<BotResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isLoadingRef = useRef(false);  // 添加加载状态ref
 
   // 加载机器人列表
-  useEffect(() => {
-    let mounted = true;
+  const loadBots = useCallback(async () => {
+    // 如果已经在加载中，则不重复加载
+    if (isLoadingRef.current) return;
 
-    const loadBots = async () => {
-      // 如果已经在加载中，则不重复加载
-      if (loading) return;
+    try {
+      setLoading(true);
+      isLoadingRef.current = true;
+      setError(null);
+      const result = await botService.getAllBots();
 
-      try {
-        setLoading(true);
-        setError(null);
-        const result = await botService.getAllBots();
-        
-        if (!mounted) return;
-
-        if (result.success) {
-          setBots(result.data);
-        } else {
-          setError(result.message || intl.formatMessage({ id: "error.unknown" }));
-          toast({
-            variant: "destructive",
-            title: intl.formatMessage({ id: "error.title" }),
-            description: result.message || intl.formatMessage({ id: "error.unknown" }),
-          });
-        }
-      } catch (error) {
-        if (!mounted) return;
-        
-        const errorMessage = error instanceof Error ? error.message : intl.formatMessage({ id: "error.loading" });
-        setError(errorMessage);
+      if (result.success) {
+        setBots(result.data);
+      } else {
+        setError(result.message || intl.formatMessage({ id: "error.unknown" }));
         toast({
           variant: "destructive",
           title: intl.formatMessage({ id: "error.title" }),
-          description: errorMessage,
+          description: result.message || intl.formatMessage({ id: "error.unknown" }),
         });
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
       }
-    };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : intl.formatMessage({ id: "error.loading" });
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: intl.formatMessage({ id: "error.title" }),
+        description: errorMessage,
+      });
+    } finally {
+      setLoading(false);
+      isLoadingRef.current = false;
+    }
+  }, [intl, toast]);
 
+  // 组件挂载时加载数据
+  useEffect(() => {
     loadBots();
-
-    // 清理函数
-    return () => {
-      mounted = false;
-    };
-  }, []); // 仅在组件挂载时执行一次
+  }, [loadBots]);
 
   const handleFeatureClick = (feature: typeof botFeatures[0]) => {
     if (!selectedBotId) {

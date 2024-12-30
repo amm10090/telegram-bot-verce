@@ -1,10 +1,23 @@
+/**
+ * Telegram Bot API 路由处理文件
+ * 提供了机器人的CRUD操作接口，包括：
+ * - GET: 获取机器人列表，支持分页、搜索和排序
+ * - POST: 创建新的机器人
+ * - DELETE: 批量删除机器人
+ */
+
 import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/db';
 import BotModel from '@/models/bot';
 import { isValidObjectId } from 'mongoose';
 import { BotResponse } from '@/types/bot';
+import crypto from 'crypto';
 
-// 将数据库文档转换为API响应格式
+/**
+ * 将数据库Bot文档转换为API响应格式
+ * @param bot 数据库中的Bot文档
+ * @returns 格式化后的Bot响应对象
+ */
 function transformBotToResponse(bot: any): BotResponse {
   return {
     id: bot._id.toString(),
@@ -21,7 +34,13 @@ function transformBotToResponse(bot: any): BotResponse {
   };
 }
 
-// 错误响应处理函数
+/**
+ * 统一的错误响应处理函数
+ * @param status HTTP状态码
+ * @param message 错误消息
+ * @param error 错误代码
+ * @param details 错误详情（可选）
+ */
 function errorResponse(status: number, message: string, error: string, details?: any) {
   return new Response(
     JSON.stringify({
@@ -41,7 +60,12 @@ function errorResponse(status: number, message: string, error: string, details?:
   );
 }
 
-// 成功响应处理函数
+/**
+ * 统一的成功响应处理函数
+ * @param data 响应数据
+ * @param message 成功消息（可选）
+ * @param pagination 分页信息（可选）
+ */
 function successResponse(data: any, message?: string, pagination?: any) {
   return new Response(
     JSON.stringify({
@@ -60,6 +84,14 @@ function successResponse(data: any, message?: string, pagination?: any) {
   );
 }
 
+/**
+ * GET 请求处理函数 - 获取机器人列表
+ * 支持以下功能：
+ * - 分页查询（page, limit）
+ * - 关键词搜索（search）
+ * - 状态筛选（status）
+ * - 排序（sortBy, sortOrder）
+ */
 export async function GET(req: NextRequest) {
   try {
     const searchParams = new URL(req.url).searchParams;
@@ -103,7 +135,7 @@ export async function GET(req: NextRequest) {
     // 计算分页信息
     const totalPages = Math.ceil(total / limit);
 
-    return successResponse(transformedBots, '获取机器人列表成功', {
+    return successResponse(transformedBots, '获取机器人列表成功！', {
       total,
       page,
       limit,
@@ -115,9 +147,24 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * POST 请求处理函数 - 创建新机器人
+ * 功能特点：
+ * - 使用MongoDB事务确保数据一致性
+ * - 检查token唯一性
+ * - 自动创建默认的开始菜单
+ * - 自动生成唯一的apiKey
+ */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // 验证必需的字段
+    if (!body.token || !body.name) {
+      return errorResponse(400, '缺少必需的字段', 'MISSING_REQUIRED_FIELDS', {
+        required: ['token', 'name']
+      });
+    }
 
     await connectDB();
 
@@ -134,10 +181,14 @@ export async function POST(req: NextRequest) {
           throw new Error('TOKEN_EXISTS');
         }
 
+        // 生成唯一的apiKey (使用uuid v4)
+        const apiKey = crypto.randomUUID();
+
         // 创建机器人
         bot = await BotModel.create([{
           name: body.name,
           token: body.token,
+          apiKey: apiKey,     // 添加API密钥
           status: 'inactive',
           settings: body.settings || {},
           menus: [{
@@ -151,7 +202,7 @@ export async function POST(req: NextRequest) {
       });
 
       await session.endSession();
-      return successResponse(bot, '创建机器人成功');
+      return successResponse(transformBotToResponse(bot), '创建机器人成功');
     } catch (error) {
       await session.endSession();
       throw error;
@@ -167,6 +218,14 @@ export async function POST(req: NextRequest) {
   }
 }
 
+/**
+ * DELETE 请求处理函数 - 批量删除机器人
+ * 功能特点：
+ * - 支持批量删除多个机器人
+ * - 使用MongoDB事务确保数据一致性
+ * - 同时清理关联的菜单数据
+ * - 验证ID格式的合法性
+ */
 export async function DELETE(req: NextRequest) {
   try {
     const body = await req.json();

@@ -30,7 +30,7 @@ export interface IBot {
   apiKey: string;
   isEnabled: boolean;
   status: 'active' | 'inactive';
-  userId: Types.ObjectId;
+  userId?: Types.ObjectId;
   settings?: BotSettings;
   menus?: BotMenu[];
   createdAt: Date;
