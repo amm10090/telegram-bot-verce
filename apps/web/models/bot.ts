@@ -28,7 +28,9 @@ const botSchema = new mongoose.Schema<IBotDocument>(
     menus: [{
       text: String,
       command: String,
-      order: Number
+      url: String,
+      order: Number,
+      _id: { type: mongoose.Schema.Types.ObjectId, auto: true }
     }],
     lastUsed: { type: Date }
   },

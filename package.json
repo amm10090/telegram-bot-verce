@@ -6,7 +6,8 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "tree": "tree -L 20 -I 'node_modules|.git|.next|.turbo|dist|build|coverage' --dirsfirst -a > tree.md"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",

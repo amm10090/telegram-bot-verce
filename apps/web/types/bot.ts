@@ -34,7 +34,7 @@ export interface IBot {
   status: 'active' | 'inactive';
   userId?: Types.ObjectId;
   settings?: BotSettings;
-  menus?: BotMenu[];
+  menus: BotMenu[];
   createdAt: Date;
   updatedAt: Date;
   lastUsed?: Date;
