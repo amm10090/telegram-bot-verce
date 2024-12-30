@@ -1,8 +1,17 @@
+/**
+ * API密钥管理组件
+ * 提供机器人的API密钥管理功能，包括：
+ * - 查看和搜索现有机器人列表
+ * - 添加新的机器人
+ * - 删除现有机器人
+ * - 复制API密钥
+ * - 刷新机器人列表
+ */
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useIntl } from 'react-intl';
-import { Copy, RefreshCw, Trash, Plus, MoreHorizontal, Eye } from 'lucide-react';
+import { Copy, RefreshCw, Trash, Plus, Eye } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
 import {
   Card,
@@ -19,11 +28,6 @@ import {
   TableHeader,
   TableRow,
 } from '@workspace/ui/components/table';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@workspace/ui/components/popover";
 import { useToast } from '@workspace/ui/hooks/use-toast';
 import { TelegramBotService } from '@/components/services/telegram-bot-service';
 import type { BotResponse } from '@/types/bot';
@@ -46,11 +50,177 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@workspace/ui/components/dialog';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@workspace/ui/components/popover";
 import { TelegramBotForm } from './telegram-bot-form';
 import { BotSearch } from './bot-search';
 
-// 创建单例服务实例
+// 创建TelegramBotService单例实例
 const botService = new TelegramBotService();
+
+// 移动端卡片组件
+function BotCard({ bot, onDelete, onCopy }: { 
+  bot: BotResponse; 
+  onDelete: (id: string) => void;
+  onCopy: (token: string) => void;
+}) {
+  const intl = useIntl();
+  const tokenId = bot.token.split(':')[0];
+
+  return (
+    <div className="p-4 hover:bg-accent/5 transition-colors">
+      {/* 头部：名称和操作按钮 */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-base">{bot.name}</span>
+            <Badge 
+              variant={bot.status === 'active' ? 'success' : 'secondary'}
+              className="h-5 text-xs"
+            >
+              {bot.status}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <code className="text-xs font-mono text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+              {tokenId}
+            </code>
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => onCopy(bot.token)}
+              >
+                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-[calc(100vw-2rem)] p-3 border bg-popover shadow-lg" 
+                  side="top" 
+                  align="end"
+                  sideOffset={5}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm text-muted-foreground">
+                        {intl.formatMessage({ id: 'bot.form.token' })}
+                      </h4>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => onCopy(bot.token)}
+                        className="h-7 w-7"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <div className="bg-muted/30 p-2 rounded-md">
+                      <code className="text-xs font-mono text-foreground break-all whitespace-normal">
+                        {bot.token}
+                      </code>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+          onClick={() => onDelete(bot.id)}
+        >
+          <Trash className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// 桌面端表格行组件
+function BotTableRow({ bot, onDelete, onCopy }: {
+  bot: BotResponse;
+  onDelete: (id: string) => void;
+  onCopy: (token: string) => void;
+}) {
+  const intl = useIntl();
+  const tokenId = bot.token.split(':')[0];
+
+  return (
+    <TableRow>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <span>{bot.name}</span>
+          <Badge variant={bot.status === 'active' ? 'success' : 'secondary'}>
+            {bot.status}
+          </Badge>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">
+            {tokenId}
+          </code>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <Eye className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent 
+              className="w-[min(calc(100vw-2rem),400px)] p-3 border bg-popover shadow-lg" 
+              side="top" 
+              align="end"
+              sideOffset={5}
+            >
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm text-muted-foreground">
+                    {intl.formatMessage({ id: 'bot.form.token' })}
+                  </h4>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => onCopy(bot.token)}
+                    className="h-8 w-8"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="bg-background/50 p-3 rounded-md border">
+                  <code className="text-sm font-mono text-foreground break-all whitespace-normal">
+                    {bot.token}
+                  </code>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onDelete(bot.id)}
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
 
 export default function ApiKeysManagement() {
   const intl = useIntl();
@@ -89,8 +259,8 @@ export default function ApiKeysManagement() {
         });
       }
     } catch (error) {
+      // 如果是取消请求的错误，不做处理
       if (error instanceof DOMException && error.name === 'AbortError') {
-        // 请求被取消，不做处理
         return;
       }
       
@@ -109,7 +279,7 @@ export default function ApiKeysManagement() {
   useEffect(() => {
     loadBots();
 
-    // 组件卸载时取消请求
+    // 组件卸载时取消未完成的请求
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -117,7 +287,7 @@ export default function ApiKeysManagement() {
     };
   }, [loadBots]);
 
-  // 使用 useCallback 优化其他函数
+  // 复制API密钥到剪贴板
   const copyApiKey = useCallback(async (apiKey: string) => {
     try {
       await navigator.clipboard.writeText(apiKey);
@@ -133,6 +303,7 @@ export default function ApiKeysManagement() {
     }
   }, [intl, toast]);
 
+  // 处理删除机器人
   const handleDelete = useCallback(async () => {
     if (!selectedBotId) return;
 
@@ -142,7 +313,7 @@ export default function ApiKeysManagement() {
         toast({
           description: intl.formatMessage({ id: 'apiKeys.deleted' }),
         });
-        loadBots();
+        loadBots();  // 重新加载列表
       } else {
         toast({
           title: intl.formatMessage({ id: 'error.title' }),
@@ -162,6 +333,7 @@ export default function ApiKeysManagement() {
     }
   }, [selectedBotId, intl, toast, loadBots]);
 
+  // 处理搜索机器人
   const handleSearch = useCallback(async (query: string, type: string) => {
     try {
       setLoading(true);
@@ -186,11 +358,16 @@ export default function ApiKeysManagement() {
     }
   }, [intl, toast]);
 
-  // 处理新增 Bot 成功
+  // 处理添加机器人成功
   const handleAddSuccess = useCallback((bot: BotResponse) => {
     setShowAddDialog(false);
-    loadBots();
+    loadBots();  // 重新加载列表以显示新添加的机器人
   }, [loadBots]);
+
+  const handleDeleteClick = useCallback((id: string) => {
+    setSelectedBotId(id);
+    setShowDeleteDialog(true);
+  }, []);
 
   return (
     <Card>
@@ -240,116 +417,55 @@ export default function ApiKeysManagement() {
             </Button>
           </div>
           <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{intl.formatMessage({ id: 'apiKeys.table.name' })}</TableHead>
-                  <TableHead className="hidden sm:table-cell">
-                    {intl.formatMessage({ id: 'bot.form.token' })}
-                  </TableHead>
-                  <TableHead className="w-[90px]">
-                    {intl.formatMessage({ id: 'apiKeys.table.status' })}
-                  </TableHead>
-                  <TableHead className="w-[100px] text-right">
-                    {intl.formatMessage({ id: 'apiKeys.table.actions' })}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {bots.map((bot) => (
-                  <TableRow key={bot.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex flex-col sm:hidden gap-1">
-                        <span>{bot.name}</span>
-                        <code className="text-xs font-mono text-muted-foreground">
-                          {bot.token.split(':')[0]}
-                        </code>
-                      </div>
-                      <span className="hidden sm:block">{bot.name}</span>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell font-mono text-sm text-muted-foreground">
-                      {bot.token.split(':')[0]}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={bot.isEnabled ? 'default' : 'secondary'}>
-                        {bot.isEnabled ? 
-                          intl.formatMessage({ id: 'common.status.active' }) :
-                          intl.formatMessage({ id: 'common.status.inactive' })
-                        }
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-2">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="icon"
-                              className="h-8 w-8"
-                            >
-                              <Eye className="h-4 w-4" />
-                              <span className="sr-only">查看密钥</span>
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent 
-                            className="w-[min(calc(100vw-2rem),400px)] p-3 border bg-popover shadow-lg" 
-                            side="top" 
-                            align="end"
-                            sideOffset={5}
-                          >
-                            <div className="space-y-2.5">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-sm text-muted-foreground">
-                                  {intl.formatMessage({ id: 'bot.form.token' })}
-                                </h4>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => copyApiKey(bot.token)}
-                                  className="h-8 w-8"
-                                >
-                                  <Copy className="h-4 w-4" />
-                                  <span className="sr-only">复制密钥</span>
-                                </Button>
-                              </div>
-                              <div className="bg-background/50 p-3 rounded-md border">
-                                <div className="max-w-full overflow-hidden">
-                                  <code className="text-sm font-mono text-foreground break-all whitespace-normal">{bot.token}</code>
-                                </div>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => {
-                            setSelectedBotId(bot.id);
-                            setShowDeleteDialog(true);
-                          }}
-                        >
-                          <Trash className="h-4 w-4" />
-                          <span className="sr-only">删除</span>
-                        </Button>
-                      </div>
-                    </TableCell>
+            {/* 桌面端表格视图 */}
+            <div className="hidden sm:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{intl.formatMessage({ id: 'apiKeys.table.name' })}</TableHead>
+                    <TableHead>{intl.formatMessage({ id: 'bot.form.token' })}</TableHead>
+                    <TableHead className="w-[90px]">
+                      {intl.formatMessage({ id: 'apiKeys.table.actions' })}
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {bots.map((bot) => (
+                    <BotTableRow
+                      key={bot.id}
+                      bot={bot}
+                      onDelete={handleDeleteClick}
+                      onCopy={copyApiKey}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* 移动端卡片视图 */}
+            <div className="sm:hidden divide-y">
+              {bots.map((bot) => (
+                <BotCard
+                  key={bot.id}
+                  bot={bot}
+                  onDelete={handleDeleteClick}
+                  onCopy={copyApiKey}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </CardContent>
 
+      {/* 删除确认对话框 */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {intl.formatMessage({ id: 'apiKeys.delete.title' })}
+              {intl.formatMessage({ id: 'apiKeys.dialog.deleteTitle' })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {intl.formatMessage({ id: 'apiKeys.delete.description' })}
+              {intl.formatMessage({ id: 'apiKeys.dialog.deleteDescription' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

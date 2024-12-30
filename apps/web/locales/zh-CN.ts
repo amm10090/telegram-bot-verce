@@ -286,7 +286,7 @@ const zhCN = {
   "apiKeys.delete.description": "确定要删除此 API 密钥吗？此操作无法撤销。",
   "apiKeys.delete.title": "删除 API 密钥",
   "apiKeys.status.active": "活跃",
-  "apiKeys.actions.copy": "复制",
+  "apiKeys.copied": "复制",
   "apiKeys.actions.refresh": "刷新",
   "apiKeys.actions.delete": "删除",
   // 机器人表单
@@ -294,7 +294,7 @@ const zhCN = {
   "bot.form.token": "令牌",
   "bot.form.description": "描述",
   "bot.form.tokenDescription": "请输入您的机器人令牌",
-  "bot.form.descriptionDescription": "请输入您的机��人描述",
+  "bot.form.descriptionDescription": "请输入您的机器人描述",
   "bot.form.nameDescription": "请输入您的机器人名称",
   "bot.form.namePlaceholder": "请输入您的机器人名称",
   "bot.form.tokenPlaceholder": "请输入您的机器人令牌",
