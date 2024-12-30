@@ -4,14 +4,14 @@
   "type": "module",
   "private": true,
   "engines": {
-    "node": ">=20.0.0 <23.0.0"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "next dev --turbo",
     "dev:fast": "NEXT_TELEMETRY_DISABLED=1 next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "ESLINT_USE_FLAT_CONFIG=true eslint .",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf .next && rm -rf .cache"
   },
   "dependencies": {
