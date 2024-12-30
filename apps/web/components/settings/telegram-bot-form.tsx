@@ -21,11 +21,15 @@ import { Input } from "@workspace/ui/components/input";
 import { Button } from "@workspace/ui/components/button";
 import { useToast } from "@workspace/ui/hooks/use-toast";
 
+// Telegram Bot 表单组件，用于创建或更新 Telegram Bot
+// 支持客户端渲染，包含表单验证和提交逻辑
 interface TelegramBotFormProps {
   initialData?: BotResponse;
   onSuccess: (data: BotResponse) => void;
 }
 
+// 表单验证模式定义
+// 使用 zod 进行表单字段验证，包括 name 和 token 的格式要求
 const formSchema = z.object({
   name: z
     .string()
@@ -44,8 +48,10 @@ type FormValues = z.infer<typeof formSchema>;
 export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps) {
   const intl = useIntl();
   const { toast } = useToast();
+  // 控制表单提交状态
   const [loading, setLoading] = useState(false);
 
+  // 初始化表单，设置默认值和验证规则
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -54,11 +60,12 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
     },
   });
 
+  // 表单提交处理函数
   async function onSubmit(data: FormValues) {
     try {
       setLoading(true);
       
-      // 验证 Token
+      // 首先验证 Token 的有效性
       const validationResult = await telegramBotService.validateToken(data.token);
       if (!validationResult.success) {
         toast({
@@ -69,17 +76,18 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
         return;
       }
 
-      // 准备数据
+      // 准备要提交的数据
       const botData: BotCreateInput | BotUpdateInput = {
         name: data.name,
         token: data.token,
       };
 
-      // 创建或更新 Bot
+      // 根据是否有初始数据决定是创建还是更新操作
       const result = initialData
         ? await telegramBotService.updateBot(initialData.id, botData as BotUpdateInput)
         : await telegramBotService.createBot(botData as BotCreateInput);
 
+      // 处理操作结果
       if (result.success) {
         toast({
           description: intl.formatMessage({
@@ -109,9 +117,12 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
     }
   }
 
+  // 渲染表单界面
+  // 包含 name 和 token 两个输入字段，以及提交按钮
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Bot 名称输入字段 */}
         <FormField
           control={form.control}
           name="name"
@@ -133,6 +144,7 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
           )}
         />
 
+        {/* Bot Token 输入字段 */}
         <FormField
           control={form.control}
           name="token"
@@ -155,6 +167,7 @@ export function TelegramBotForm({ initialData, onSuccess }: TelegramBotFormProps
           )}
         />
 
+        {/* 提交按钮 */}
         <Button type="submit" disabled={loading} className="w-full">
           {loading
             ? intl.formatMessage({ id: "common.processing" })
