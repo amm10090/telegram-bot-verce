@@ -289,6 +289,7 @@ const zhCN = {
   "apiKeys.copied": "复制",
   "apiKeys.actions.refresh": "刷新",
   "apiKeys.actions.delete": "删除",
+  "apiKeys.deleted": "删除成功",
   // 机器人表单
   "bot.created": "机器人已创建",
   "bot.form.name": "名称",

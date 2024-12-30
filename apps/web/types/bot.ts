@@ -18,9 +18,11 @@ export interface BotSettings {
 
 // Bot菜单项接口
 export interface BotMenu {
+  _id?: any;  // Mongoose ObjectId
   text: string;
   command: string;
   order: number;
+  toObject?: () => any;
 }
 
 // 基础 Bot 接口

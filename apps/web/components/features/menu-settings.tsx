@@ -127,11 +127,24 @@ export function MenuSettings({ botId, isOpen, onClose }: {
   const updateOrderMutation = useMutation({
     mutationFn: (items: MenuItem[]) => telegramMenuService.updateMenuOrder(
       botId, 
-      items.map((item, index) => ({ id: item.id, order: index }))
+      items.map((item, index) => ({ 
+        id: item.id.toString(), 
+        order: index 
+      }))
     ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menus', botId] });
+      toast({
+        description: "菜单顺序已更新",
+      });
     },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "更新菜单排序失败",
+      });
+    }
   });
 
   // 同步到Telegram的 mutation
@@ -168,7 +181,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     }
   };
 
-  const onDragEnd = (result: any) => {
+  const onDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
 
     const items = Array.from(menuItems);
@@ -176,23 +189,10 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     items.splice(result.destination.index, 0, reorderedItem!);
 
     // 更新排序
-    const updatedItems = items.map((item, index) => ({
-      ...item,
-      order: index,
-    }));
-
-    updateMenuOrder(updatedItems);
-  };
-
-  const updateMenuOrder = async (items: MenuItem[]) => {
     try {
       await updateOrderMutation.mutateAsync(items);
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "错误",
-        description: "更新菜单排序失败",
-      });
+      console.error('更新排序失败:', error);
     }
   };
 
@@ -255,19 +255,19 @@ export function MenuSettings({ botId, isOpen, onClose }: {
               <div className="flex items-center gap-2 group">
                 <div
                   {...provided.dragHandleProps}
-                  className="cursor-grab hover:bg-accent rounded p-1"
+                  className="cursor-grab hover:bg-muted/80 rounded p-1"
                 >
                   <GripVertical className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div 
-                  className={`flex-1 flex items-center gap-2 p-2 rounded-md hover:bg-accent ${
-                    selectedItem?.id === item.id ? "bg-accent" : ""
-                  } ${isDragging ? "cursor-grabbing" : "cursor-pointer"}`}
+                  className={`flex-1 flex items-center gap-2 p-2 rounded-md border border-border bg-background/30 hover:bg-muted/50 transition-colors ${
+                    selectedItem?.id === item.id ? "bg-muted" : ""
+                  } ${isDragging ? "cursor-grabbing shadow-lg" : "cursor-pointer"}`}
                   onClick={() => !isDragging && setSelectedItem(item)}
                 >
-                  <span className="flex-1">{item.text}</span>
+                  <span className="flex-1 font-medium">{item.text}</span>
                   {item.command && (
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-muted-foreground/80 font-mono">
                       {item.command}
                     </span>
                   )}
@@ -275,7 +275,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100"
+                  className="h-8 w-8  group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
                   onClick={() => removeMenuItem(item)}
                   disabled={isDragging}
                 >
