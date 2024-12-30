@@ -62,11 +62,5 @@
     "@typescript-eslint/parser": "^7.18.0",
     "@workspace/eslint-config": "workspace:^",
     "@workspace/typescript-config": "workspace:*"
-  },
-  "resolutions": {
-    "@types/react": "18.2.0",
-    "@types/react-dom": "18.2.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
   }
 }

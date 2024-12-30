@@ -1,8 +1,10 @@
+/** @type {import("eslint").Linter.Config} */
 module.exports = {
+  root: true,
   extends: ["@workspace/eslint-config/next.js"],
-  parser: "@typescript-eslint/parser",
   parserOptions: {
-    project: true,
+    tsconfigRootDir: __dirname,
+    project: "./tsconfig.json",
   },
   rules: {
     "@next/next/no-html-link-for-pages": "off",
