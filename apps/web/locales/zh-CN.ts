@@ -425,7 +425,9 @@ const zhCN = {
   'bot.search.type.token': '按Token',
   'bot.search.type.all': '全部',
   'bot.search.button': '搜索',
-
+'bots.select.empty': '暂无机器人',
+'bots.select.noData': '暂无机器人',
+'bots.select.loading': '加载中...',
   // Webhook 管理
   'webhook.url.placeholder': '输入Webhook URL',
   'webhook.actions.set': '设置Webhook',

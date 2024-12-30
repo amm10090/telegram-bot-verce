@@ -199,12 +199,12 @@ export function MenuSettings({ botId, isOpen, onClose }: {
       );
 
       const response = await fetch(`/api/bot/telegram/bots/${botId}/menu`, {
-        method: "POST",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          menu: updatedItems,
+          menus: updatedItems,
         }),
       });
 

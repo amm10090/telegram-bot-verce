@@ -18,6 +18,16 @@ import { Toaster } from "@workspace/ui/components/toaster"
 function SettingsContent() {
   const intl = useIntl();
 
+  // 添加平滑滚动效果
+  React.useEffect(() => {
+    if (window.location.hash) {
+      const element = document.querySelector(window.location.hash);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, []);
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* 页面标题和说明区域 - 添加了更好的间距和响应式设计 */}
@@ -74,7 +84,7 @@ function SettingsContent() {
           {/* 修改网格容器的样式 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* API密钥管理卡片 - 优化内部布局 */}
-            <div className="min-w-0">
+            <div id="api-keys" className="min-w-0">
               {" "}
               {/* 添加 min-w-0 防止子元素溢出 */}
               <Card>

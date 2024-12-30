@@ -155,7 +155,7 @@ export default function BotsPage() {
             {intl.formatMessage({ id: "bots.configuration.description" })}
           </p>
         </div>
-        <Button onClick={() => router.push("/settings")}>
+        <Button onClick={() => router.push("/settings#api-keys")}>
           <Plus className="mr-2 h-4 w-4" />
           {intl.formatMessage({ id: "bots.actions.add" })}
         </Button>
