@@ -43,12 +43,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog";
+import { telegramMenuService } from '@/components/services/telegram-menu-service';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // 定义菜单项的类型
 interface MenuItem {
   id: string;
   text: string;
-  command?: string;
+  command: string;
   url?: string;
   order: number;
   children?: MenuItem[];
@@ -57,7 +59,7 @@ interface MenuItem {
 // 定义表单验证模式
 const menuItemSchema = z.object({
   text: z.string().min(1, "菜单文本不能为空"),
-  command: z.string().optional(),
+  command: z.string().min(1, "命令不能为空"),
   url: z.string().url("请输入有效的URL").optional().or(z.literal('')),
 });
 
@@ -68,9 +70,8 @@ export function MenuSettings({ botId, isOpen, onClose }: {
 }) {
   const intl = useIntl();
   const { toast } = useToast();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
@@ -84,46 +85,68 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     },
   });
 
-  // 加载菜单数据
-  useEffect(() => {
-    const loadMenuItems = async () => {
-      if (!botId || !isOpen) return;
-      
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/bot/telegram/bots/${botId}/menu`);
-        const data = await response.json();
-        
-        if (data.success) {
-          setMenuItems(data.data);
-        } else {
-          toast({
-            variant: "destructive",
-            title: "错误",
-            description: data.message || "加载菜单失败",
-          });
-        }
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "错误",
-          description: "加载菜单失败",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // 使用 React Query 加载菜单数据
+  const { data: menuItems = [], isLoading } = useQuery({
+    queryKey: ['menus', botId],
+    queryFn: async () => {
+      const response = await telegramMenuService.getMenus(botId);
+      return response.data.map((item: any) => ({
+        id: item._id || Math.random().toString(36).substr(2, 9),
+        text: item.text,
+        command: item.command,
+        url: item.url,
+        order: item.order,
+        children: item.children,
+      }));
+    },
+    enabled: isOpen,
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
+  });
 
-    loadMenuItems();
-  }, [botId, isOpen, toast]);
+  // 更新表单的默认值
+  useEffect(() => {
+    if (selectedItem) {
+      form.reset({
+        text: selectedItem.text,
+        command: selectedItem.command,
+        url: selectedItem.url || '',
+      });
+    }
+  }, [selectedItem, form]);
+
+  // 更新菜单的 mutation
+  const updateMenuMutation = useMutation({
+    mutationFn: (items: MenuItem[]) => telegramMenuService.updateMenus(botId, items),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menus', botId] });
+    },
+  });
+
+  // 更新菜单排序的 mutation
+  const updateOrderMutation = useMutation({
+    mutationFn: (items: MenuItem[]) => telegramMenuService.updateMenuOrder(
+      botId, 
+      items.map((item, index) => ({ id: item.id, order: index }))
+    ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menus', botId] });
+    },
+  });
+
+  // 同步到Telegram的 mutation
+  const syncToTelegramMutation = useMutation({
+    mutationFn: () => telegramMenuService.syncToTelegram(botId),
+  });
 
   const addMenuItem = () => {
     const newItem: MenuItem = {
       id: Math.random().toString(36).substr(2, 9),
       text: "新菜单项",
+      command: "/start",
       order: menuItems.length,
     };
-    setMenuItems([...menuItems, newItem]);
+    updateMenuMutation.mutate([...menuItems, newItem]);
     setSelectedItem(newItem);
   };
 
@@ -134,7 +157,8 @@ export function MenuSettings({ botId, isOpen, onClose }: {
 
   const confirmDelete = () => {
     if (itemToDelete) {
-      setMenuItems(menuItems.filter(item => item.id !== itemToDelete.id));
+      const updatedItems = menuItems.filter(item => item.id !== itemToDelete.id);
+      updateMenuMutation.mutate(updatedItems);
       setSelectedItem(null);
       setItemToDelete(null);
       setDeleteDialogOpen(false);
@@ -157,29 +181,12 @@ export function MenuSettings({ botId, isOpen, onClose }: {
       order: index,
     }));
 
-    setMenuItems(updatedItems);
     updateMenuOrder(updatedItems);
   };
 
   const updateMenuOrder = async (items: MenuItem[]) => {
     try {
-      const response = await fetch(`/api/bot/telegram/bots/${botId}/menu`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orders: items.map((item, index) => ({
-            id: item.id,
-            order: index,
-          })),
-        }),
-      });
-
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.message);
-      }
+      await updateOrderMutation.mutateAsync(items);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -198,25 +205,24 @@ export function MenuSettings({ botId, isOpen, onClose }: {
           : item
       );
 
-      const response = await fetch(`/api/bot/telegram/bots/${botId}/menu`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          menus: updatedItems,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setMenuItems(updatedItems);
-        toast({
-          description: "菜单配置已保存",
-        });
+      // 保存到数据库并同步到Telegram
+      const response = await updateMenuMutation.mutateAsync(updatedItems);
+      if (response.success) {
+        const syncResponse = await syncToTelegramMutation.mutateAsync();
+        if (syncResponse.success) {
+          toast({
+            description: "菜单配置已保存并同步到Telegram",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "同步失败",
+            description: "菜单已保存但同步到Telegram失败，请稍后重试",
+          });
+        }
         onClose();
       } else {
-        throw new Error(data.message);
+        throw new Error(response.message);
       }
     } catch (error) {
       toast({
@@ -297,13 +303,13 @@ export function MenuSettings({ botId, isOpen, onClose }: {
             <div className="p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">菜单项</h3>
-                <Button onClick={addMenuItem} disabled={loading}>
+                <Button onClick={addMenuItem} disabled={saving}>
                   <Plus className="mr-2 h-4 w-4" />
                   添加菜单项
                 </Button>
               </div>
               
-              {loading ? (
+              {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>

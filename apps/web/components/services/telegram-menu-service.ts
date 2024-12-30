@@ -1,67 +1,47 @@
-import { MenuItem } from '@/types/menu';
+import { BotMenu } from '@/types/bot';
 
-export class TelegramMenuService {
-  private baseUrl: string;
+interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T;
+}
 
-  constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-  }
+export const telegramMenuService = {
+  // 获取菜单列表
+  async getMenus(botId: string): Promise<ApiResponse<BotMenu[]>> {
+    const response = await fetch(`/api/bot/telegram/bots/${botId}/menu`);
+    return response.json();
+  },
 
-  // 获取机器人的菜单配置
-  async getMenuCommands(botId: string): Promise<MenuItem[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/bot/telegram/bots/${botId}/commands`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+  // 更新菜单列表
+  async updateMenus(botId: string, menus: BotMenu[]): Promise<ApiResponse<BotMenu[]>> {
+    const response = await fetch(`/api/bot/telegram/bots/${botId}/menu`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ menus }),
+    });
+    return response.json();
+  },
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch menu commands');
-      }
+  // 更新菜单排序
+  async updateMenuOrder(botId: string, orders: { id: string; order: number }[]): Promise<ApiResponse<BotMenu[]>> {
+    const response = await fetch(`/api/bot/telegram/bots/${botId}/menu/order`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ orders }),
+    });
+    return response.json();
+  },
 
-      const data = await response.json();
-      return data.commands;
-    } catch (error) {
-      console.error('Error fetching menu commands:', error);
-      throw error;
-    }
-  }
-
-  // 设置机器人的菜单命令
-  async setMenuCommands(botId: string, commands: MenuItem[]): Promise<void> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/bot/telegram/bots/${botId}/commands`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ commands }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to set menu commands');
-      }
-    } catch (error) {
-      console.error('Error setting menu commands:', error);
-      throw error;
-    }
-  }
-
-  // 删除机器人的菜单命令
-  async deleteMenuCommand(botId: string, commandId: string): Promise<void> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/bot/telegram/bots/${botId}/commands/${commandId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete menu command');
-      }
-    } catch (error) {
-      console.error('Error deleting menu command:', error);
-      throw error;
-    }
-  }
-} 
+  // 同步菜单到Telegram
+  async syncToTelegram(botId: string): Promise<ApiResponse<void>> {
+    const response = await fetch(`/api/bot/telegram/bots/${botId}/menu/sync`, {
+      method: 'POST',
+    });
+    return response.json();
+  },
+}; 

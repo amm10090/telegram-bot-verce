@@ -32,6 +32,7 @@ import { TelegramBotService } from "@/components/services/telegram-bot-service";
 import type { BotResponse } from "@/types/bot";
 import { useToast } from "@workspace/ui/hooks/use-toast";
 import { Badge } from "@workspace/ui/components/badge";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // 示例数据
 const botFeatures = [
@@ -66,6 +67,16 @@ const botFeatures = [
 ];
 
 const botService = new TelegramBotService();
+
+// 创建一个 QueryClient 实例
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 1000,
+      retry: 1,
+    },
+  },
+});
 
 export default function BotsPage() {
   const intl = useIntl();
@@ -136,124 +147,126 @@ export default function BotsPage() {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {intl.formatMessage({ id: "bots.configuration.title" })}
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            {intl.formatMessage({ id: "bots.configuration.description" })}
-          </p>
+    <QueryClientProvider client={queryClient}>
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {intl.formatMessage({ id: "bots.configuration.title" })}
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              {intl.formatMessage({ id: "bots.configuration.description" })}
+            </p>
+          </div>
+          <Button onClick={() => router.push("/settings#api-keys")}>
+            <Plus className="mr-2 h-4 w-4" />
+            {intl.formatMessage({ id: "bots.actions.add" })}
+          </Button>
         </div>
-        <Button onClick={() => router.push("/settings#api-keys")}>
-          <Plus className="mr-2 h-4 w-4" />
-          {intl.formatMessage({ id: "bots.actions.add" })}
-        </Button>
-      </div>
 
-      <div className="mb-6">
-        <Select
-          value={selectedBotId || ""}
-          onValueChange={(value) => setSelectedBotId(value)}
-          disabled={loading || bots.length === 0}
-        >
-          <SelectTrigger className="w-[300px]">
-            <SelectValue 
-              placeholder={
-                loading 
-                  ? intl.formatMessage({ id: "bots.select.loading" })
-                  : bots.length === 0
-                  ? intl.formatMessage({ id: "bots.select.empty" })
-                  : intl.formatMessage({ id: "bots.select.placeholder" })
-              } 
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {bots.map((bot) => (
-              <SelectItem key={bot.id} value={bot.id}>
-                <div className="flex items-center gap-2">
-                  <BotIcon className="h-4 w-4" />
-                  <span>{bot.name}</span>
-                  <Badge 
-                    variant={bot.status === 'active' ? 'default' : 'secondary'}
-                    className="ml-2"
-                  >
-                    {bot.status}
-                  </Badge>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {error && (
-          <p className="text-sm text-destructive mt-2">{error}</p>
-        )}
-        {!loading && bots.length === 0 && !error && (
-          <p className="text-sm text-muted-foreground mt-2">
-            {intl.formatMessage({ id: "bots.select.noData" })}
-          </p>
-        )}
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {botFeatures.map((feature) => {
-          const Icon = feature.icon;
-          return (
-            <Card
-              key={feature.id}
-              className={`group transition-colors ${
-                selectedBotId 
-                  ? "hover:border-primary/50 cursor-pointer" 
-                  : "opacity-50 cursor-not-allowed"
-              }`}
-              onClick={() => handleFeatureClick(feature)}
-            >
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <CardTitle>{intl.formatMessage({ id: feature.title })}</CardTitle>
-                  </div>
-                  {selectedBotId && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleFeatureClick(feature);
-                      }}
+        <div className="mb-6">
+          <Select
+            value={selectedBotId || ""}
+            onValueChange={(value) => setSelectedBotId(value)}
+            disabled={loading || bots.length === 0}
+          >
+            <SelectTrigger className="w-[300px]">
+              <SelectValue 
+                placeholder={
+                  loading 
+                    ? intl.formatMessage({ id: "bots.select.loading" })
+                    : bots.length === 0
+                    ? intl.formatMessage({ id: "bots.select.empty" })
+                    : intl.formatMessage({ id: "bots.select.placeholder" })
+                } 
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {bots.map((bot) => (
+                <SelectItem key={bot.id} value={bot.id}>
+                  <div className="flex items-center gap-2">
+                    <BotIcon className="h-4 w-4" />
+                    <span>{bot.name}</span>
+                    <Badge 
+                      variant={bot.status === 'active' ? 'default' : 'secondary'}
+                      className="ml-2"
                     >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  {intl.formatMessage({ id: feature.description })}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                      {bot.status}
+                    </Badge>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {error && (
+            <p className="text-sm text-destructive mt-2">{error}</p>
+          )}
+          {!loading && bots.length === 0 && !error && (
+            <p className="text-sm text-muted-foreground mt-2">
+              {intl.formatMessage({ id: "bots.select.noData" })}
+            </p>
+          )}
+        </div>
 
-      {selectedBotId && (
-        <MenuSettings
-          botId={selectedBotId}
-          isOpen={isMenuDrawerOpen}
-          onClose={() => setIsMenuDrawerOpen(false)}
-        />
-      )}
+        <div className="grid gap-6 md:grid-cols-2">
+          {botFeatures.map((feature) => {
+            const Icon = feature.icon;
+            return (
+              <Card
+                key={feature.id}
+                className={`group transition-colors ${
+                  selectedBotId 
+                    ? "hover:border-primary/50 cursor-pointer" 
+                    : "opacity-50 cursor-not-allowed"
+                }`}
+                onClick={() => handleFeatureClick(feature)}
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Icon className="h-6 w-6 text-primary" />
+                      </div>
+                      <CardTitle>{intl.formatMessage({ id: feature.title })}</CardTitle>
+                    </div>
+                    {selectedBotId && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFeatureClick(feature);
+                        }}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base">
+                    {intl.formatMessage({ id: feature.description })}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
-      {/* 快速入门部分保持不变 */}
-      <div className="mt-8">
-        {/* ... 原有的快速入门卡片内容 ... */}
+        {selectedBotId && (
+          <MenuSettings
+            botId={selectedBotId}
+            isOpen={isMenuDrawerOpen}
+            onClose={() => setIsMenuDrawerOpen(false)}
+          />
+        )}
+
+        {/* 快速入门部分保持不变 */}
+        <div className="mt-8">
+          {/* ... 原有的快速入门卡片内容 ... */}
+        </div>
       </div>
-    </div>
+    </QueryClientProvider>
   );
 }
