@@ -19,6 +19,8 @@ function transformBotToResponse(bot: any): BotResponse {
   };
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
