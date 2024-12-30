@@ -321,6 +321,15 @@ export function MenuSettings({ botId, isOpen, onClose }: {
                         {...provided.droppableProps}
                         ref={provided.innerRef}
                         className="space-y-2"
+                        onPointerMove={(e) => {
+                          e.stopPropagation();
+                        }}
+                        onMouseMove={(e) => {
+                          e.stopPropagation();
+                        }}
+                        onTouchMove={(e) => {
+                          e.stopPropagation();
+                        }}
                       >
                         {menuItems.map((item, index) => (
                           <MenuItemComponent
