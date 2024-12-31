@@ -25,6 +25,7 @@ import { MenuResponse } from './menu-response';
 import { ResponseType } from '@/types/bot';
 import { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
+import { toast } from "@workspace/ui/hooks/use-toast";
 
 /**
  * 菜单项表单的验证模式
@@ -147,11 +148,45 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
     return true;
   };
 
-  const handleTest = async () => {
+  const handleTest = async (receiverId: string) => {
     setIsTesting(true);
     try {
-      // TODO: 实现测试逻辑
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!selectedItem?.id) {
+        throw new Error('请先选择一个机器人');
+      }
+
+      const formValues = form.getValues();
+      console.log('测试请求 - 机器人ID:', selectedItem.id);
+      
+      const response = await fetch(`/api/bot/telegram/bots/${selectedItem.id}/command/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          command: formValues.command,
+          response: formValues.response,
+          receiverId
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '测试失败');
+      }
+
+      const result = await response.json();
+      toast({
+        title: "测试成功",
+        description: result.message || "命令响应已发送到 Telegram",
+      });
+    } catch (error: any) {
+      console.error('测试失败:', error);
+      toast({
+        title: "测试失败",
+        description: error.message || "请检查命令配置是否正确",
+        variant: "destructive",
+      });
     } finally {
       setIsTesting(false);
     }

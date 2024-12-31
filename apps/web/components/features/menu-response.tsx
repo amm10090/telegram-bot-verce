@@ -11,6 +11,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@workspace/ui/components/accordion";
+import { Input } from "@workspace/ui/components/input";
 
 interface Button {
   text: string;
@@ -36,7 +37,7 @@ interface ResponseProps {
     selective?: boolean;
   };
   onChange: (response: ResponseProps['response']) => void;
-  onTest: () => void;
+  onTest: (receiverId: string) => void;
   isTesting: boolean;
 }
 
@@ -46,6 +47,7 @@ export function MenuResponse({ response, onChange, onTest, isTesting }: Response
     buttonIndex: number;
     button: Button;
   } | null>(null);
+  const [receiverId, setReceiverId] = useState('');
 
   // 初始化按钮布局
   const buttons = response.buttons?.buttons || [[]];
@@ -670,15 +672,50 @@ export function MenuResponse({ response, onChange, onTest, isTesting }: Response
         ))}
       </Accordion>
 
-      {/* 测试按钮 */}
-      <div className="pt-4">
-        <Button
-          className="w-full"
-          onClick={onTest}
-          disabled={isTesting || !response.types?.length}
-        >
-          {isTesting ? '测试中...' : '测试响应'}
-        </Button>
+      {/* 测试按钮和接收者ID */}
+      <div className="pt-4 space-y-4">
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <Input
+              value={receiverId}
+              onChange={(e) => setReceiverId(e.target.value)}
+              placeholder="输入接收测试消息的Telegram用户ID"
+            />
+          </div>
+          <Button
+            className="whitespace-nowrap"
+            onClick={() => onTest(receiverId)}
+            disabled={
+              isTesting || 
+              !response.types?.length || 
+              !receiverId || 
+              !response.content?.trim() ||
+              (response.types.includes(ResponseType.PHOTO) && !response.mediaUrl) ||
+              (response.types.includes(ResponseType.VIDEO) && !response.mediaUrl) ||
+              (response.types.includes(ResponseType.DOCUMENT) && !response.mediaUrl)
+            }
+          >
+            {isTesting ? '测试中...' : '测试响应'}
+          </Button>
+        </div>
+        {!receiverId && (
+          <p className="text-sm text-muted-foreground">
+            请输入接收测试消息的Telegram用户ID
+          </p>
+        )}
+        {!response.content?.trim() && (
+          <p className="text-sm text-muted-foreground">
+            请输入响应内容
+          </p>
+        )}
+        {(response.types.includes(ResponseType.PHOTO) || 
+          response.types.includes(ResponseType.VIDEO) || 
+          response.types.includes(ResponseType.DOCUMENT)) && 
+          !response.mediaUrl && (
+          <p className="text-sm text-muted-foreground">
+            请输入媒体文件URL
+          </p>
+        )}
       </div>
 
       {/* 按钮编辑对话框 */}
