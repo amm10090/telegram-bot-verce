@@ -1,23 +1,30 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
+import { MenuItem } from '@/types/bot';
 import BotModel from '@/models/bot';
-import { BotMenu } from '@/types/bot';
+import { Document, Types } from 'mongoose';
 
 interface OrderItem {
   id: string;
   order: number;
 }
 
+// 扩展 MenuItem 接口以包含 MongoDB 文档属性
+interface MenuItemDocument extends Omit<MenuItem, 'id'>, Document {
+  _id: Types.ObjectId;
+  toObject(): MenuItem & { _id: Types.ObjectId };
+}
+
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
     const body = await request.json();
     console.log('收到排序请求体:', body);
     
-    const bot = await BotModel.findById(params.id);
+    const bot = await BotModel.findById(context.params.id);
     if (!bot || !bot.menus) {
       return NextResponse.json(
         { success: false, message: '机器人不存在或没有菜单配置' },
@@ -37,7 +44,7 @@ export async function PUT(
     console.log('处理排序请求:', orders);
 
     // 验证所有id是否存在
-    const validIds = bot.menus.map(menu => menu._id?.toString());
+    const validIds = (bot.menus as MenuItemDocument[]).map(menu => menu._id.toString());
     console.log('有效的id列表:', validIds);
     
     const allIdsValid = orders.every(order => validIds.includes(order.id));
@@ -49,9 +56,9 @@ export async function PUT(
     }
 
     // 更新排序
-    const updatedMenus = bot.menus.map(menu => {
-      const orderItem = orders.find(o => o.id === menu._id?.toString());
-      const menuObj = menu.toObject ? menu.toObject() : menu;
+    const updatedMenus = (bot.menus as MenuItemDocument[]).map(menu => {
+      const orderItem = orders.find(o => o.id === menu._id.toString());
+      const menuObj = menu.toObject();
       return {
         ...menuObj,
         order: orderItem ? orderItem.order : menu.order

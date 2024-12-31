@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/db';
 import BotModel from '@/models/bot';
 import { CommandResponse, ResponseType } from '@/types/bot';
+import { TelegramClient } from '@/lib/telegram';
 
 /**
  * 测试命令响应的API路由
@@ -9,123 +10,68 @@ import { CommandResponse, ResponseType } from '@/types/bot';
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
 
-    // 获取请求数据
-    const body = await req.json();
-    const { response } = body as { response: CommandResponse };
-
-    // 获取机器人信息
-    const bot = await BotModel.findById(params.id);
+    // 查找机器人
+    const bot = await BotModel.findById(context.params.id);
     if (!bot) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: '机器人不存在',
+          message: "机器人不存在",
         }),
         { status: 404 }
       );
     }
 
-    // 准备响应数据
-    let method = 'sendMessage';
-    let params: any = {
-      chat_id: bot.userId, // 发送给机器人所有者
-      text: response.content,
-    };
+    // 获取请求体中的响应配置
+    const body = await req.json();
+    const { response } = body as { response: CommandResponse };
 
-    // 根据响应类型设置参数
-    switch (response.type) {
-      case ResponseType.MARKDOWN:
-        params.parse_mode = 'Markdown';
-        break;
-      case ResponseType.HTML:
-        params.parse_mode = 'HTML';
-        break;
-      case ResponseType.PHOTO:
-        method = 'sendPhoto';
-        params = {
-          chat_id: bot.userId,
-          photo: response.mediaUrl,
-          caption: response.caption,
-        };
-        break;
-      case ResponseType.VIDEO:
-        method = 'sendVideo';
-        params = {
-          chat_id: bot.userId,
-          video: response.mediaUrl,
-          caption: response.caption,
-        };
-        break;
-      case ResponseType.DOCUMENT:
-        method = 'sendDocument';
-        params = {
-          chat_id: bot.userId,
-          document: response.mediaUrl,
-          caption: response.caption,
-        };
-        break;
+    // 创建 Telegram 客户端实例
+    const telegram = new TelegramClient(bot.token);
+
+    // 根据响应类型发送不同的消息
+    let result;
+    
+    // 处理文本类型响应（包括 Markdown 和 HTML）
+    if (response.types.some(t => [ResponseType.TEXT, ResponseType.MARKDOWN, ResponseType.HTML].includes(t))) {
+      result = await telegram.sendMessage({
+        chat_id: "test",
+        text: response.content,
+        parse_mode: response.parseMode,
+        ...(response.buttons && { reply_markup: response.buttons }),
+      });
     }
 
-    // 添加按钮（如果有）
-    if (response.buttons) {
-      params.reply_markup = {
-        inline_keyboard: response.buttons.buttons.map(row =>
-          row.map(button => ({
-            text: button.text,
-            ...(button.type === 'url'
-              ? { url: button.value }
-              : { callback_data: button.value }
-            ),
-          }))
-        ),
-      };
-    }
-
-    // 发送测试响应到Telegram
-    const telegramResponse = await fetch(
-      `https://api.telegram.org/bot${bot.token}/${method}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(params),
-      }
-    );
-
-    const result = await telegramResponse.json();
-
-    if (!result.ok) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: '发送测试响应失败',
-          error: result.description,
-        }),
-        { status: 500 }
-      );
+    // 处理图片类型响应
+    if (response.types.includes(ResponseType.PHOTO) && response.mediaUrl) {
+      result = await telegram.sendPhoto({
+        chat_id: "test",
+        photo: response.mediaUrl,
+        caption: response.caption,
+        parse_mode: response.parseMode,
+        ...(response.buttons && { reply_markup: response.buttons }),
+      });
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: '测试响应已发送',
-        data: result.result,
-      }),
-      { status: 200 }
+        data: result,
+        message: "命令测试成功",
+      })
     );
   } catch (error) {
-    console.error('发送测试响应失败:', error);
+    console.error("命令测试失败:", error);
     return new Response(
       JSON.stringify({
         success: false,
-        message: '发送测试响应失败',
-        error: error instanceof Error ? error.message : '未知错误',
+        message: "命令测试失败",
+        error: error instanceof Error ? error.message : "未知错误",
       }),
       { status: 500 }
     );

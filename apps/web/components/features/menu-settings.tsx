@@ -1,15 +1,17 @@
 "use client";
 
-/**
- * 菜单设置主组件
- * 负责管理菜单项的整体状态和操作
- * 包括：拖拽排序、添加、删除、编辑、撤销/重做等功能
- */
-
 import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { Plus, Loader2, Keyboard, Undo2, Redo2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
+import type { MenuItem } from "@/types/bot";
+import { telegramMenuService } from '@/components/services/telegram-menu-service';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from "@workspace/ui/hooks/use-toast";
+import { MenuItemComponent, type MenuItemProps } from './menu-item';
+import { MenuForm, menuItemSchema } from './menu-form';
+import { cn } from "@/lib/utils";
+import * as z from "zod";
 import {
   Drawer,
   DrawerClose,
@@ -29,18 +31,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog";
-import { telegramMenuService } from '@/components/services/telegram-menu-service';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@workspace/ui/components/popover";
-import { useToast } from "@workspace/ui/hooks/use-toast";
-import { MenuItem, MenuItemComponent } from './menu-item';
-import { MenuForm, menuItemSchema } from './menu-form';
-import { z } from 'zod';
-import { cn } from "@/lib/utils";
+import { Types } from "mongoose";
+
+// 确保 MenuItem 有 id 字段
+type MenuItemWithId = MenuItem & { id: string };
+
+// 类型转换函数
+const ensureId = (item: MenuItem): MenuItemWithId => ({
+  ...item,
+  id: item.id || Math.random().toString(36).substr(2, 9),
+});
+
+/**
+ * 菜单设置主组件
+ * 负责管理菜单项的整体状态和操作
+ * 包括：拖拽排序、添加、删除、编辑、撤销/重做等功能
+ */
 
 /**
  * 加载状态遮罩组件
@@ -129,29 +140,25 @@ export function MenuSettings({ botId, isOpen, onClose }: {
   // 状态管理
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<MenuItemWithId | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<MenuItemWithId | null>(null);
   const [operationFeedback, setOperationFeedback] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
-  const [history, setHistory] = useState<MenuItem[][]>([]);
+  const [history, setHistory] = useState<MenuItemWithId[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   // 加载菜单数据
-  const { data: menuItems = [], isLoading } = useQuery<MenuItem[]>({
+  const { data: menuItems = [], isLoading } = useQuery<MenuItemWithId[]>({
     queryKey: ['menus', botId],
     queryFn: async () => {
       const response = await telegramMenuService.getMenus(botId);
       return (response.data || []).map((item: any) => ({
-        id: item._id || Math.random().toString(36).substr(2, 9),
-        text: item.text,
-        command: item.command,
-        url: item.url,
-        order: item.order,
-        children: item.children,
+        ...item,
+        id: item._id?.toString() || Math.random().toString(36).substr(2, 9),
       }));
     },
     enabled: isOpen,
@@ -181,10 +188,10 @@ export function MenuSettings({ botId, isOpen, onClose }: {
 
   // 更新菜单排序的 mutation
   const updateOrderMutation = useMutation({
-    mutationFn: (items: MenuItem[]) => telegramMenuService.updateMenuOrder(
+    mutationFn: (items: MenuItemWithId[]) => telegramMenuService.updateMenuOrder(
       botId, 
       items.map((item, index) => ({ 
-        id: item.id.toString(), 
+        id: item.id, 
         order: index 
       }))
     ),
@@ -205,7 +212,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
   /**
    * 历史记录管理
    */
-  const addToHistory = (items: MenuItem[]) => {
+  const addToHistory = (items: MenuItemWithId[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push([...items]);
     setHistory(newHistory);
@@ -243,7 +250,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
    * 菜单项操作
    */
   const addMenuItem = () => {
-    const newItem: MenuItem = {
+    const newItem: MenuItemWithId = {
       id: Math.random().toString(36).substr(2, 9),
       text: "新菜单项",
       command: "/start",
@@ -255,7 +262,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     setSelectedItem(newItem);
   };
 
-  const removeMenuItem = async (item: MenuItem) => {
+  const removeMenuItem = async (item: MenuItemWithId) => {
     setItemToDelete(item);
     setDeleteDialogOpen(true);
   };
@@ -494,7 +501,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
                                   item={item}
                                   index={index}
                                   selectedItem={selectedItem}
-                                  setSelectedItem={setSelectedItem}
+                                  setSelectedItem={(item) => setSelectedItem(item as MenuItemWithId | null)}
                                   onRemove={removeMenuItem}
                                 />
                               ))}

@@ -4,44 +4,14 @@ import { useState } from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { Trash, GripVertical } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
-import type { CommandResponse } from "@/types/bot";
+import type { MenuItem } from "@/types/bot";
 
-/**
- * 菜单项的数据结构定义
- * @interface MenuItem
- * @property {string} id - 唯一标识符
- * @property {string} text - 菜单显示文本
- * @property {string} command - Telegram 命令
- * @property {string} [url] - 可选的链接地址
- * @property {number} order - 排序顺序
- * @property {CommandResponse} [response] - 命令响应配置
- * @property {MenuItem[]} [children] - 可选的子菜单项
- */
-export interface MenuItem {
-  id: string;
-  text: string;
-  command: string;
-  url?: string;
-  order: number;
-  response?: CommandResponse;
-  children?: MenuItem[];
-}
-
-/**
- * 菜单项组件的属性定义
- * @interface MenuItemComponentProps
- * @property {MenuItem} item - 菜单项数据
- * @property {number} index - 在列表中的索引位置
- * @property {MenuItem | null} selectedItem - 当前选中的菜单项
- * @property {Function} setSelectedItem - 设置选中菜单项的函数
- * @property {Function} onRemove - 删除菜单项的回调函数
- */
-interface MenuItemComponentProps {
-  item: MenuItem;
+export interface MenuItemProps {
+  item: MenuItem & { id: string };
   index: number;
-  selectedItem: MenuItem | null;
-  setSelectedItem: (item: MenuItem | null) => void;
-  onRemove: (item: MenuItem) => void;
+  selectedItem: (MenuItem & { id: string }) | null;
+  setSelectedItem: (item: (MenuItem & { id: string }) | null) => void;
+  onRemove: (item: MenuItem & { id: string }) => void;
 }
 
 /**
@@ -54,7 +24,7 @@ export function MenuItemComponent({
   selectedItem, 
   setSelectedItem, 
   onRemove 
-}: MenuItemComponentProps) {
+}: MenuItemProps) {
   // 跟踪当前项是否正在被拖拽
   const [isDragging, setIsDragging] = useState(false);
 

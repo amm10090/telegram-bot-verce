@@ -14,6 +14,7 @@ function transformBotToResponse(bot: any): BotResponse {
     isEnabled: bot.isEnabled,
     status: bot.status,
     settings: bot.settings,
+    menus: bot.menus || [],
     createdAt: bot.createdAt.toISOString(),
     updatedAt: bot.updatedAt.toISOString(),
     lastUsed: bot.lastUsed?.toISOString(),

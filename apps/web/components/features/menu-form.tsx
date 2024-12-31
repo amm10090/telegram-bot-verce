@@ -20,7 +20,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@workspace/ui/components/collapsible";
-import { MenuItem } from './menu-item';
+import { MenuItem } from '@/types/bot';
 import { MenuResponse } from './menu-response';
 import { ResponseType } from '@/types/bot';
 import { useState, useEffect } from 'react';

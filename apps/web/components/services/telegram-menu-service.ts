@@ -1,18 +1,12 @@
-import { BotMenu, CommandResponse } from '@/types/bot';
-
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data: T;
-}
+import { MenuItem, CommandResponse, ApiResponse } from '@/types/bot';
 
 export const telegramMenuService = {
-  getMenus: async (botId: string): Promise<ApiResponse<BotMenu[]>> => {
+  getMenus: async (botId: string): Promise<ApiResponse<MenuItem[]>> => {
     const response = await fetch(`/api/bot/telegram/bots/${botId}/menu`);
     return response.json();
   },
 
-  updateMenus: async (botId: string, menus: BotMenu[]): Promise<ApiResponse<BotMenu[]>> => {
+  updateMenus: async (botId: string, menus: MenuItem[]): Promise<ApiResponse<MenuItem[]>> => {
     const response = await fetch(`/api/bot/telegram/bots/${botId}/menu`, {
       method: 'PUT',
       headers: {
@@ -23,7 +17,7 @@ export const telegramMenuService = {
     return response.json();
   },
 
-  updateMenuOrder: async (botId: string, orders: { id: string; order: number }[]): Promise<ApiResponse<BotMenu[]>> => {
+  updateMenuOrder: async (botId: string, orders: { id: string; order: number }[]): Promise<ApiResponse<MenuItem[]>> => {
     const response = await fetch(`/api/bot/telegram/bots/${botId}/menu/order`, {
       method: 'PUT',
       headers: {
@@ -41,7 +35,7 @@ export const telegramMenuService = {
     return response.json();
   },
 
-  testResponse: async (botId: string, response: CommandResponse) => {
+  testResponse: async (botId: string, response: CommandResponse): Promise<ApiResponse<any>> => {
     try {
       const res = await fetch(`/api/bot/telegram/bots/${botId}/command/test`, {
         method: 'POST',
