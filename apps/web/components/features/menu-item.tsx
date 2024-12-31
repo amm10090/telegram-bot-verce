@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { Trash, GripVertical } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
+import type { CommandResponse } from "@/types/bot";
 
 /**
  * 菜单项的数据结构定义
@@ -13,6 +14,7 @@ import { Button } from "@workspace/ui/components/button";
  * @property {string} command - Telegram 命令
  * @property {string} [url] - 可选的链接地址
  * @property {number} order - 排序顺序
+ * @property {CommandResponse} [response] - 命令响应配置
  * @property {MenuItem[]} [children] - 可选的子菜单项
  */
 export interface MenuItem {
@@ -21,6 +23,7 @@ export interface MenuItem {
   command: string;
   url?: string;
   order: number;
+  response?: CommandResponse;
   children?: MenuItem[];
 }
 

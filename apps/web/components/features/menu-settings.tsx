@@ -40,6 +40,7 @@ import { useToast } from "@workspace/ui/hooks/use-toast";
 import { MenuItem, MenuItemComponent } from './menu-item';
 import { MenuForm, menuItemSchema } from './menu-form';
 import { z } from 'zod';
+import { cn } from "@/lib/utils";
 
 /**
  * 加载状态遮罩组件
@@ -405,7 +406,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     <>
       <Drawer open={isOpen} onOpenChange={onClose}>
         <DrawerContent>
-          <div className="mx-auto w-full max-w-3xl relative">
+          <div className="mx-auto w-full max-w-6xl relative">
             {/* 加载和操作状态指示器 */}
             {(isLoading || updateMenuMutation.isPending || updateOrderMutation.isPending) && (
               <LoadingOverlay />
@@ -421,7 +422,6 @@ export function MenuSettings({ botId, isOpen, onClose }: {
             <DrawerHeader>
               <div className="flex items-center justify-between">
                 <DrawerTitle>配置机器人菜单</DrawerTitle>
-                {/* 快捷键帮助按钮 */}
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -449,66 +449,83 @@ export function MenuSettings({ botId, isOpen, onClose }: {
               </DrawerDescription>
             </DrawerHeader>
 
-            <div className="p-4 space-y-4">
-              {/* 工具栏 */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-lg font-medium">菜单项</h3>
-                  <UndoRedoButtons
-                    onUndo={undo}
-                    onRedo={redo}
-                    canUndo={historyIndex > 0}
-                    canRedo={historyIndex < history.length - 1}
-                  />
-                </div>
-                <Button onClick={addMenuItem} disabled={saving}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  添加菜单项
-                </Button>
-              </div>
-              
-              {/* 菜单项列表 */}
-              {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <DragDropContext onDragEnd={onDragEnd}>
-                  <Droppable droppableId="menu-items">
-                    {(provided) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="space-y-2"
-                        onPointerMove={(e) => e.stopPropagation()}
-                        onTouchMove={(e) => e.stopPropagation()}
-                      >
-                        {menuItems.map((item, index) => (
-                          <MenuItemComponent
-                            key={item.id}
-                            item={item}
-                            index={index}
-                            selectedItem={selectedItem}
-                            setSelectedItem={setSelectedItem}
-                            onRemove={removeMenuItem}
-                          />
-                        ))}
-                        {provided.placeholder}
+            <div className="p-4">
+              <div className="flex gap-4 transition-all duration-300 ease-in-out">
+                {/* 左侧菜单列表 */}
+                <div className={cn(
+                  "flex-1 transition-all duration-300 ease-in-out",
+                  selectedItem ? "lg:w-[300px] lg:flex-none" : "w-full"
+                )}>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <h3 className="text-lg font-medium">菜单项</h3>
+                        <UndoRedoButtons
+                          onUndo={undo}
+                          onRedo={redo}
+                          canUndo={historyIndex > 0}
+                          canRedo={historyIndex < history.length - 1}
+                        />
                       </div>
+                      <Button onClick={addMenuItem} disabled={saving}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        添加菜单项
+                      </Button>
+                    </div>
+                    
+                    {isLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : (
+                      <DragDropContext onDragEnd={onDragEnd}>
+                        <Droppable droppableId="menu-items">
+                          {(provided) => (
+                            <div
+                              {...provided.droppableProps}
+                              ref={provided.innerRef}
+                              className="space-y-2"
+                              onPointerMove={(e) => e.stopPropagation()}
+                              onTouchMove={(e) => e.stopPropagation()}
+                            >
+                              {menuItems.map((item, index) => (
+                                <MenuItemComponent
+                                  key={item.id}
+                                  item={item}
+                                  index={index}
+                                  selectedItem={selectedItem}
+                                  setSelectedItem={setSelectedItem}
+                                  onRemove={removeMenuItem}
+                                />
+                              ))}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
                     )}
-                  </Droppable>
-                </DragDropContext>
-              )}
+                  </div>
+                </div>
 
-              {/* 编辑表单 */}
-              {selectedItem && (
-                <MenuForm
-                  selectedItem={selectedItem}
-                  menuItems={menuItems}
-                  onSubmit={onSubmit}
-                  saving={saving}
-                />
-              )}
+                {/* 右侧配置面板 */}
+                <div className={cn(
+                  "lg:block transition-all duration-300 ease-in-out",
+                  selectedItem 
+                    ? "opacity-100 translate-x-0 lg:w-[calc(100%-300px-1rem)]" 
+                    : "lg:w-0 opacity-0 -translate-x-4 hidden"
+                )}>
+                  {selectedItem && (
+                    <div className="bg-card rounded-lg p-4 shadow-sm">
+                      <MenuForm
+                        selectedItem={selectedItem}
+                        menuItems={menuItems}
+                        onSubmit={onSubmit}
+                        saving={saving}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <DrawerFooter>

@@ -30,6 +30,30 @@ const botSchema = new mongoose.Schema<IBotDocument>(
       command: String,
       url: String,
       order: Number,
+      response: {
+        type: {
+          type: String,
+          enum: ['text', 'markdown', 'html', 'photo', 'video', 'document', 'inline_buttons', 'keyboard'],
+          default: 'text'
+        },
+        content: String,
+        buttons: {
+          buttons: [[{
+            text: String,
+            type: {
+              type: String,
+              enum: ['url', 'callback']
+            },
+            value: String
+          }]]
+        },
+        parseMode: {
+          type: String,
+          enum: ['Markdown', 'HTML']
+        },
+        mediaUrl: String,
+        caption: String
+      },
       _id: { type: mongoose.Schema.Types.ObjectId, auto: true }
     }],
     lastUsed: { type: Date }

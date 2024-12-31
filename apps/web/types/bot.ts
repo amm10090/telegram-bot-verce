@@ -16,12 +16,57 @@ export interface BotSettings {
   customizations?: Record<string, unknown>;
 }
 
+// 响应类型枚举
+export enum ResponseType {
+  TEXT = 'text',
+  MARKDOWN = 'markdown',
+  HTML = 'html',
+  PHOTO = 'photo',
+  VIDEO = 'video',
+  DOCUMENT = 'document',
+  INLINE_BUTTONS = 'inline_buttons',
+  KEYBOARD = 'keyboard'
+}
+
+// 按钮类型
+export interface Button {
+  text: string;
+  type: 'url' | 'callback';
+  value: string; // URL或回调数据
+}
+
+// 按钮布局
+export interface ButtonLayout {
+  buttons: Button[][];
+}
+
+// 响应配置
+export interface CommandResponse {
+  types: ResponseType[];
+  content: string;
+  buttons?: {
+    buttons: {
+      text: string;
+      type: 'url' | 'callback';
+      value: string;
+    }[][];
+  };
+  parseMode?: 'Markdown' | 'HTML';
+  mediaUrl?: string;
+  caption?: string;
+  inputPlaceholder?: string;
+  resizeKeyboard?: boolean;
+  oneTimeKeyboard?: boolean;
+  selective?: boolean;
+}
+
 // Bot菜单项接口
 export interface BotMenu {
   _id?: any;  // Mongoose ObjectId
   text: string;
   command: string;
   order: number;
+  response?: CommandResponse;
   toObject?: () => any;
 }
 

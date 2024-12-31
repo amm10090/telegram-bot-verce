@@ -1,4 +1,4 @@
-import { BotMenu } from '@/types/bot';
+import { BotMenu, CommandResponse } from '@/types/bot';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -7,14 +7,12 @@ interface ApiResponse<T> {
 }
 
 export const telegramMenuService = {
-  // 获取菜单列表
-  async getMenus(botId: string): Promise<ApiResponse<BotMenu[]>> {
+  getMenus: async (botId: string): Promise<ApiResponse<BotMenu[]>> => {
     const response = await fetch(`/api/bot/telegram/bots/${botId}/menu`);
     return response.json();
   },
 
-  // 更新菜单列表
-  async updateMenus(botId: string, menus: BotMenu[]): Promise<ApiResponse<BotMenu[]>> {
+  updateMenus: async (botId: string, menus: BotMenu[]): Promise<ApiResponse<BotMenu[]>> => {
     const response = await fetch(`/api/bot/telegram/bots/${botId}/menu`, {
       method: 'PUT',
       headers: {
@@ -25,8 +23,7 @@ export const telegramMenuService = {
     return response.json();
   },
 
-  // 更新菜单排序
-  async updateMenuOrder(botId: string, orders: { id: string; order: number }[]): Promise<ApiResponse<BotMenu[]>> {
+  updateMenuOrder: async (botId: string, orders: { id: string; order: number }[]): Promise<ApiResponse<BotMenu[]>> => {
     const response = await fetch(`/api/bot/telegram/bots/${botId}/menu/order`, {
       method: 'PUT',
       headers: {
@@ -37,11 +34,26 @@ export const telegramMenuService = {
     return response.json();
   },
 
-  // 同步菜单到Telegram
-  async syncToTelegram(botId: string): Promise<ApiResponse<void>> {
+  syncToTelegram: async (botId: string): Promise<ApiResponse<void>> => {
     const response = await fetch(`/api/bot/telegram/bots/${botId}/menu/sync`, {
       method: 'POST',
     });
     return response.json();
   },
+
+  testResponse: async (botId: string, response: CommandResponse) => {
+    try {
+      const res = await fetch(`/api/bot/telegram/bots/${botId}/command/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ response }),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error('测试响应失败:', error);
+      throw error;
+    }
+  }
 }; 
