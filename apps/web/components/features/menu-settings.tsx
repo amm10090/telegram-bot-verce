@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * 菜单设置主组件
+ * 负责管理菜单项的整体状态和操作
+ * 包括：拖拽排序、添加、删除、编辑、撤销/重做等功能
+ */
+
 import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { Plus, Loader2, Keyboard, Undo2, Redo2 } from "lucide-react";
@@ -35,7 +41,10 @@ import { MenuItem, MenuItemComponent } from './menu-item';
 import { MenuForm, menuItemSchema } from './menu-form';
 import { z } from 'zod';
 
-// 加载和操作状态组件
+/**
+ * 加载状态遮罩组件
+ * 在数据加载或操作进行时显示
+ */
 const LoadingOverlay = () => (
   <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
     <div className="flex flex-col items-center gap-2">
@@ -45,6 +54,10 @@ const LoadingOverlay = () => (
   </div>
 );
 
+/**
+ * 操作反馈组件
+ * 显示操作成功或失败的提示信息
+ */
 const OperationFeedback = ({ type, message }: { type: 'success' | 'error'; message: string }) => (
   <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg
     flex items-center gap-2 text-sm transition-all duration-200
@@ -53,7 +66,10 @@ const OperationFeedback = ({ type, message }: { type: 'success' | 'error'; messa
   </div>
 );
 
-// 快捷键提示组件
+/**
+ * 快捷键提示组件
+ * 显示可用的键盘快捷键
+ */
 const ShortcutHint = ({ shortcut, action }: { shortcut: string; action: string }) => (
   <div className="flex items-center justify-between text-xs text-muted-foreground">
     <span>{action}</span>
@@ -61,7 +77,10 @@ const ShortcutHint = ({ shortcut, action }: { shortcut: string; action: string }
   </div>
 );
 
-// 撤销/重做按钮组件
+/**
+ * 撤销/重做按钮组件
+ * 用于历史操作管理
+ */
 const UndoRedoButtons = ({ 
   onUndo, 
   onRedo, 
@@ -95,11 +114,18 @@ const UndoRedoButtons = ({
   </div>
 );
 
+/**
+ * 菜单设置组件
+ * @param botId - 机器人ID
+ * @param isOpen - 抽屉是否打开
+ * @param onClose - 关闭抽屉的回调函数
+ */
 export function MenuSettings({ botId, isOpen, onClose }: { 
   botId: string;
   isOpen: boolean;
   onClose: () => void;
 }) {
+  // 状态管理
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
@@ -113,7 +139,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
   const [history, setHistory] = useState<MenuItem[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  // 使用 React Query 加载菜单数据
+  // 加载菜单数据
   const { data: menuItems = [], isLoading } = useQuery<MenuItem[]>({
     queryKey: ['menus', botId],
     queryFn: async () => {
@@ -132,7 +158,9 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     gcTime: 5 * 60 * 1000,
   });
 
-  // 显示操作反馈
+  /**
+   * 显示操作反馈信息
+   */
   const showFeedback = (type: 'success' | 'error', message: string) => {
     setOperationFeedback({ type, message });
     setTimeout(() => setOperationFeedback(null), 3000);
@@ -173,7 +201,9 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     mutationFn: () => telegramMenuService.syncToTelegram(botId),
   });
 
-  // 添加到历史记录
+  /**
+   * 历史记录管理
+   */
   const addToHistory = (items: MenuItem[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push([...items]);
@@ -181,7 +211,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     setHistoryIndex(newHistory.length - 1);
   };
 
-  // 撤销
+  // 撤销操作
   const undo = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
@@ -191,7 +221,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     }
   };
 
-  // 重做
+  // 重做操作
   const redo = () => {
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
@@ -201,13 +231,16 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     }
   };
 
-  // 在菜单更新时添加到历史记录
+  // 初始化历史记录
   useEffect(() => {
     if (menuItems.length > 0 && historyIndex === -1) {
       addToHistory(menuItems);
     }
   }, [menuItems]);
 
+  /**
+   * 菜单项操作
+   */
   const addMenuItem = () => {
     const newItem: MenuItem = {
       id: Math.random().toString(36).substr(2, 9),
@@ -237,6 +270,10 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     }
   };
 
+  /**
+   * 处理拖拽结束事件
+   * 更新菜单项顺序
+   */
   const onDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
 
@@ -252,6 +289,10 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     }
   };
 
+  /**
+   * 处理表单提交
+   * 更新菜单项并同步到Telegram
+   */
   const onSubmit = async (values: z.infer<typeof menuItemSchema>) => {
     try {
       setSaving(true);
@@ -261,7 +302,6 @@ export function MenuSettings({ botId, isOpen, onClose }: {
           : item
       );
 
-      // 保存到数据库并同步到Telegram
       const response = await updateMenuMutation.mutateAsync(updatedItems);
       if (response.success) {
         const syncResponse = await syncToTelegramMutation.mutateAsync();
@@ -291,13 +331,16 @@ export function MenuSettings({ botId, isOpen, onClose }: {
     }
   };
 
-  // 添加键盘快捷键处理
+  /**
+   * 键盘快捷键处理
+   */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
 
+      // 保存更改
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         if (selectedItem) {
@@ -305,21 +348,25 @@ export function MenuSettings({ botId, isOpen, onClose }: {
         }
       }
 
+      // 添加新菜单项
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault();
         addMenuItem();
       }
 
+      // 删除选中的菜单项
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedItem) {
         e.preventDefault();
         removeMenuItem(selectedItem);
       }
 
+      // 取消选择
       if (e.key === 'Escape') {
         e.preventDefault();
         setSelectedItem(null);
       }
 
+      // 上下箭头选择菜单项
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
         const currentIndex = selectedItem 
@@ -338,6 +385,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
         }
       }
 
+      // 撤销/重做
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         undo();
@@ -358,6 +406,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
       <Drawer open={isOpen} onOpenChange={onClose}>
         <DrawerContent>
           <div className="mx-auto w-full max-w-3xl relative">
+            {/* 加载和操作状态指示器 */}
             {(isLoading || updateMenuMutation.isPending || updateOrderMutation.isPending) && (
               <LoadingOverlay />
             )}
@@ -372,6 +421,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
             <DrawerHeader>
               <div className="flex items-center justify-between">
                 <DrawerTitle>配置机器人菜单</DrawerTitle>
+                {/* 快捷键帮助按钮 */}
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -400,6 +450,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
             </DrawerHeader>
 
             <div className="p-4 space-y-4">
+              {/* 工具栏 */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <h3 className="text-lg font-medium">菜单项</h3>
@@ -416,6 +467,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
                 </Button>
               </div>
               
+              {/* 菜单项列表 */}
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -446,6 +498,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
                 </DragDropContext>
               )}
 
+              {/* 编辑表单 */}
               {selectedItem && (
                 <MenuForm
                   selectedItem={selectedItem}
@@ -465,6 +518,7 @@ export function MenuSettings({ botId, isOpen, onClose }: {
         </DrawerContent>
       </Drawer>
 
+      {/* 删除确认对话框 */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
