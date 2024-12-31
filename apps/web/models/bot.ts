@@ -64,7 +64,6 @@ const responseSchema = new mongoose.Schema({
  * 定义了机器人菜单项的结构
  * @property {string} text - 菜单项显示文本
  * @property {string} command - 菜单命令
- * @property {string} url - 可选的URL链接
  * @property {number} order - 排序序号
  * @property {object} response - 响应配置
  * @property {ObjectId} _id - 菜单项ID
@@ -72,7 +71,6 @@ const responseSchema = new mongoose.Schema({
 const menuSchema = new mongoose.Schema({
   text: { type: String, required: true },
   command: { type: String, required: true },
-  url: String,
   order: { type: Number, required: true },
   response: responseSchema,
   _id: { type: mongoose.Schema.Types.ObjectId, auto: true }

@@ -33,7 +33,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/componen
 export const menuItemSchema = z.object({
   text: z.string().min(1, "请输入菜单文本"),
   command: z.string().min(1, "请输入命令"),
-  url: z.string().optional(),
   response: z.object({
     types: z.array(z.nativeEnum(ResponseType)),
     content: z.string(),
@@ -107,7 +106,6 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
     defaultValues: {
       text: selectedItem?.text || "",
       command: selectedItem?.command || "",
-      url: selectedItem?.url || "",
       response: selectedItem?.response || {
         types: [ResponseType.TEXT],
         content: ""
@@ -121,7 +119,6 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
       form.reset({
         text: selectedItem.text,
         command: selectedItem.command,
-        url: selectedItem.url || "",
         response: selectedItem.response || {
           types: [ResponseType.TEXT],
           content: ""
@@ -220,35 +217,6 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
                   </FormItem>
                 )}
               />
-
-              {/* 高级选项折叠面板 */}
-              <Collapsible>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="flex w-full justify-between p-2 hover:bg-muted/50">
-                    <span className="text-sm font-medium">高级选项</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-4 px-1 pb-4">
-                  {/* URL 输入 */}
-                  <FormField
-                    control={form.control}
-                    name="url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>URL</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="https://" />
-                        </FormControl>
-                        <FormDescription>
-                          可选：点击菜单项时打开的链接
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CollapsibleContent>
-              </Collapsible>
 
               {/* 命令预览 */}
               <div className="pt-2">

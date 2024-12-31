@@ -64,7 +64,6 @@ export interface MenuItem {
   id?: string;                    // 菜单项ID
   text: string;                   // 显示文本
   command: string;                // 命令文本
-  url?: string;                   // 可选的URL链接
   order: number;                  // 排序序号
   response?: CommandResponse;     // 命令响应配置
 }

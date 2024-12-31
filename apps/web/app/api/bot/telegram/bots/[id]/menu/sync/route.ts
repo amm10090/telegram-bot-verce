@@ -46,16 +46,67 @@ export async function POST(
       menuCount: bot.menus?.length || 0 
     });
 
-    // 准备命令列表
+    // 准备命令列表并验证格式
     console.log('正在准备命令列表...');
-    const commands = (bot.menus || []).map(menu => ({
-      command: menu.command,
-      description: menu.text
-    }));
+    const validCommands = (bot.menus || [])
+      .filter(menu => {
+        // 验证命令格式
+        const isValidCommand = menu.command.startsWith('/') && 
+                             menu.command.length <= 32 &&
+                             /^[a-zA-Z0-9_]+$/.test(menu.command.slice(1));
+        
+        if (!isValidCommand) {
+          console.log('忽略无效的命令格式:', { 
+            command: menu.command,
+            reason: !menu.command.startsWith('/') ? '命令必须以/开头' :
+                   menu.command.length > 32 ? '命令长度超过32字符' :
+                   '命令只能包含字母、数字和下划线'
+          });
+        }
+        
+        return isValidCommand;
+      })
+      .map(menu => ({
+        command: menu.command,
+        description: menu.text
+      }));
+
     console.log('命令列表准备完成:', { 
-      commandCount: commands.length,
-      commands: commands.map(cmd => cmd.command)
+      totalCommands: bot.menus?.length || 0,
+      validCommands: validCommands.length,
+      commands: validCommands.map(cmd => ({
+        command: cmd.command,
+        description: cmd.description,
+      }))
     });
+
+    // 如果没有有效命令，返回错误
+    if (validCommands.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: '没有有效的命令可同步',
+          error: '所有命令格式无效',
+          details: {
+            botId: bot.id,
+            botName: bot.name,
+            totalCommands: bot.menus?.length || 0,
+            validationRules: {
+              startsWith: '/',
+              maxLength: 32,
+              allowedChars: '字母、数字、下划线',
+            },
+            timestamp: new Date().toISOString()
+          }
+        }),
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+    }
 
     // 调用Telegram API设置命令
     console.log('正在调用Telegram API...');
@@ -63,7 +114,7 @@ export async function POST(
     console.log('请求Telegram API:', { 
       url: telegramUrl.replace(bot.token, '***token***'),
       method: 'POST',
-      commandCount: commands.length 
+      commandCount: validCommands.length 
     });
 
     const response = await fetch(
@@ -73,7 +124,7 @@ export async function POST(
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ commands }),
+        body: JSON.stringify({ commands: validCommands }),
       }
     );
 
@@ -97,7 +148,7 @@ export async function POST(
           details: {
             botId: bot.id,
             botName: bot.name,
-            commandCount: commands.length,
+            commandCount: validCommands.length,
             telegramStatus: response.status,
             telegramError: result.description,
             timestamp: new Date().toISOString()
@@ -125,11 +176,20 @@ export async function POST(
             isEnabled: bot.isEnabled
           },
           sync: {
-            commandCount: commands.length,
-            commands: commands.map(cmd => ({
+            totalCommands: bot.menus?.length || 0,
+            validCommands: validCommands.length,
+            commands: validCommands.map(cmd => ({
               command: cmd.command,
               description: cmd.description
             })),
+            ignoredCommands: (bot.menus || [])
+              .filter(menu => !validCommands.find(vc => vc.command === menu.command))
+              .map(menu => ({
+                command: menu.command,
+                reason: !menu.command.startsWith('/') ? '命令必须以/开头' :
+                       menu.command.length > 32 ? '命令长度超过32字符' :
+                       '命令只能包含字母、数字和下划线'
+              })),
             timestamp: new Date().toISOString()
           },
           telegram: {
