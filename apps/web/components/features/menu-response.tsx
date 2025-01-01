@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { CommandResponse, ResponseType } from "@/types/bot";
-import { X } from "lucide-react";
+import { X, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Accordion,
@@ -12,6 +12,17 @@ import {
   AccordionTrigger,
 } from "@workspace/ui/components/accordion";
 import { Input } from "@workspace/ui/components/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@workspace/ui/components/sheet";
+import {
+  ScrollArea,
+  ScrollBar
+} from "@workspace/ui/components/scroll-area";
 
 interface Button {
   text: string;
@@ -56,6 +67,7 @@ export function MenuResponse({
     buttonIndex: number;
     button: Button;
   } | null>(null);
+  const [activeType, setActiveType] = useState<ResponseType | null>(null);
 
   // 初始化按钮布局
   const buttons = response.buttons?.buttons || [[]];
@@ -534,228 +546,268 @@ export function MenuResponse({
     });
   };
 
-  return (
-    <div className="space-y-6">
-      {/* 响应类型选择 */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium">响应类型</label>
-          <span className="text-xs text-muted-foreground">可以组合多种响应类型</span>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { value: ResponseType.TEXT, label: '纯文本', icon: (
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-            )},
-            { value: ResponseType.MARKDOWN, label: 'Markdown', icon: (
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z" />
-                <path d="M16 8l-4 4-4-4" />
-                <path d="M12 12v8" />
-              </svg>
-            )},
-            { value: ResponseType.HTML, label: 'HTML', icon: (
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M13 2l-2 20" />
-                <path d="M19 8l-6 6 6 6" />
-                <path d="M5 8l6 6-6 6" />
-              </svg>
-            )},
-            { value: ResponseType.PHOTO, label: '图片', icon: (
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <path d="M21 15l-5-5L5 21" />
-              </svg>
-            )},
-            { value: ResponseType.VIDEO, label: '视频', icon: (
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
-                <path d="M10 8l6 4-6 4V8z" />
-              </svg>
-            )},
-            { value: ResponseType.DOCUMENT, label: '文档', icon: (
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <path d="M14 2v6h6" />
-                <path d="M16 13H8" />
-                <path d="M16 17H8" />
-                <path d="M10 9H8" />
-              </svg>
-            )},
-            { value: ResponseType.INLINE_BUTTONS, label: '内联按钮', icon: (
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <path d="M8 12h8" />
-                <path d="M12 8v8" />
-              </svg>
-            )},
-            { value: ResponseType.KEYBOARD, label: '自定义键盘', icon: (
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
-                <path d="M6 8h.01" />
-                <path d="M10 8h.01" />
-                <path d="M14 8h.01" />
-                <path d="M18 8h.01" />
-                <path d="M6 12h.01" />
-                <path d="M10 12h.01" />
-                <path d="M14 12h.01" />
-                <path d="M18 12h.01" />
-                <path d="M6 16h12" />
-              </svg>
-            )},
-          ].map(type => (
-            <button
+  // 渲染响应类型选择器
+  const renderTypeSelector = () => {
+    const types = [
+      { 
+        value: ResponseType.TEXT, 
+        label: '纯文本',
+        icon: (
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        )
+      },
+      { 
+        value: ResponseType.MARKDOWN, 
+        label: 'Markdown',
+        icon: (
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z" />
+            <path d="M16 8l-4 4-4-4" />
+            <path d="M12 12v8" />
+          </svg>
+        )
+      },
+      { 
+        value: ResponseType.HTML, 
+        label: 'HTML',
+        icon: (
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z" />
+            <path d="M16 8l-4 4-4-4" />
+            <path d="M12 12v8" />
+          </svg>
+        )
+      },
+      { 
+        value: ResponseType.PHOTO, 
+        label: '图片',
+        icon: (
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        )
+      },
+      { 
+        value: ResponseType.VIDEO, 
+        label: '视频',
+        icon: (
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        )
+      },
+      { 
+        value: ResponseType.DOCUMENT, 
+        label: '文档',
+        icon: (
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        )
+      },
+      { 
+        value: ResponseType.INLINE_BUTTONS, 
+        label: '内联按钮',
+        icon: (
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        )
+      },
+      { 
+        value: ResponseType.KEYBOARD, 
+        label: '自定义键盘',
+        icon: (
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        )
+      },
+    ];
+
+    return (
+      <ScrollArea className="w-full whitespace-nowrap">
+        <div className="flex space-x-3 p-4">
+          {types.map(type => (
+            <Button
               key={type.value}
-              onClick={() => toggleResponseType(type.value)}
+              variant={response.types?.includes(type.value) ? "default" : "outline"}
+              size="sm"
               className={cn(
-                "flex flex-col items-center gap-2 p-4 rounded-lg border transition-all duration-200",
-                "hover:border-primary/50 hover:bg-muted/50",
+                "flex items-center gap-2 px-4 py-2 transition-all duration-200",
+                "hover:scale-105 active:scale-95",
                 response.types?.includes(type.value) 
-                  ? "border-primary bg-primary/10" 
-                  : "border-muted-foreground/20"
+                  ? "shadow-sm" 
+                  : "hover:border-primary/50"
               )}
+              onClick={() => {
+                toggleResponseType(type.value);
+                setActiveType(type.value);
+              }}
             >
-              <div className={cn(
-                "transition-colors duration-200",
-                response.types?.includes(type.value) 
-                  ? "text-primary" 
-                  : "text-muted-foreground"
-              )}>
-                {type.icon}
-              </div>
-              <span className={cn(
-                "text-sm font-medium transition-colors duration-200",
-                response.types?.includes(type.value) 
-                  ? "text-primary" 
-                  : "text-muted-foreground"
-              )}>
-                {type.label}
-              </span>
-            </button>
+              {type.icon}
+              <span className="font-medium">{type.label}</span>
+            </Button>
           ))}
         </div>
-      </div>
+        <ScrollBar orientation="horizontal" className="h-2" />
+      </ScrollArea>
+    );
+  };
 
-      {/* 使用手风琴组件展示响应编辑器 */}
-      <Accordion type="single" collapsible defaultValue={response.types?.[0]}>
-        {response.types?.map(type => (
-          <AccordionItem key={type} value={type}>
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center justify-between flex-1 pr-4">
-                <span className="text-sm font-medium">{
-                  {
-                    [ResponseType.TEXT]: '文本内容',
-                    [ResponseType.MARKDOWN]: 'Markdown 内容',
-                    [ResponseType.HTML]: 'HTML 内容',
-                    [ResponseType.PHOTO]: '图片',
-                    [ResponseType.VIDEO]: '视频',
-                    [ResponseType.DOCUMENT]: '文档',
-                    [ResponseType.INLINE_BUTTONS]: '内联按钮',
-                    [ResponseType.KEYBOARD]: '自定义键盘',
-                  }[type]
-                }</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleResponseType(type);
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">移除</span>
-                </Button>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="pt-4">
-                {renderContentEditor(type)}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
-
-      {/* 测试部分的UI */}
-      <div className="pt-4 space-y-4">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <Input
-              value={receiverId}
-              onChange={(e) => onReceiverIdChange(e.target.value)}
-              placeholder="输入接收测试消息的Telegram用户ID"
-            />
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border bg-card shadow-sm transition-all duration-200 hover:shadow-md">
+        {/* 响应类型选择器 */}
+        <div className="border-b">
+          <div className="flex items-center justify-between p-6">
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold tracking-tight">响应类型</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                选择一个或多个响应类型来丰富回复内容
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">
+                已选择 {response.types?.length || 0} 种类型
+              </span>
+            </div>
           </div>
-          <Button
-            className="whitespace-nowrap"
-            onClick={onTest}
-            disabled={isTesting}
-          >
-            {isTesting ? '测试中...' : '测试响应'}
-          </Button>
+          {renderTypeSelector()}
         </div>
-        {!receiverId && (
-          <p className="text-sm text-muted-foreground">
-            请输入接收测试消息的Telegram用户ID
-          </p>
-        )}
+
+        {/* 响应配置区域 */}
+        <div className="divide-y divide-border">
+          <Accordion
+            type="single"
+            collapsible
+            defaultValue={activeType || undefined}
+            className="w-full"
+          >
+            {response.types?.map((type) => (
+              <AccordionItem 
+                key={type} 
+                value={type} 
+                className="border-b last:border-b-0 px-6"
+              >
+                <AccordionTrigger className="py-4 hover:no-underline">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-3">
+                      <span className="text-base font-medium">
+                        {getResponseTypeLabel(type)}
+                      </span>
+                      <span className="text-xs text-muted-foreground px-2 py-1 rounded-full bg-muted">
+                        {type}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleResponseType(type);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-4 pb-6">
+                  <ScrollArea className="h-[calc(100vh-400px)] pr-4">
+                    {renderContentEditor(type)}
+                  </ScrollArea>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+
+        {/* 测试区域 */}
+        <div className="border-t bg-muted/50">
+          <div className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <Input
+                  value={receiverId}
+                  onChange={(e) => onReceiverIdChange(e.target.value)}
+                  placeholder="输入接收消息的用户ID"
+                  className="h-10"
+                />
+              </div>
+              <Button
+                onClick={onTest}
+                disabled={isTesting}
+                className="min-w-[120px] h-10 transition-all duration-200 hover:scale-105 active:scale-95"
+              >
+                {isTesting ? '测试中...' : '测试响应'}
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 按钮编辑对话框 */}
       {editingButton && (
-        <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50">
-          <div className="bg-card p-4 rounded-lg shadow-lg w-full max-w-md space-y-4">
-            <h3 className="text-lg font-medium">编辑按钮</h3>
-            <div className="space-y-4">
+        <Sheet open={!!editingButton} onOpenChange={() => setEditingButton(null)}>
+          <SheetContent className="sm:max-w-[400px]">
+            <SheetHeader className="space-y-1">
+              <SheetTitle>编辑按钮</SheetTitle>
+              <p className="text-sm text-muted-foreground">
+                配置按钮的显示文本和行为
+              </p>
+            </SheetHeader>
+            <div className="space-y-6 mt-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium">按钮文本</label>
-                <input
-                  type="text"
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  按钮文本
+                </label>
+                <Input
                   value={editingButton.button.text}
                   onChange={(e) => setEditingButton({
                     ...editingButton,
                     button: { ...editingButton.button, text: e.target.value }
                   })}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  className="h-10"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">按钮类型</label>
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  按钮类型
+                </label>
                 <select
                   value={editingButton.button.type}
                   onChange={(e) => setEditingButton({
                     ...editingButton,
                     button: { ...editingButton.button, type: e.target.value as 'url' | 'callback' }
                   })}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                 >
                   <option value="url">URL</option>
                   <option value="callback">回调</option>
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                   {editingButton.button.type === 'url' ? 'URL' : '回调数据'}
                 </label>
-                <input
-                  type="text"
+                <Input
                   value={editingButton.button.value}
                   onChange={(e) => setEditingButton({
                     ...editingButton,
                     button: { ...editingButton.button, value: e.target.value }
                   })}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  className="h-10"
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 mt-6">
               <Button
                 variant="outline"
                 onClick={() => setEditingButton(null)}
+                className="transition-all duration-200 hover:scale-105 active:scale-95"
               >
                 取消
               </Button>
@@ -768,13 +820,29 @@ export function MenuResponse({
                   );
                   setEditingButton(null);
                 }}
+                className="transition-all duration-200 hover:scale-105 active:scale-95"
               >
                 保存
               </Button>
             </div>
-          </div>
-        </div>
+          </SheetContent>
+        </Sheet>
       )}
     </div>
   );
+}
+
+// 辅助函数
+function getResponseTypeLabel(type: ResponseType): string {
+  const labels: Record<ResponseType, string> = {
+    [ResponseType.TEXT]: "文本内容",
+    [ResponseType.MARKDOWN]: "Markdown 内容",
+    [ResponseType.HTML]: "HTML 内容",
+    [ResponseType.PHOTO]: "图片",
+    [ResponseType.VIDEO]: "视频",
+    [ResponseType.DOCUMENT]: "文档",
+    [ResponseType.INLINE_BUTTONS]: "内联按钮",
+    [ResponseType.KEYBOARD]: "自定义键盘"
+  };
+  return labels[type];
 } 

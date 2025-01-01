@@ -15,20 +15,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
-import { MenuItem } from '@/types/bot';
 import { MenuResponse } from './menu-response';
 import { ResponseType } from '@/types/bot';
 import { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
-import { toast } from "@workspace/ui/hooks/use-toast";
+import { useToast } from "@workspace/ui/hooks/use-toast";
+import type { MenuItem } from "./menu-item";
+import { useBotContext } from "@/contexts/BotContext";
 
-/**
- * 菜单项表单的验证模式
- * 定义了必填字段和格式要求
- */
 export const menuItemSchema = z.object({
   text: z.string().min(1, "请输入菜单文本"),
-  command: z.string().min(1, "请输入命令"),
+  command: z.string().min(1, "请输入命令").startsWith("/", "命令必须以/开头"),
   response: z.object({
     types: z.array(z.nativeEnum(ResponseType)),
     content: z.string(),
@@ -49,20 +46,13 @@ export const menuItemSchema = z.object({
   }).optional()
 });
 
-/**
- * 菜单表单组件的属性定义
- */
-interface MenuFormProps {
-  selectedItem: MenuItem | null;
+export interface MenuFormProps {
+  selectedItem: MenuItem;
   menuItems: MenuItem[];
   onSubmit: (values: z.infer<typeof menuItemSchema>) => Promise<void>;
   saving: boolean;
 }
 
-/**
- * 命令预览组件
- * 展示命令在 Telegram 中的显示效果
- */
 const CommandPreview = ({ command, text }: { command: string; text: string }) => {
   return (
     <div className="rounded-lg border bg-card p-4 space-y-3">
@@ -89,21 +79,24 @@ const CommandPreview = ({ command, text }: { command: string; text: string }) =>
   );
 };
 
-/**
- * 菜单表单组件
- * 处理菜单项的编辑和创建
- */
-export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuFormProps) {
+export function MenuForm({
+  selectedItem,
+  menuItems,
+  onSubmit,
+  saving
+}: MenuFormProps) {
   const [activeTab, setActiveTab] = useState("basic");
   const [isTesting, setIsTesting] = useState(false);
   const [testReceiverId, setTestReceiverId] = useState("");
+  const { toast } = useToast();
+  const { selectedBot } = useBotContext();
 
   const form = useForm<z.infer<typeof menuItemSchema>>({
     resolver: zodResolver(menuItemSchema),
     defaultValues: {
-      text: selectedItem?.text || "",
-      command: selectedItem?.command || "",
-      response: selectedItem?.response || {
+      text: selectedItem.text,
+      command: selectedItem.command,
+      response: selectedItem.response || {
         types: [ResponseType.TEXT],
         content: ""
       }
@@ -111,7 +104,6 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
   });
 
   useEffect(() => {
-    if (selectedItem) {
       form.reset({
         text: selectedItem.text,
         command: selectedItem.command,
@@ -120,20 +112,15 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
           content: ""
         }
       });
-    }
   }, [selectedItem, form]);
 
-  /**
-   * 命令重复检查
-   * 确保命令格式正确且在菜单项中唯一
-   */
-  const validateCommand = (command: string, currentItemId?: string) => {
+  const validateCommand = (command: string) => {
     if (!command.startsWith('/')) {
       return "命令必须以/开头";
     }
     
     const isDuplicate = menuItems.some(item => 
-      item.command === command && item.id !== currentItemId
+      item.command === command && item.id !== selectedItem.id
     );
     
     if (isDuplicate) {
@@ -153,10 +140,10 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
       return;
     }
 
-    if (!selectedItem?.id) {
+    if (!selectedBot?.token) {
       toast({
         title: "错误",
-        description: "请先选择一个机器人",
+        description: "未找到机器人Token",
         variant: "destructive",
       });
       return;
@@ -201,10 +188,11 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
 
     setIsTesting(true);
     try {
-      const response = await fetch(`/api/bot/telegram/bots/${selectedItem.id}/command/test`, {
+      const response = await fetch(`/api/bot/telegram/bots/${selectedBot.id}/command/test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bot ${selectedBot.token}`
         },
         body: JSON.stringify({
           command: formValues.command,
@@ -224,7 +212,6 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
         description: result.message || "命令响应已发送到 Telegram",
       });
     } catch (error: any) {
-      console.error('测试失败:', error);
       toast({
         title: "测试失败",
         description: error.message || "请检查命令配置是否正确",
@@ -237,16 +224,27 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="basic">基本设置</TabsTrigger>
-          <TabsTrigger value="response">响应配置</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="sticky top-0 z-10 bg-background border-b">
+          <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
+            <TabsTrigger
+              value="basic"
+              className="relative rounded-none border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-foreground data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            >
+              基本设置
+            </TabsTrigger>
+            <TabsTrigger
+              value="response"
+              className="relative rounded-none border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-foreground data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            >
+              响应配置
+            </TabsTrigger>
         </TabsList>
+        </div>
 
-        <TabsContent value="basic">
+        <TabsContent value="basic" className="mt-0 border-0 p-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* 菜单文本输入 */}
               <FormField
                 control={form.control}
                 name="text"
@@ -261,7 +259,6 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
                 )}
               />
 
-              {/* 命令输入 */}
               <FormField
                 control={form.control}
                 name="command"
@@ -276,7 +273,7 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
                           className="pr-20"
                           onChange={(e) => {
                             field.onChange(e);
-                            const validationResult = validateCommand(e.target.value, selectedItem?.id);
+                            const validationResult = validateCommand(e.target.value);
                             if (typeof validationResult === "string") {
                               form.setError("command", { message: validationResult });
                             } else {
@@ -296,7 +293,6 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
                 )}
               />
 
-              {/* 命令预览 */}
               <div className="pt-2">
                 <CommandPreview
                   command={form.watch("command")}
@@ -304,7 +300,6 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
                 />
               </div>
 
-              {/* 提交按钮 */}
               <Button 
                 type="submit"
                 disabled={saving}
@@ -317,7 +312,8 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
           </Form>
         </TabsContent>
 
-        <TabsContent value="response">
+        <TabsContent value="response" className="mt-0 border-0">
+          <div className="space-y-4">
           <MenuResponse
             response={form.watch("response") || {
               types: [ResponseType.TEXT],
@@ -326,11 +322,14 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
             onChange={(response) => form.setValue("response", response)}
             onTest={handleTest}
             isTesting={isTesting}
-            receiverId={testReceiverId}
-            onReceiverIdChange={setTestReceiverId}
+              receiverId={testReceiverId}
+              onReceiverIdChange={setTestReceiverId}
           />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
   );
 } 
+
+MenuForm.schema = menuItemSchema; 

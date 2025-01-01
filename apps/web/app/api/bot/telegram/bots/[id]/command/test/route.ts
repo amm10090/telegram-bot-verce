@@ -1,17 +1,48 @@
 import { NextResponse } from "next/server";
 import { TelegramClient } from "@/lib/telegram";
 import { ResponseType } from "@/types/bot";
+import { connectDB } from "@/lib/db";
+import BotModel from "@/models/bot";
+import { isValidObjectId } from "mongoose";
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const botToken = request.headers.get('X-Bot-Token');
+    const authHeader = request.headers.get('Authorization');
+    const botToken = authHeader?.startsWith('Bot ') ? authHeader.slice(4) : null;
+    
     if (!botToken) {
       return NextResponse.json(
         { error: "缺少机器人Token" },
         { status: 400 }
+      );
+    }
+
+    // 验证 Bot ID
+    const { id } = params;
+    if (!isValidObjectId(id)) {
+      return NextResponse.json(
+        { error: "无效的机器人ID" },
+        { status: 400 }
+      );
+    }
+
+    // 验证 Bot 是否存在且 Token 是否匹配
+    await connectDB();
+    const bot = await BotModel.findById(id);
+    if (!bot) {
+      return NextResponse.json(
+        { error: "机器人不存在" },
+        { status: 404 }
+      );
+    }
+
+    if (bot.token !== botToken) {
+      return NextResponse.json(
+        { error: "Token 不匹配" },
+        { status: 403 }
       );
     }
 
