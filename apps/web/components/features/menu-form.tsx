@@ -15,11 +15,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@workspace/ui/components/collapsible";
 import { MenuItem } from '@/types/bot';
 import { MenuResponse } from './menu-response';
 import { ResponseType } from '@/types/bot';
@@ -101,6 +96,7 @@ const CommandPreview = ({ command, text }: { command: string; text: string }) =>
 export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuFormProps) {
   const [activeTab, setActiveTab] = useState("basic");
   const [isTesting, setIsTesting] = useState(false);
+  const [testReceiverId, setTestReceiverId] = useState("");
 
   const form = useForm<z.infer<typeof menuItemSchema>>({
     resolver: zodResolver(menuItemSchema),
@@ -114,7 +110,6 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
     }
   });
 
-  // 监听 selectedItem 变化并更新表单值
   useEffect(() => {
     if (selectedItem) {
       form.reset({
@@ -148,16 +143,64 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
     return true;
   };
 
-  const handleTest = async (receiverId: string) => {
+  const handleTest = async () => {
+    if (!testReceiverId) {
+      toast({
+        title: "错误",
+        description: "请输入接收者ID",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedItem?.id) {
+      toast({
+        title: "错误",
+        description: "请先选择一个机器人",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formValues = form.getValues();
+    const response = formValues.response;
+
+    // 验证响应内容
+    if (!response?.types?.length) {
+      toast({
+        title: "错误",
+        description: "请选择至少一种响应类型",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!response.content?.trim()) {
+      toast({
+        title: "错误",
+        description: "请输入响应内容",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 验证媒体类型的URL
+    if (
+      (response.types.includes(ResponseType.PHOTO) ||
+        response.types.includes(ResponseType.VIDEO) ||
+        response.types.includes(ResponseType.DOCUMENT)) &&
+      !response.mediaUrl
+    ) {
+      toast({
+        title: "错误",
+        description: "请输入媒体文件URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsTesting(true);
     try {
-      if (!selectedItem?.id) {
-        throw new Error('请先选择一个机器人');
-      }
-
-      const formValues = form.getValues();
-      console.log('测试请求 - 机器人ID:', selectedItem.id);
-      
       const response = await fetch(`/api/bot/telegram/bots/${selectedItem.id}/command/test`, {
         method: 'POST',
         headers: {
@@ -166,7 +209,7 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
         body: JSON.stringify({
           command: formValues.command,
           response: formValues.response,
-          receiverId
+          receiverId: testReceiverId
         }),
       });
 
@@ -283,6 +326,8 @@ export function MenuForm({ selectedItem, menuItems, onSubmit, saving }: MenuForm
             onChange={(response) => form.setValue("response", response)}
             onTest={handleTest}
             isTesting={isTesting}
+            receiverId={testReceiverId}
+            onReceiverIdChange={setTestReceiverId}
           />
         </TabsContent>
       </Tabs>
