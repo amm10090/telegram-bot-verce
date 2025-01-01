@@ -24,6 +24,7 @@ import {
 } from "@workspace/ui/components/scroll-area";
 import { Badge } from "@workspace/ui/components/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
+import { marked } from 'marked';
 
 interface Button {
   text: string;
@@ -220,7 +221,9 @@ export function MenuResponse({
               <div 
                 className="prose prose-sm dark:prose-invert max-w-none"
                 dangerouslySetInnerHTML={{ 
-                  __html: response.content 
+                  __html: type === ResponseType.MARKDOWN 
+                    ? marked(response.content || '')
+                    : response.content 
                 }}
               />
             </div>
