@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { CommandResponse, ResponseType } from "@/types/bot";
-import { X, ChevronDown, ChevronUp } from "lucide-react";
+import { X, ChevronDown, MessageSquare, Hash as Markdown, Code, Image, Video, FileText, Layout, Keyboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Accordion,
@@ -17,12 +17,13 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@workspace/ui/components/sheet";
 import {
   ScrollArea,
   ScrollBar
 } from "@workspace/ui/components/scroll-area";
+import { Badge } from "@workspace/ui/components/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
 
 interface Button {
   text: string;
@@ -53,6 +54,64 @@ interface ResponseProps {
   receiverId: string;
   onReceiverIdChange: (value: string) => void;
 }
+
+interface TypeConfig {
+  value: ResponseType;
+  label: string;
+  description: string;
+  icon: JSX.Element;
+}
+
+const responseTypes: TypeConfig[] = [
+  { 
+    value: ResponseType.TEXT, 
+    label: '纯文本',
+    description: '发送普通文本消息',
+    icon: <MessageSquare className="h-4 w-4" />
+  },
+  { 
+    value: ResponseType.MARKDOWN, 
+    label: 'Markdown',
+    description: '使用 Markdown 格式化文本',
+    icon: <Markdown className="h-4 w-4" />
+  },
+  { 
+    value: ResponseType.HTML, 
+    label: 'HTML',
+    description: '使用 HTML 格式化文本',
+    icon: <Code className="h-4 w-4" />
+  },
+  { 
+    value: ResponseType.PHOTO, 
+    label: '图片',
+    description: '发送图片消息',
+    icon: <Image className="h-4 w-4" />
+  },
+  { 
+    value: ResponseType.VIDEO, 
+    label: '视频',
+    description: '发送视频消息',
+    icon: <Video className="h-4 w-4" />
+  },
+  { 
+    value: ResponseType.DOCUMENT, 
+    label: '文档',
+    description: '发送文档文件',
+    icon: <FileText className="h-4 w-4" />
+  },
+  { 
+    value: ResponseType.INLINE_BUTTONS, 
+    label: '内联按钮',
+    description: '添加消息内联按钮',
+    icon: <Layout className="h-4 w-4" />
+  },
+  { 
+    value: ResponseType.KEYBOARD, 
+    label: '自定义键盘',
+    description: '添加自定义回复键盘',
+    icon: <Keyboard className="h-4 w-4" />
+  },
+];
 
 export function MenuResponse({ 
   response, 
@@ -175,11 +234,10 @@ export function MenuResponse({
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">媒体 URL</label>
-              <input
-                type="text"
+              <Input
                 value={response.mediaUrl || ''}
                 onChange={(e) => onChange({ ...response, mediaUrl: e.target.value })}
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                className="w-full"
                 placeholder="输入媒体文件的 URL..."
               />
             </div>
@@ -213,28 +271,7 @@ export function MenuResponse({
                   {type === ResponseType.DOCUMENT && (
                     <div className="flex items-center gap-3 p-4">
                       <div className="h-10 w-10 flex items-center justify-center rounded bg-primary/10">
-                        {response.mediaUrl?.toLowerCase().endsWith('.pdf') && (
-                          <svg className="h-6 w-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <path d="M14 2v6h6" />
-                            <path d="M16 13H8" />
-                            <path d="M16 17H8" />
-                            <path d="M10 9H8" />
-                          </svg>
-                        )}
-                        {response.mediaUrl?.toLowerCase().endsWith('.zip') && (
-                          <svg className="h-6 w-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                            <path d="M12 22v-6" />
-                            <path d="M12 8v6" />
-                          </svg>
-                        )}
-                        {(!response.mediaUrl?.toLowerCase().endsWith('.pdf') && !response.mediaUrl?.toLowerCase().endsWith('.zip')) && (
-                          <svg className="h-6 w-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
-                            <path d="M13 2v7h7" />
-                          </svg>
-                        )}
+                        <FileText className="h-6 w-6 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">
@@ -317,7 +354,6 @@ export function MenuResponse({
                 ))}
               </div>
             </div>
-            {/* 内联按钮预览 */}
             {buttons.some(row => row.length > 0) && (
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
                 <label className="text-sm font-medium">预览</label>
@@ -364,7 +400,6 @@ export function MenuResponse({
               />
             </div>
 
-            {/* 键盘配置选项 */}
             <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
               <h4 className="font-medium">键盘选项</h4>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -372,14 +407,12 @@ export function MenuResponse({
                   <label className="text-sm font-medium">
                     输入框占位符
                   </label>
-                  <input
-                    type="text"
+                  <Input
                     value={response.inputPlaceholder || ''}
                     onChange={(e) => onChange({ 
                       ...response, 
                       inputPlaceholder: e.target.value 
                     })}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2"
                     placeholder="请输入..."
                   />
                 </div>
@@ -455,8 +488,8 @@ export function MenuResponse({
                               buttonIndex,
                               button: {
                                 ...button,
-                                type: 'callback', // 自定义键盘只支持文本
-                                value: button.text // 值就是文本本身
+                                type: 'callback',
+                                value: button.text
                               }
                             })}
                           >
@@ -478,7 +511,7 @@ export function MenuResponse({
                 ))}
               </div>
             </div>
-            {/* 自定义键盘预览 */}
+
             {buttons.some(row => row.length > 0) && (
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
                 <label className="text-sm font-medium">预览</label>
@@ -548,259 +581,229 @@ export function MenuResponse({
 
   // 渲染响应类型选择器
   const renderTypeSelector = () => {
-    const types = [
-      { 
-        value: ResponseType.TEXT, 
-        label: '纯文本',
-        icon: (
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        )
-      },
-      { 
-        value: ResponseType.MARKDOWN, 
-        label: 'Markdown',
-        icon: (
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z" />
-            <path d="M16 8l-4 4-4-4" />
-            <path d="M12 12v8" />
-          </svg>
-        )
-      },
-      { 
-        value: ResponseType.HTML, 
-        label: 'HTML',
-        icon: (
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z" />
-            <path d="M16 8l-4 4-4-4" />
-            <path d="M12 12v8" />
-          </svg>
-        )
-      },
-      { 
-        value: ResponseType.PHOTO, 
-        label: '图片',
-        icon: (
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        )
-      },
-      { 
-        value: ResponseType.VIDEO, 
-        label: '视频',
-        icon: (
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        )
-      },
-      { 
-        value: ResponseType.DOCUMENT, 
-        label: '文档',
-        icon: (
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        )
-      },
-      { 
-        value: ResponseType.INLINE_BUTTONS, 
-        label: '内联按钮',
-        icon: (
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        )
-      },
-      { 
-        value: ResponseType.KEYBOARD, 
-        label: '自定义键盘',
-        icon: (
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        )
-      },
-    ];
-
     return (
-      <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex space-x-3 p-4">
-          {types.map(type => (
-            <Button
+      <ScrollArea className="w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4">
+          {responseTypes.map(type => (
+            <Card
               key={type.value}
-              variant={response.types?.includes(type.value) ? "default" : "outline"}
-              size="sm"
               className={cn(
-                "flex items-center gap-2 px-4 py-2 transition-all duration-200",
-                "hover:scale-105 active:scale-95",
-                response.types?.includes(type.value) 
-                  ? "shadow-sm" 
-                  : "hover:border-primary/50"
+                "relative group cursor-pointer transition-all duration-200",
+                "hover:shadow-md hover:border-primary/50",
+                response.types?.includes(type.value) && "border-primary bg-primary/5",
               )}
               onClick={() => {
                 toggleResponseType(type.value);
                 setActiveType(type.value);
               }}
             >
-              {type.icon}
-              <span className="font-medium">{type.label}</span>
-            </Button>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className={cn(
+                    "p-2 rounded-lg",
+                    response.types?.includes(type.value) 
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  )}>
+                    {type.icon}
+                  </div>
+                  {response.types?.includes(type.value) && (
+                    <Badge variant="default" className="h-5">已选</Badge>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-medium">{type.label}</h4>
+                  <p className="text-xs text-muted-foreground">
+                    {type.description}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
-        <ScrollBar orientation="horizontal" className="h-2" />
+        <ScrollBar orientation="horizontal" />
       </ScrollArea>
     );
   };
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border bg-card shadow-sm transition-all duration-200 hover:shadow-md">
-        {/* 响应类型选择器 */}
-        <div className="border-b">
-          <div className="flex items-center justify-between p-6">
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h3 className="text-lg font-semibold tracking-tight">响应类型</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <CardTitle className="text-base">响应类型</CardTitle>
+              <CardDescription>
                 选择一个或多个响应类型来丰富回复内容
-              </p>
+              </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">
-                已选择 {response.types?.length || 0} 种类型
-              </span>
-            </div>
+            <Badge variant="secondary" className="h-6">
+              已选择 {response.types?.length || 0} 种类型
+            </Badge>
           </div>
+        </CardHeader>
+        <CardContent>
           {renderTypeSelector()}
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* 响应配置区域 */}
-        <div className="divide-y divide-border">
-          <Accordion
-            type="single"
-            collapsible
-            defaultValue={activeType || undefined}
-            className="w-full"
-          >
-            {response.types?.map((type) => (
-              <AccordionItem 
-                key={type} 
-                value={type} 
-                className="border-b last:border-b-0 px-6"
-              >
-                <AccordionTrigger className="py-4 hover:no-underline">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-3">
-                      <span className="text-base font-medium">
-                        {getResponseTypeLabel(type)}
-                      </span>
-                      <span className="text-xs text-muted-foreground px-2 py-1 rounded-full bg-muted">
-                        {type}
-                      </span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleResponseType(type);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-4 pb-6">
-                  <ScrollArea className="h-[calc(100vh-400px)] pr-4">
-                    {renderContentEditor(type)}
-                  </ScrollArea>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
+      {response.types && response.types.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">响应配置</CardTitle>
+            <CardDescription>
+              配置每种响应类型的具体内容和行为
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Accordion
+              type="single"
+              collapsible
+              defaultValue={activeType?.toString()}
+              className="w-full"
+            >
+              {response.types?.map((type) => {
+                const typeConfig = responseTypes.find(t => t.value === type);
+                return (
+                  <AccordionItem 
+                    key={type} 
+                    value={type.toString()} 
+                    className="border-b last:border-b-0"
+                  >
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline group">
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "p-2 rounded-lg",
+                            "bg-primary/10 text-primary"
+                          )}>
+                            {typeConfig?.icon}
+                          </div>
+                          <div className="space-y-1 text-left">
+                            <span className="text-sm font-medium">
+                              {typeConfig?.label}
+                            </span>
+                            <p className="text-xs text-muted-foreground">
+                              {typeConfig?.description}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleResponseType(type);
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="px-4 py-3">
+                        <div className="rounded-lg border bg-card">
+                          <div className="p-4">
+                            {renderContentEditor(type)}
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          </CardContent>
+        </Card>
+      )}
 
-        {/* 测试区域 */}
-        <div className="border-t bg-muted/50">
-          <div className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <Input
-                  value={receiverId}
-                  onChange={(e) => onReceiverIdChange(e.target.value)}
-                  placeholder="输入接收消息的用户ID"
-                  className="h-10"
-                />
-              </div>
-              <Button
-                onClick={onTest}
-                disabled={isTesting}
-                className="min-w-[120px] h-10 transition-all duration-200 hover:scale-105 active:scale-95"
-              >
-                {isTesting ? '测试中...' : '测试响应'}
-              </Button>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">测试响应</CardTitle>
+          <CardDescription>
+            发送测试消息以预览响应效果
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <Input
+                value={receiverId}
+                onChange={(e) => onReceiverIdChange(e.target.value)}
+                placeholder="输入接收消息的用户ID"
+                className="h-10"
+              />
             </div>
+            <Button
+              onClick={onTest}
+              disabled={isTesting}
+              className="min-w-[120px] h-10 transition-all duration-200 hover:scale-105 active:scale-95"
+            >
+              {isTesting ? '测试中...' : '测试响应'}
+            </Button>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* 按钮编辑对话框 */}
       {editingButton && (
         <Sheet open={!!editingButton} onOpenChange={() => setEditingButton(null)}>
-          <SheetContent className="sm:max-w-[400px]">
-            <SheetHeader className="space-y-1">
+          <SheetContent className="sm:max-w-[600px]">
+            <SheetHeader>
               <SheetTitle>编辑按钮</SheetTitle>
               <p className="text-sm text-muted-foreground">
                 配置按钮的显示文本和行为
               </p>
             </SheetHeader>
-            <div className="space-y-6 mt-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  按钮文本
-                </label>
-                <Input
-                  value={editingButton.button.text}
-                  onChange={(e) => setEditingButton({
-                    ...editingButton,
-                    button: { ...editingButton.button, text: e.target.value }
-                  })}
-                  className="h-10"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  按钮类型
-                </label>
-                <select
-                  value={editingButton.button.type}
-                  onChange={(e) => setEditingButton({
-                    ...editingButton,
-                    button: { ...editingButton.button, type: e.target.value as 'url' | 'callback' }
-                  })}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="url">URL</option>
-                  <option value="callback">回调</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  {editingButton.button.type === 'url' ? 'URL' : '回调数据'}
-                </label>
-                <Input
-                  value={editingButton.button.value}
-                  onChange={(e) => setEditingButton({
-                    ...editingButton,
-                    button: { ...editingButton.button, value: e.target.value }
-                  })}
-                  className="h-10"
-                />
+            <div className="mt-6">
+              <div className="space-y-6">
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      按钮文本
+                    </label>
+                    <Input
+                      value={editingButton.button.text}
+                      onChange={(e) => setEditingButton({
+                        ...editingButton,
+                        button: { ...editingButton.button, text: e.target.value }
+                      })}
+                      className="h-10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      按钮类型
+                    </label>
+                    <select
+                      value={editingButton.button.type}
+                      onChange={(e) => setEditingButton({
+                        ...editingButton,
+                        button: { ...editingButton.button, type: e.target.value as 'url' | 'callback' }
+                      })}
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="url">URL</option>
+                      <option value="callback">回调</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    {editingButton.button.type === 'url' ? 'URL' : '回调数据'}
+                  </label>
+                  <Input
+                    value={editingButton.button.value}
+                    onChange={(e) => setEditingButton({
+                      ...editingButton,
+                      button: { ...editingButton.button, value: e.target.value }
+                    })}
+                    className="h-10"
+                  />
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
@@ -830,19 +833,4 @@ export function MenuResponse({
       )}
     </div>
   );
-}
-
-// 辅助函数
-function getResponseTypeLabel(type: ResponseType): string {
-  const labels: Record<ResponseType, string> = {
-    [ResponseType.TEXT]: "文本内容",
-    [ResponseType.MARKDOWN]: "Markdown 内容",
-    [ResponseType.HTML]: "HTML 内容",
-    [ResponseType.PHOTO]: "图片",
-    [ResponseType.VIDEO]: "视频",
-    [ResponseType.DOCUMENT]: "文档",
-    [ResponseType.INLINE_BUTTONS]: "内联按钮",
-    [ResponseType.KEYBOARD]: "自定义键盘"
-  };
-  return labels[type];
 } 

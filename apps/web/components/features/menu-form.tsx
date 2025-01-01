@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown, Loader2, Command, Link, MessageSquare } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import {
@@ -22,6 +22,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/componen
 import { useToast } from "@workspace/ui/hooks/use-toast";
 import type { MenuItem } from "./menu-item";
 import { useBotContext } from "@/contexts/BotContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
+import { Badge } from "@workspace/ui/components/badge";
+import { Separator } from "@workspace/ui/components/separator";
+import { cn } from "@/lib/utils";
 
 export const menuItemSchema = z.object({
   text: z.string().min(1, "请输入菜单文本"),
@@ -55,27 +59,39 @@ export interface MenuFormProps {
 
 const CommandPreview = ({ command, text }: { command: string; text: string }) => {
   return (
-    <div className="rounded-lg border bg-card p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium">命令预览</h4>
-        <span className="text-xs text-muted-foreground">Telegram 显示效果</span>
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-start gap-2 p-2 rounded bg-muted/50">
-          <div className="flex-1">
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">命令预览</CardTitle>
+          <Badge variant="secondary">Telegram 显示效果</Badge>
+        </div>
+        <CardDescription>
+          用户将在 Telegram 中看到的命令展示效果
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+          <Command className="h-5 w-5 text-primary mt-0.5" />
+          <div className="flex-1 space-y-1">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm text-blue-500">{command}</span>
-              <span className="text-sm">-</span>
+              <code className="text-sm font-mono text-blue-500">{command}</code>
+              <span className="text-sm text-muted-foreground">-</span>
               <span className="text-sm">{text}</span>
             </div>
           </div>
         </div>
-        <div className="text-xs text-muted-foreground">
-          <p>• 命令将显示在用户的命令菜单中</p>
-          <p>• 用户可以通过输入 {command} 或点击命令来触发</p>
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <MessageSquare className="h-4 w-4" />
+            <span>命令将显示在用户的命令菜单中</span>
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Link className="h-4 w-4" />
+            <span>用户可以通过输入 {command} 或点击命令来触发</span>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -223,113 +239,162 @@ export function MenuForm({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="sticky top-0 z-10 bg-background border-b">
           <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
             <TabsTrigger
               value="basic"
-              className="relative rounded-none border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-foreground data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              className={cn(
+                "relative rounded-none border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 font-medium",
+                "text-muted-foreground hover:text-foreground",
+                "data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              )}
             >
-              基本设置
+              <div className="flex items-center gap-2">
+                <Command className="h-4 w-4" />
+                基本设置
+              </div>
             </TabsTrigger>
             <TabsTrigger
               value="response"
-              className="relative rounded-none border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-foreground data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              className={cn(
+                "relative rounded-none border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 font-medium",
+                "text-muted-foreground hover:text-foreground",
+                "data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              )}
             >
-              响应配置
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                响应配置
+              </div>
             </TabsTrigger>
-        </TabsList>
+          </TabsList>
         </div>
 
-        <TabsContent value="basic" className="mt-0 border-0 p-4">
+        <TabsContent value="basic" className="mt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="text"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>菜单文本</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">基本信息</CardTitle>
+                  <CardDescription>
+                    设置菜单项的显示文本和触发命令
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="text"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>菜单文本</FormLabel>
+                        <FormControl>
+                          <Input {...field} className="font-medium" />
+                        </FormControl>
+                        <FormDescription>
+                          在命令列表中显示的文本说明
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="command"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>命令</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input 
+                              {...field} 
+                              placeholder="/start"
+                              className="font-mono pr-20"
+                              onChange={(e) => {
+                                field.onChange(e);
+                                const validationResult = validateCommand(e.target.value);
+                                if (typeof validationResult === "string") {
+                                  form.setError("command", { message: validationResult });
+                                } else {
+                                  form.clearErrors("command");
+                                }
+                              }}
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                              <Badge 
+                                variant={field.value && field.value.startsWith('/') ? "default" : "secondary"}
+                                className="font-normal"
+                              >
+                                {field.value && field.value.startsWith('/') ? '有效' : '无效'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          用于触发此菜单项的命令，必须以 / 开头
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <CommandPreview
+                command={form.watch("command")}
+                text={form.watch("text")}
               />
 
-              <FormField
-                control={form.control}
-                name="command"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>命令</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input 
-                          {...field} 
-                          placeholder="/start"
-                          className="pr-20"
-                          onChange={(e) => {
-                            field.onChange(e);
-                            const validationResult = validateCommand(e.target.value);
-                            if (typeof validationResult === "string") {
-                              form.setError("command", { message: validationResult });
-                            } else {
-                              form.clearErrors("command");
-                            }
-                          }}
-                        />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <span className="text-xs text-muted-foreground">
-                            {field.value && field.value.startsWith('/') ? '✓' : ''}
-                          </span>
-                        </div>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="pt-2">
-                <CommandPreview
-                  command={form.watch("command")}
-                  text={form.watch("text")}
-                />
+              <div className="flex items-center gap-4">
+                <Button 
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1"
+                >
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  保存更改
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => form.reset()}
+                  disabled={saving}
+                >
+                  重置
+                </Button>
               </div>
-
-              <Button 
-                type="submit"
-                disabled={saving}
-                className="w-full"
-              >
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                保存更改
-              </Button>
             </form>
           </Form>
         </TabsContent>
 
-        <TabsContent value="response" className="mt-0 border-0">
-          <div className="space-y-4">
-          <MenuResponse
-            response={form.watch("response") || {
-              types: [ResponseType.TEXT],
-              content: ""
-            }}
-            onChange={(response) => form.setValue("response", response)}
-            onTest={handleTest}
-            isTesting={isTesting}
-              receiverId={testReceiverId}
-              onReceiverIdChange={setTestReceiverId}
-          />
-          </div>
+        <TabsContent value="response" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">响应配置</CardTitle>
+              <CardDescription>
+                设置当用户触发此命令时，机器人的响应行为
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MenuResponse
+                response={form.watch("response") || {
+                  types: [ResponseType.TEXT],
+                  content: ""
+                }}
+                onChange={(response) => form.setValue("response", response)}
+                onTest={handleTest}
+                isTesting={isTesting}
+                receiverId={testReceiverId}
+                onReceiverIdChange={setTestReceiverId}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
-} 
+}
 
 MenuForm.schema = menuItemSchema; 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
-import { Plus, Loader2, Keyboard, Undo2, Redo2, Settings, X, FileText } from "lucide-react";
+import { Plus, Loader2, Keyboard, Undo2, Redo2, Settings, X, FileText, Command, ChevronRight } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { useToast } from "@workspace/ui/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,8 @@ import {
 } from "@workspace/ui/components/alert-dialog";
 import { MenuItemComponent } from './menu-item';
 import { MenuForm } from './menu-form';
+import { ScrollArea } from "@workspace/ui/components/scroll-area";
+import { Badge } from "@workspace/ui/components/badge";
 
 interface MenuItem {
   id: string;
@@ -377,11 +379,19 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-[800px] p-0 flex flex-col h-full">
-        <div className="flex-none p-4 border-b">
-              <div className="flex items-center justify-between">
-            <SheetTitle>菜单设置</SheetTitle>
-            <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+      <SheetContent className="w-full sm:max-w-[1000px] p-0 flex flex-col h-full bg-background">
+        <div className="flex-none border-b bg-card">
+          <div className="flex items-center justify-between p-6">
+            <div className="flex items-center gap-3">
+              <Command className="h-6 w-6 text-primary" />
+              <div>
+                <SheetTitle className="text-xl font-semibold">菜单设置</SheetTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  配置机器人的命令菜单和响应行为
+                </p>
+              </div>
+            </div>
+            <SheetClose className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-muted transition-colors">
               <X className="h-4 w-4" />
               <span className="sr-only">关闭</span>
             </SheetClose>
@@ -390,98 +400,146 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
 
         <div className="flex-1 min-h-0">
           <div className="h-full flex flex-col sm:flex-row">
-            {/* 菜单项列表 */}
-            <div className="w-full sm:w-[280px] border-b sm:border-b-0 sm:border-r flex flex-col min-h-[200px] sm:min-h-0">
-              <div className="flex-none p-4">
+            {/* 左侧菜单列表 */}
+            <div className="w-full sm:w-[320px] border-b sm:border-b-0 sm:border-r flex flex-col min-h-[200px] sm:min-h-0 bg-muted/30">
+              <div className="flex-none p-4 border-b bg-card">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium">菜单项</h3>
+                  <div className="space-y-1">
+                    <h3 className="font-medium">菜单项</h3>
+                    <p className="text-xs text-muted-foreground">
+                      共 {menuItems.length} 个命令
+                    </p>
+                  </div>
                   <div className="flex items-center gap-2">
+                    <UndoRedoButtons
+                      onUndo={undo}
+                      onRedo={redo}
+                      canUndo={canUndo}
+                      canRedo={canRedo}
+                    />
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={undo}
-                      disabled={!canUndo}
-                    >
-                      <Undo2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={redo}
-                      disabled={!canRedo}
-                    >
-                      <Redo2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
                       onClick={addMenuItem}
+                      size="sm"
+                      className="gap-1 shadow-sm hover:shadow transition-all duration-200"
                     >
-                      添加菜单项
+                      <Plus className="h-4 w-4" />
+                      添加
                     </Button>
-                      </div>
-                    </div>
-                <div className="text-xs text-muted-foreground mb-2">
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Badge variant="secondary" className="h-5">
+                    提示
+                  </Badge>
                   拖拽菜单项可以调整顺序
                 </div>
-                    </div>
-                    
-              <div className="flex-1 overflow-y-auto">
-                <DragDropContext onDragEnd={onDragEnd}>
-                  <Droppable droppableId="menu-items">
-                    {(provided) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="space-y-px"
-                      >
-                        {menuItems.map((item, index) => (
-                          <MenuItemComponent
-                            key={item.id}
-                            item={item}
-                            index={index}
-                            selected={selectedItem?.id === item.id}
-                            onSelect={() => setSelectedItem(item)}
-                            onRemove={() => removeMenuItem(item)}
-                          />
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </DragDropContext>
+              </div>
+              
+              <ScrollArea className="flex-1">
+                <div className="p-2">
+                  <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="menu-items">
+                      {(provided) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className="space-y-2"
+                        >
+                          {menuItems.map((item, index) => (
+                            <MenuItemComponent
+                              key={item.id}
+                              item={item}
+                              index={index}
+                              selected={selectedItem?.id === item.id}
+                              onSelect={() => setSelectedItem(item)}
+                              onRemove={() => removeMenuItem(item)}
+                            />
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                </div>
+              </ScrollArea>
+
+              <div className="flex-none p-4 bg-card border-t">
+                <div className="text-xs text-muted-foreground space-y-2">
+                  <div className="flex items-center gap-2">
+                    <kbd className="px-2 py-1 rounded bg-muted text-muted-foreground">⌘/Ctrl + N</kbd>
+                    <span>新建菜单项</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <kbd className="px-2 py-1 rounded bg-muted text-muted-foreground">⌘/Ctrl + S</kbd>
+                    <span>保存更改</span>
                   </div>
                 </div>
+              </div>
+            </div>
 
-            {/* 菜单项编辑表单 */}
-            <div className="flex-1 flex flex-col min-h-0">
+            {/* 右侧编辑区域 */}
+            <div className="flex-1 flex flex-col min-h-0 bg-card">
               {selectedItem ? (
                 <div className="h-full flex flex-col">
-                  <div className="flex-none p-4 border-b">
-                    <h3 className="text-sm font-medium">
-                      编辑菜单项 - {selectedItem.command}
-                    </h3>
+                  <div className="flex-none p-4 border-b bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="font-medium">
+                        {selectedItem.text}
+                      </h3>
+                      <Badge variant="outline" className="font-mono">
+                        {selectedItem.command}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-4">
+                  <ScrollArea className="flex-1">
+                    <div className="p-6">
                       <MenuForm
                         selectedItem={selectedItem}
                         menuItems={menuItems}
-                      onSubmit={handleSave}
+                        onSubmit={handleSave}
                         saving={saving}
                       />
                     </div>
+                  </ScrollArea>
                 </div>
               ) : (
-                <div className="h-full flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <FileText className="h-8 w-8 mx-auto mb-2" />
-                    <p>选择一个菜单项进行编辑</p>
+                <div className="h-full flex items-center justify-center text-muted-foreground bg-muted/30">
+                  <div className="text-center space-y-2">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+                      <FileText className="h-6 w-6" />
+                    </div>
+                    <h3 className="font-medium">选择菜单项</h3>
+                    <p className="text-sm">
+                      从左侧列表选择一个菜单项进行编辑
+                    </p>
+                  </div>
                 </div>
-              </div>
               )}
             </div>
           </div>
         </div>
+
+        {/* 删除确认对话框 */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认删除</AlertDialogTitle>
+              <AlertDialogDescription>
+                此操作将删除菜单项 "{itemToDelete?.text}"。删除后无法恢复，是否继续？
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                删除
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SheetContent>
     </Sheet>
   );
