@@ -1,3 +1,13 @@
+/**
+ * 菜单项组件
+ * 
+ * 该组件用于在菜单列表中展示单个菜单项，支持：
+ * - 拖拽排序
+ * - 选中状态
+ * - 删除操作
+ * - 响应类型预览
+ */
+
 "use client";
 
 import { Draggable } from "@hello-pangea/dnd";
@@ -7,39 +17,50 @@ import { cn } from "@/lib/utils";
 import { ResponseType } from '@/types/bot';
 import { Badge } from "@workspace/ui/components/badge";
 
+/**
+ * 菜单项数据接口
+ * 定义了菜单项的完整数据结构
+ */
 export interface MenuItem {
-  id: string;
-  text: string;
-  command: string;
-  order: number;
-  response?: {
-    types: ResponseType[];
-    content: string;
-    buttons?: {
+  id: string;                // 唯一标识符
+  text: string;             // 菜单显示文本
+  command: string;          // 触发命令
+  order: number;            // 排序序号
+  response?: {              // 响应配置
+    types: ResponseType[];  // 响应类型列表
+    content: string;        // 响应内容
+    buttons?: {             // 按钮配置
       buttons: Array<Array<{
-        text: string;
-        type: "url" | "callback";
-        value: string;
+        text: string;       // 按钮文本
+        type: "url" | "callback";  // 按钮类型：链接或回调
+        value: string;      // 按钮值
       }>>;
     };
-    parseMode?: "HTML" | "Markdown";
-    mediaUrl?: string;
-    caption?: string;
-    inputPlaceholder?: string;
-    resizeKeyboard?: boolean;
-    oneTimeKeyboard?: boolean;
-    selective?: boolean;
+    parseMode?: "HTML" | "Markdown";  // 内容解析模式
+    mediaUrl?: string;      // 媒体文件URL
+    caption?: string;       // 媒体文件说明
+    inputPlaceholder?: string;  // 输入框占位符
+    resizeKeyboard?: boolean;   // 是否自适应键盘大小
+    oneTimeKeyboard?: boolean;  // 是否一次性键盘
+    selective?: boolean;        // 是否选择性显示
   };
 }
 
+/**
+ * 菜单项组件属性接口
+ */
 export interface MenuItemProps {
-  item: MenuItem;
-  index: number;
-  selected?: boolean;
-  onSelect: () => void;
-  onRemove: () => void;
+  item: MenuItem;           // 菜单项数据
+  index: number;           // 在列表中的索引
+  selected?: boolean;      // 是否被选中
+  onSelect: () => void;    // 选中回调
+  onRemove: () => void;    // 删除回调
 }
 
+/**
+ * 菜单项组件
+ * 用于渲染单个可拖拽的菜单项
+ */
 export function MenuItemComponent({
   item,
   index,
@@ -47,6 +68,7 @@ export function MenuItemComponent({
   onSelect,
   onRemove
 }: MenuItemProps) {
+  // 获取响应类型数量
   const responseTypesCount = item.response?.types?.length || 0;
 
   return (
@@ -64,6 +86,7 @@ export function MenuItemComponent({
           )}
           onClick={onSelect}
         >
+          {/* 拖拽手柄 */}
           <div
             {...provided.dragHandleProps}
             className={cn(
@@ -75,7 +98,9 @@ export function MenuItemComponent({
             <Grip className="h-4 w-4" />
           </div>
 
+          {/* 菜单项内容 */}
           <div className="min-w-0 flex-1 space-y-1">
+            {/* 菜单文本和响应类型数量 */}
             <div className="flex items-center gap-2">
               <span className="font-medium truncate">
                 {item.text}
@@ -89,6 +114,7 @@ export function MenuItemComponent({
                 </Badge>
               )}
             </div>
+            {/* 命令和响应预览 */}
             <div className="flex items-center gap-2 text-sm">
               <code className="text-xs font-mono text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
                 {item.command}
@@ -100,6 +126,7 @@ export function MenuItemComponent({
             </div>
           </div>
 
+          {/* 删除按钮 */}
           <Button
             variant="ghost"
             size="icon"
@@ -121,9 +148,15 @@ export function MenuItemComponent({
   );
 }
 
+/**
+ * 获取响应类型的预览文本
+ * @param response 响应配置对象
+ * @returns 格式化的响应类型描述
+ */
 function getResponsePreview(response?: MenuItem['response']): string {
   if (!response) return '未配置响应';
   
+  // 响应类型的中文标签映射
   const typeLabels: Record<ResponseType, string> = {
     [ResponseType.TEXT]: '文本',
     [ResponseType.MARKDOWN]: 'Markdown',

@@ -1,3 +1,13 @@
+/**
+ * 菜单响应组件
+ * 
+ * 该组件用于配置机器人的响应行为，支持：
+ * - 多种响应类型（文本、Markdown、HTML、图片、视频等）
+ * - 内联按钮和自定义键盘
+ * - 响应预览
+ * - 测试发送功能
+ */
+
 "use client";
 
 import { useState } from "react";
@@ -27,43 +37,59 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@work
 import { marked } from 'marked';
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 
+/**
+ * 按钮配置接口
+ */
 interface Button {
-  text: string;
-  type: 'url' | 'callback';
-  value: string;
+  text: string;           // 按钮文本
+  type: 'url' | 'callback';  // 按钮类型：链接或回调
+  value: string;          // 按钮值
 }
 
+/**
+ * 按钮布局接口
+ */
 interface ButtonLayout {
-  buttons: Button[][];
+  buttons: Button[][];    // 二维数组，表示按钮的行列布局
 }
 
+/**
+ * 响应组件属性接口
+ */
 interface ResponseProps {
   response: {
-    types: ResponseType[];
-    content: string;
-    buttons?: ButtonLayout;
-    parseMode?: 'Markdown' | 'HTML';
-    mediaUrl?: string;
-    caption?: string;
-    inputPlaceholder?: string;
-    resizeKeyboard?: boolean;
-    oneTimeKeyboard?: boolean;
-    selective?: boolean;
+    types: ResponseType[];           // 响应类型列表
+    content: string;                 // 响应内容
+    buttons?: ButtonLayout;          // 按钮布局配置
+    parseMode?: 'Markdown' | 'HTML'; // 内容解析模式
+    mediaUrl?: string;              // 媒体文件URL
+    caption?: string;               // 媒体文件说明
+    inputPlaceholder?: string;      // 输入框占位符
+    resizeKeyboard?: boolean;       // 是否自适应键盘大小
+    oneTimeKeyboard?: boolean;      // 是否一次性键盘
+    selective?: boolean;            // 是否选择性显示
   };
-  onChange: (response: ResponseProps['response']) => void;
-  onTest: () => void;
-  isTesting: boolean;
-  receiverId: string;
-  onReceiverIdChange: (value: string) => void;
+  onChange: (response: ResponseProps['response']) => void;  // 响应配置变更回调
+  onTest: () => void;              // 测试响应回调
+  isTesting: boolean;              // 是否正在测试
+  receiverId: string;              // 测试接收者ID
+  onReceiverIdChange: (value: string) => void;  // 接收者ID变更回调
 }
 
+/**
+ * 响应类型配置接口
+ */
 interface TypeConfig {
-  value: ResponseType;
-  label: string;
-  description: string;
-  icon: JSX.Element;
+  value: ResponseType;    // 响应类型值
+  label: string;         // 显示标签
+  description: string;   // 类型描述
+  icon: JSX.Element;     // 类型图标
 }
 
+/**
+ * 响应类型配置列表
+ * 定义所有支持的响应类型及其属性
+ */
 const responseTypes: TypeConfig[] = [
   { 
     value: ResponseType.TEXT, 
@@ -123,6 +149,7 @@ export function MenuResponse({
   receiverId,
   onReceiverIdChange
 }: ResponseProps) {
+  // 状态管理
   const [editingButton, setEditingButton] = useState<{
     rowIndex: number;
     buttonIndex: number;
@@ -130,10 +157,12 @@ export function MenuResponse({
   } | null>(null);
   const [activeType, setActiveType] = useState<ResponseType | null>(null);
 
-  // 初始化按钮布局
+  // 获取当前按钮布局
   const buttons = response.buttons?.buttons || [[]];
 
-  // 添加新行
+  /**
+   * 添加新的按钮行
+   */
   const addRow = () => {
     const newButtons = [...buttons, []];
     onChange({
@@ -142,7 +171,10 @@ export function MenuResponse({
     });
   };
 
-  // 添加按钮到行
+  /**
+   * 向指定行添加新按钮
+   * @param rowIndex 目标行索引
+   */
   const addButtonToRow = (rowIndex: number) => {
     const newButton: Button = {
       text: '新按钮',
@@ -158,7 +190,12 @@ export function MenuResponse({
     });
   };
 
-  // 更新按钮
+  /**
+   * 更新按钮配置
+   * @param rowIndex 行索引
+   * @param buttonIndex 按钮索引
+   * @param updatedButton 更新后的按钮配置
+   */
   const updateButton = (rowIndex: number, buttonIndex: number, updatedButton: Button) => {
     const newButtons = buttons.map((row, i) =>
       i === rowIndex
@@ -171,7 +208,11 @@ export function MenuResponse({
     });
   };
 
-  // 删除按钮
+  /**
+   * 删除按钮
+   * @param rowIndex 行索引
+   * @param buttonIndex 按钮索引
+   */
   const removeButton = (rowIndex: number, buttonIndex: number) => {
     const newButtons = buttons.map((row, i) =>
       i === rowIndex ? row.filter((_, j) => j !== buttonIndex) : row
@@ -182,7 +223,11 @@ export function MenuResponse({
     });
   };
 
-  // 渲染响应内容编辑器
+  /**
+   * 渲染响应内容编辑器
+   * 根据不同的响应类型渲染对应的编辑界面
+   * @param type 响应类型
+   */
   const renderContentEditor = (type: ResponseType) => {
     switch (type) {
       case ResponseType.TEXT:
@@ -651,7 +696,11 @@ export function MenuResponse({
     }
   };
 
-  // 切换响应类型
+  /**
+   * 切换响应类型
+   * 处理类型选择和互斥关系
+   * @param type 要切换的响应类型
+   */
   const toggleResponseType = (type: ResponseType) => {
     const types = response.types || [];
     let newTypes = types.includes(type)
@@ -675,7 +724,10 @@ export function MenuResponse({
     });
   };
 
-  // 渲染响应类型选择器
+  /**
+   * 渲染响应类型选择器
+   * 展示所有可用的响应类型供用户选择
+   */
   const renderTypeSelector = () => {
     return (
       <ScrollArea className="w-full">

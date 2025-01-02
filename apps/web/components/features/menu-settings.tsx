@@ -1,3 +1,14 @@
+/**
+ * 菜单设置组件
+ * 
+ * 该组件提供了一个完整的菜单管理界面，允许用户：
+ * - 查看和编辑现有的菜单项
+ * - 添加新的菜单项
+ * - 拖拽排序菜单项
+ * - 删除菜单项
+ * - 支持撤销/重做操作
+ */
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -32,6 +43,9 @@ import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Badge } from "@workspace/ui/components/badge";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 
+/**
+ * 菜单项接口定义
+ */
 interface MenuItem {
   id: string;
   text: string;
@@ -44,6 +58,10 @@ interface MenuSettingsProps {
   onClose: () => void;
 }
 
+/**
+ * 加载状态覆盖层组件
+ * 在数据加载或处理时显示加载动画
+ */
 const LoadingOverlay = () => (
   <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
     <div className="flex flex-col items-center gap-2">
@@ -53,6 +71,10 @@ const LoadingOverlay = () => (
   </div>
 );
 
+/**
+ * 快捷键提示组件
+ * 显示快捷键及其对应的操作说明
+ */
 const ShortcutHint = ({ shortcut, action }: { shortcut: string; action: string }) => (
   <div className="flex items-center justify-between text-xs text-muted-foreground">
     <span>{action}</span>
@@ -60,6 +82,10 @@ const ShortcutHint = ({ shortcut, action }: { shortcut: string; action: string }
   </div>
 );
 
+/**
+ * 撤销/重做按钮组件
+ * 提供操作历史的导航功能
+ */
 const UndoRedoButtons = ({ 
   onUndo, 
   onRedo, 
@@ -94,6 +120,7 @@ const UndoRedoButtons = ({
 );
 
 export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
+  // 状态管理
   const { selectedBot } = useBotContext();
   const { toast } = useToast();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -102,18 +129,27 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
+  // 历史记录状态，用于实现撤销/重做功能
   const [history, setHistory] = useState<MenuItem[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
+  /**
+   * 从服务器获取菜单项数据
+   * 在组件加载和机器人选择变更时触发
+   */
   useEffect(() => {
     if (selectedBot) {
       fetchMenuItems();
     }
   }, [selectedBot]);
 
+  /**
+   * 将当前菜单项状态添加到历史记录
+   * @param items 当前菜单项列表
+   */
   const fetchMenuItems = async () => {
     if (!selectedBot) return;
 
@@ -145,6 +181,10 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
     }
   };
 
+  /**
+   * 将当前菜单项状态添加到历史记录
+   * @param items 当前菜单项列表
+   */
   const addToHistory = (items: MenuItem[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push([...items]);
@@ -152,6 +192,10 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
     setHistoryIndex(newHistory.length - 1);
   };
 
+  /**
+   * 撤销操作
+   * 恢复到历史记录中的上一个状态
+   */
   const undo = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
@@ -163,6 +207,10 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
     }
   };
 
+  /**
+   * 重做操作
+   * 恢复到历史记录中的下一个状态
+   */
   const redo = () => {
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
@@ -174,6 +222,10 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
     }
   };
 
+  /**
+   * 添加新的菜单项
+   * 创建一个新的菜单项并更新状态
+   */
   const addMenuItem = () => {
     const newItem: MenuItem = {
       id: Math.random().toString(36).substr(2, 9),
@@ -187,11 +239,19 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
     setSelectedItem(newItem);
   };
 
+  /**
+   * 删除菜单项
+   * 打开确认对话框
+   */
   const removeMenuItem = (item: MenuItem) => {
     setItemToDelete(item);
     setDeleteDialogOpen(true);
   };
 
+  /**
+   * 确认删除菜单项
+   * 向服务器发送删除请求并更新本地状态
+   */
   const confirmDelete = async () => {
     if (!itemToDelete || !selectedBot) return;
 
@@ -226,6 +286,10 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
     }
   };
 
+  /**
+   * 处理拖拽结束事件
+   * 更新菜单项顺序并同步到服务器
+   */
   const onDragEnd = async (result: DropResult) => {
     if (!result.destination || !selectedBot) return;
 
@@ -275,6 +339,10 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
     }
   };
 
+  /**
+   * 保存菜单项更改
+   * 向服务器发送更新请求并更新本地状态
+   */
   const handleSave = async (values: z.infer<typeof MenuForm.schema>) => {
     if (!selectedBot) return;
 
@@ -317,6 +385,17 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
     }
   };
 
+  /**
+   * 键盘快捷键处理
+   * 支持以下快捷键：
+   * - Ctrl/Cmd + S: 保存当前菜单项
+   * - Ctrl/Cmd + N: 新建菜单项
+   * - Delete/Backspace: 删除当前选中的菜单项
+   * - Escape: 取消选择
+   * - 方向键: 导航菜单项
+   * - Ctrl/Cmd + Z: 撤销
+   * - Ctrl/Cmd + Shift + Z: 重做
+   */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {

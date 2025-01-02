@@ -1,3 +1,14 @@
+/**
+ * 菜单表单组件
+ * 
+ * 该组件提供了一个完整的菜单项编辑界面，包括：
+ * - 基本信息设置（菜单文本和命令）
+ * - 响应配置（机器人回复的内容和行为）
+ * - 实时预览
+ * - 表单验证
+ * - 测试功能
+ */
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -27,6 +38,10 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Separator } from "@workspace/ui/components/separator";
 import { cn } from "@/lib/utils";
 
+/**
+ * 菜单项数据验证模式
+ * 使用 zod 定义表单字段的验证规则
+ */
 export const menuItemSchema = z.object({
   text: z.string().min(1, "请输入菜单文本"),
   command: z.string().min(1, "请输入命令").startsWith("/", "命令必须以/开头"),
@@ -57,6 +72,10 @@ export interface MenuFormProps {
   saving: boolean;
 }
 
+/**
+ * 命令预览组件
+ * 展示命令在 Telegram 中的实际显示效果
+ */
 const CommandPreview = ({ command, text }: { command: string; text: string }) => {
   return (
     <Card>
@@ -101,12 +120,17 @@ export function MenuForm({
   onSubmit,
   saving
 }: MenuFormProps) {
+  // 状态管理
   const [activeTab, setActiveTab] = useState("basic");
   const [isTesting, setIsTesting] = useState(false);
   const [testReceiverId, setTestReceiverId] = useState("");
   const { toast } = useToast();
   const { selectedBot } = useBotContext();
 
+  /**
+   * 表单实例
+   * 使用 react-hook-form 管理表单状态和验证
+   */
   const form = useForm<z.infer<typeof menuItemSchema>>({
     resolver: zodResolver(menuItemSchema),
     defaultValues: {
@@ -119,17 +143,25 @@ export function MenuForm({
     }
   });
 
+  /**
+   * 当选中的菜单项变更时，重置表单数据
+   */
   useEffect(() => {
-      form.reset({
-        text: selectedItem.text,
-        command: selectedItem.command,
-        response: selectedItem.response || {
-          types: [ResponseType.TEXT],
-          content: ""
-        }
-      });
+    form.reset({
+      text: selectedItem.text,
+      command: selectedItem.command,
+      response: selectedItem.response || {
+        types: [ResponseType.TEXT],
+        content: ""
+      }
+    });
   }, [selectedItem, form]);
 
+  /**
+   * 验证命令格式和唯一性
+   * @param command 要验证的命令
+   * @returns true 表示验证通过，否则返回错误信息
+   */
   const validateCommand = (command: string) => {
     if (!command.startsWith('/')) {
       return "命令必须以/开头";
@@ -146,6 +178,10 @@ export function MenuForm({
     return true;
   };
 
+  /**
+   * 测试命令响应
+   * 向指定的接收者发送测试消息
+   */
   const handleTest = async () => {
     if (!testReceiverId) {
       toast({
@@ -241,8 +277,10 @@ export function MenuForm({
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {/* 选项卡导航 */}
         <div className="sticky top-0 z-10 bg-background border-b">
           <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
+            {/* 基本设置选项卡 */}
             <TabsTrigger
               value="basic"
               className={cn(
@@ -256,6 +294,7 @@ export function MenuForm({
                 基本设置
               </div>
             </TabsTrigger>
+            {/* 响应配置选项卡 */}
             <TabsTrigger
               value="response"
               className={cn(
@@ -272,9 +311,11 @@ export function MenuForm({
           </TabsList>
         </div>
 
+        {/* 基本设置表单 */}
         <TabsContent value="basic" className="mt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              {/* 基本信息卡片 */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">基本信息</CardTitle>
@@ -342,11 +383,13 @@ export function MenuForm({
                 </CardContent>
               </Card>
 
+              {/* 命令预览 */}
               <CommandPreview
                 command={form.watch("command")}
                 text={form.watch("text")}
               />
 
+              {/* 表单操作按钮 */}
               <div className="flex items-center gap-4">
                 <Button 
                   type="submit"
@@ -369,6 +412,7 @@ export function MenuForm({
           </Form>
         </TabsContent>
 
+        {/* 响应配置表单 */}
         <TabsContent value="response" className="mt-6">
           <Card>
             <CardHeader>
