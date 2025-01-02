@@ -171,9 +171,17 @@ export function MenuForm({
     defaultValues: {
       text: selectedItem.text,
       command: selectedItem.command,
-      response: selectedItem.response || {
-        types: [ResponseType.TEXT],
-        content: ""
+      response: {
+        types: selectedItem.response?.types || [ResponseType.TEXT],
+        content: selectedItem.response?.content || "",
+        buttons: selectedItem.response?.buttons,
+        parseMode: selectedItem.response?.parseMode,
+        mediaUrl: selectedItem.response?.mediaUrl,
+        caption: selectedItem.response?.caption,
+        inputPlaceholder: selectedItem.response?.inputPlaceholder,
+        resizeKeyboard: selectedItem.response?.resizeKeyboard,
+        oneTimeKeyboard: selectedItem.response?.oneTimeKeyboard,
+        selective: selectedItem.response?.selective
       }
     }
   });
@@ -182,14 +190,26 @@ export function MenuForm({
    * 当选中的菜单项变更时，重置表单数据
    */
   useEffect(() => {
-    form.reset({
-      text: selectedItem.text,
-      command: selectedItem.command,
-      response: selectedItem.response || {
-        types: [ResponseType.TEXT],
-        content: ""
-      }
-    });
+    if (selectedItem) {
+      form.reset({
+        text: selectedItem.text,
+        command: selectedItem.command,
+        response: {
+          types: selectedItem.response?.types || [ResponseType.TEXT],
+          content: selectedItem.response?.content || "",
+          buttons: selectedItem.response?.buttons,
+          parseMode: selectedItem.response?.parseMode,
+          mediaUrl: selectedItem.response?.mediaUrl,
+          caption: selectedItem.response?.caption,
+          inputPlaceholder: selectedItem.response?.inputPlaceholder,
+          resizeKeyboard: selectedItem.response?.resizeKeyboard,
+          oneTimeKeyboard: selectedItem.response?.oneTimeKeyboard,
+          selective: selectedItem.response?.selective
+        }
+      }, {
+        keepDefaultValues: true
+      });
+    }
   }, [selectedItem, form]);
 
   /**
@@ -459,7 +479,12 @@ export function MenuForm({
                   types: [ResponseType.TEXT],
                   content: ""
                 }}
-                onChange={(response) => form.setValue("response", response)}
+                onChange={(response) => {
+                  form.setValue("response", response, { 
+                    shouldValidate: true,
+                    shouldDirty: true 
+                  });
+                }}
                 onTest={handleTest}
                 isTesting={isTesting}
                 receiverId={testReceiverId}

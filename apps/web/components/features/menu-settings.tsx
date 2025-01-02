@@ -184,10 +184,34 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
           id: item._id || item.id,
           text: item.text || '',
           command: item.command || '',
-          order: item.order || index
+          order: item.order || index,
+          response: item.response ? {
+            types: item.response.types || [ResponseType.TEXT],
+            content: item.response.content || '',
+            buttons: item.response.buttons,
+            parseMode: item.response.parseMode,
+            mediaUrl: item.response.mediaUrl,
+            caption: item.response.caption,
+            inputPlaceholder: item.response.inputPlaceholder,
+            resizeKeyboard: item.response.resizeKeyboard,
+            oneTimeKeyboard: item.response.oneTimeKeyboard,
+            selective: item.response.selective
+          } : undefined
         }));
+        
+        // 按order字段排序
+        formattedItems.sort((a: MenuItem, b: MenuItem) => (a.order || 0) - (b.order || 0));
+        
         setMenuItems(formattedItems);
         addToHistory(formattedItems);
+        
+        // 如果当前有选中的项，更新选中项的数据
+        if (selectedItem) {
+          const updatedSelectedItem = formattedItems.find((item: MenuItem) => item.id === selectedItem.id);
+          if (updatedSelectedItem) {
+            setSelectedItem(updatedSelectedItem);
+          }
+        }
       }
     } catch (err) {
       toast({

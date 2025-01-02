@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { CommandResponse, ResponseType } from "@/types/bot";
 import { X, ChevronDown, MessageSquare, Hash as Markdown, Code, Image, Video, FileText, Layout, Keyboard } from "lucide-react";
@@ -69,7 +69,7 @@ interface ResponseProps {
     oneTimeKeyboard?: boolean;      // 是否一次性键盘
     selective?: boolean;            // 是否选择性显示
   };
-  onChange: (response: ResponseProps['response']) => void;  // 响应配置变更回调
+  onChange: (response: NonNullable<ResponseProps['response']>) => void;  // 响应配置变更回调
   onTest: () => void;              // 测试响应回调
   isTesting: boolean;              // 是否正在测试
   receiverId: string;              // 测试接收者ID
@@ -155,10 +155,20 @@ export function MenuResponse({
     buttonIndex: number;
     button: Button;
   } | null>(null);
-  const [activeType, setActiveType] = useState<ResponseType | null>(null);
+  const [activeType, setActiveType] = useState<ResponseType | null>(
+    response?.types?.[0] || null
+  );
 
   // 获取当前按钮布局
-  const buttons = response.buttons?.buttons || [[]];
+  const buttons = response?.buttons?.buttons || [[]];
+
+  // 当response变化时更新activeType
+  useEffect(() => {
+    const firstType = response.types?.[0];
+    if (firstType && (!activeType || !response.types.includes(activeType))) {
+      setActiveType(firstType);
+    }
+  }, [response.types, activeType]);
 
   /**
    * 添加新的按钮行
@@ -702,7 +712,7 @@ export function MenuResponse({
    * @param type 要切换的响应类型
    */
   const toggleResponseType = (type: ResponseType) => {
-    const types = response.types || [];
+    const types = response.types;
     let newTypes = types.includes(type)
       ? types.filter(t => t !== type)
       : [...types, type];
@@ -721,7 +731,25 @@ export function MenuResponse({
     onChange({
       ...response,
       types: newTypes,
+      // 如果切换到新的响应类型，确保保留现有内容
+      content: response?.content || "",
+      // 保留其他响应属性
+      buttons: response?.buttons,
+      parseMode: response?.parseMode,
+      mediaUrl: response?.mediaUrl,
+      caption: response?.caption,
+      inputPlaceholder: response?.inputPlaceholder,
+      resizeKeyboard: response?.resizeKeyboard,
+      oneTimeKeyboard: response?.oneTimeKeyboard,
+      selective: response?.selective
     });
+
+    // 如果新类型不为空，设置为活动类型
+    if (newTypes.length > 0 && newTypes[0] !== undefined) {
+      setActiveType(newTypes[0]);
+    } else {
+      setActiveType(null);
+    }
   };
 
   /**
