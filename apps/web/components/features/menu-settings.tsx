@@ -19,6 +19,7 @@ import { useToast } from "@workspace/ui/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import * as z from "zod";
 import { useBotContext } from "@/contexts/BotContext";
+import { ResponseType } from "@/types/bot";
 import {
   Sheet,
   SheetContent,
@@ -51,6 +52,24 @@ interface MenuItem {
   text: string;
   command: string;
   order: number;
+  response?: {
+    types: ResponseType[];
+    content: string;
+    buttons?: {
+      buttons: Array<Array<{
+        text: string;
+        type: "url" | "callback";
+        value: string;
+      }>>;
+    };
+    parseMode?: "HTML" | "Markdown";
+    mediaUrl?: string;
+    caption?: string;
+    inputPlaceholder?: string;
+    resizeKeyboard?: boolean;
+    oneTimeKeyboard?: boolean;
+    selective?: boolean;
+  };
 }
 
 interface MenuSettingsProps {
@@ -224,15 +243,31 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
 
   /**
    * 添加新的菜单项
-   * 创建一个新的菜单项并更新状态
+   * 创建一个新的菜单项并更新本地状态
    */
   const addMenuItem = () => {
+    // 获取当前最大序号
+    const maxNumber = menuItems.reduce((max, menu) => {
+      const match = menu.command.match(/\/start_(\d+)$/);
+      if (match && match[1]) {
+        const num = parseInt(match[1], 10);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+
+    const newNumber = maxNumber + 1;
     const newItem: MenuItem = {
-      id: Math.random().toString(36).substr(2, 9),
-      text: "新菜单项",
-      command: "/start",
-      order: menuItems.length,
+      id: `temp-${Date.now()}`, // 临时ID，保存时会被替换
+      text: `命令_${newNumber}`,
+      command: `/start_${newNumber}`,
+      response: {
+        types: [ResponseType.TEXT],
+        content: "这是一条新的命令，前往菜单设置进行配置"
+      },
+      order: menuItems.length
     };
+
     const newItems = [...menuItems, newItem];
     setMenuItems(newItems);
     addToHistory(newItems);
@@ -255,10 +290,32 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
   const confirmDelete = async () => {
     if (!itemToDelete || !selectedBot) return;
 
+    // 如果是临时菜单项，直接从本地状态移除
+    if (itemToDelete.id.startsWith('temp-')) {
+      const updatedItems = menuItems.filter(item => item.id !== itemToDelete.id);
+      setMenuItems(updatedItems);
+      addToHistory(updatedItems);
+      setSelectedItem(null);
+      setItemToDelete(null);
+      setDeleteDialogOpen(false);
+      toast({
+        title: "成功",
+        description: "菜单项已删除",
+      });
+      return;
+    }
+
+    // 已保存的菜单项需要请求后端删除
     try {
       const response = await fetch(
-        `/api/bot/telegram/bots/${selectedBot.id}/menu/${itemToDelete.id}`,
-        { method: 'DELETE' }
+        `/api/bot/telegram/bots/${selectedBot.id}/menu`,
+        { 
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: itemToDelete.id })
+        }
       );
 
       if (!response.ok) {
@@ -344,41 +401,56 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
    * 向服务器发送更新请求并更新本地状态
    */
   const handleSave = async (values: z.infer<typeof MenuForm.schema>) => {
-    if (!selectedBot) return;
+    if (!selectedBot || !selectedItem) return;
 
     try {
       setSaving(true);
+      const isNewItem = selectedItem.id.startsWith('temp-');
+      
       const response = await fetch(`/api/bot/telegram/bots/${selectedBot.id}/menu`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          id: isNewItem ? undefined : selectedItem.id
+        })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save menu item');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to save menu item');
       }
 
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to save menu item');
+      }
+
+      // 更新本地状态
       const updatedItems = menuItems.map(item => 
-        item.id === selectedItem?.id
-          ? { ...item, ...values }
+        item.id === selectedItem.id 
+          ? { ...result.data, id: result.data._id.toString(), order: item.order }
           : item
       );
 
       setMenuItems(updatedItems);
       addToHistory(updatedItems);
-      setSelectedItem(null);
       
-          toast({
+      // 更新选中项为保存后的新数据
+      const savedItem = { ...result.data, id: result.data._id.toString() };
+      setSelectedItem(savedItem);
+      
+      toast({
         title: "成功",
-        description: "菜单项已保存",
+        description: isNewItem ? "菜单项已创建" : "菜单项已更新",
       });
     } catch (err) {
       toast({
         variant: "destructive",
         title: "错误",
-        description: "保存菜单项失败",
+        description: err instanceof Error ? err.message : "保存菜单项失败",
       });
     } finally {
       setSaving(false);

@@ -61,11 +61,12 @@ export interface CommandResponse {
  * @interface MenuItem
  */
 export interface MenuItem {
-  id?: string;                    // 菜单项ID
-  text: string;                   // 显示文本
-  command: string;                // 命令文本
-  order: number;                  // 排序序号
-  response?: CommandResponse;     // 命令响应配置
+  _id?: Types.ObjectId;          // MongoDB ID
+  id?: string;                   // 菜单项ID
+  text: string;                  // 显示文本
+  command: string;               // 命令文本
+  order: number;                 // 排序序号
+  response?: CommandResponse;    // 命令响应配置
 }
 
 /**

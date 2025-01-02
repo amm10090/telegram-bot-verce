@@ -68,8 +68,12 @@ export function MenuItemComponent({
   onSelect,
   onRemove
 }: MenuItemProps) {
-  // 获取响应类型数量
   const responseTypesCount = item.response?.types?.length || 0;
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onRemove();
+  };
 
   return (
     <Draggable draggableId={item.id} index={index}>
@@ -135,10 +139,7 @@ export function MenuItemComponent({
               "hover:bg-destructive/10 hover:text-destructive",
               "focus:opacity-100"
             )}
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
+            onClick={handleRemove}
           >
             <Trash2 className="h-4 w-4" />
           </Button>

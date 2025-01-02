@@ -39,12 +39,24 @@ import { Separator } from "@workspace/ui/components/separator";
 import { cn } from "@/lib/utils";
 
 /**
+ * 检查命令格式是否有效
+ */
+function isValidCommand(command: string): boolean {
+  return /^\/[a-z0-9_]{1,31}$/.test(command);
+}
+
+/**
  * 菜单项数据验证模式
  * 使用 zod 定义表单字段的验证规则
  */
 export const menuItemSchema = z.object({
   text: z.string().min(1, "请输入菜单文本"),
-  command: z.string().min(1, "请输入命令").startsWith("/", "命令必须以/开头"),
+  command: z.string()
+    .min(1, "请输入命令")
+    .startsWith("/", "命令必须以/开头")
+    .regex(/^\/[a-z0-9_]+$/i, "命令只能包含字母、数字和下划线")
+    .transform(val => val.toLowerCase())  // 自动转换为小写
+    .refine(val => val.length <= 32, "命令长度不能超过32个字符"),
   response: z.object({
     types: z.array(z.nativeEnum(ResponseType)),
     content: z.string(),
@@ -114,6 +126,29 @@ const CommandPreview = ({ command, text }: { command: string; text: string }) =>
   );
 };
 
+/**
+ * 验证命令的格式和唯一性
+ */
+function validateCommand(command: string, menuItems: MenuItem[], currentId?: string): true | string {
+  // 验证命令格式
+  if (!command) return '命令不能为空';
+  if (!/^\/[a-z0-9_]{1,31}$/.test(command)) {
+    return '命令格式无效';
+  }
+  
+  // 验证命令唯一性
+  const isDuplicate = menuItems.some(item => 
+    item.command.toLowerCase() === command.toLowerCase() && 
+    item.id !== currentId
+  );
+  
+  if (isDuplicate) {
+    return '该命令已存在';
+  }
+  
+  return true;
+}
+
 export function MenuForm({
   selectedItem,
   menuItems,
@@ -156,27 +191,6 @@ export function MenuForm({
       }
     });
   }, [selectedItem, form]);
-
-  /**
-   * 验证命令格式和唯一性
-   * @param command 要验证的命令
-   * @returns true 表示验证通过，否则返回错误信息
-   */
-  const validateCommand = (command: string) => {
-    if (!command.startsWith('/')) {
-      return "命令必须以/开头";
-    }
-    
-    const isDuplicate = menuItems.some(item => 
-      item.command === command && item.id !== selectedItem.id
-    );
-    
-    if (isDuplicate) {
-      return "该命令已存在";
-    }
-    
-    return true;
-  };
 
   /**
    * 测试命令响应
@@ -349,32 +363,50 @@ export function MenuForm({
                         <FormLabel>命令</FormLabel>
                         <FormControl>
                           <div className="relative">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none">/</div>
                             <Input 
                               {...field} 
-                              placeholder="/start"
-                              className="font-mono pr-20"
+                              value={field.value.replace(/^\//, '')}
+                              className="font-mono pl-7 pr-20"
                               onChange={(e) => {
-                                field.onChange(e);
-                                const validationResult = validateCommand(e.target.value);
+                                // 自动转换为小写并移除非法字符
+                                const value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                                // 限制长度（不含/）
+                                const trimmedValue = value.slice(0, 31);
+                                field.onChange(`/${trimmedValue}`);
+                                
+                                // 验证命令
+                                const validationResult = validateCommand(`/${trimmedValue}`, menuItems, selectedItem.id);
                                 if (typeof validationResult === "string") {
                                   form.setError("command", { message: validationResult });
                                 } else {
                                   form.clearErrors("command");
                                 }
                               }}
+                              onPaste={(e) => {
+                                e.preventDefault();
+                                const pastedText = e.clipboardData.getData('text');
+                                // 移除可能存在的/前缀，并应用相同的格式规则
+                                const cleanedText = pastedText.replace(/^\//, '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 31);
+                                field.onChange(`/${cleanedText}`);
+                              }}
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2">
                               <Badge 
-                                variant={field.value && field.value.startsWith('/') ? "default" : "secondary"}
+                                variant={isValidCommand(field.value) ? "default" : "secondary"}
                                 className="font-normal"
                               >
-                                {field.value && field.value.startsWith('/') ? '有效' : '无效'}
+                                {isValidCommand(field.value) ? '有效' : '无效'}
                               </Badge>
                             </div>
                           </div>
                         </FormControl>
-                        <FormDescription>
-                          用于触发此菜单项的命令，必须以 / 开头
+                        <FormDescription className="space-y-1">
+                          <p>用于触发此菜单项的命令，必须符合以下规则：</p>
+                          <ul className="text-xs list-disc list-inside space-y-1">
+                            <li>只能包含小写字母、数字和下划线</li>
+                            <li>长度不超过32个字符（含/）</li>
+                          </ul>
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
