@@ -30,6 +30,7 @@ import { MenuItemComponent } from './menu-item';
 import { MenuForm } from './menu-form';
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Badge } from "@workspace/ui/components/badge";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 
 interface MenuItem {
   id: string;
@@ -386,9 +387,9 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
               <Command className="h-6 w-6 text-primary" />
               <div>
                 <SheetTitle className="text-xl font-semibold">菜单设置</SheetTitle>
-                <p className="text-sm text-muted-foreground mt-1">
+                <DialogPrimitive.Description className="text-sm text-muted-foreground mt-1">
                   配置机器人的命令菜单和响应行为
-                </p>
+                </DialogPrimitive.Description>
               </div>
             </div>
             <SheetClose className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-muted transition-colors">
@@ -404,13 +405,13 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
             <div className="w-full sm:w-[320px] border-b sm:border-b-0 sm:border-r flex flex-col min-h-[200px] sm:min-h-0 bg-muted/30">
               <div className="flex-none p-4 border-b bg-card">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="space-y-1">
+                  <div className="space-y-1" id="menu-list-description">
                     <h3 className="font-medium">菜单项</h3>
                     <p className="text-xs text-muted-foreground">
                       共 {menuItems.length} 个命令
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" aria-describedby="menu-list-description">
                     <UndoRedoButtons
                       onUndo={undo}
                       onRedo={redo}
@@ -525,9 +526,9 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>确认删除</AlertDialogTitle>
-              <AlertDialogDescription>
+              <DialogPrimitive.Description className="text-sm text-muted-foreground">
                 此操作将删除菜单项 "{itemToDelete?.text}"。删除后无法恢复，是否继续？
-              </AlertDialogDescription>
+              </DialogPrimitive.Description>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>取消</AlertDialogCancel>
