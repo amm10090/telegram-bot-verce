@@ -12,7 +12,6 @@ interface MenuItemInput {
   order?: number;
 }
 
-// 在文件顶部添加响应类型组的定义
 const RESPONSE_TYPE_GROUPS = {
   BASIC: [ResponseType.TEXT, ResponseType.MARKDOWN, ResponseType.HTML] as ResponseType[],
   MEDIA: [ResponseType.PHOTO, ResponseType.VIDEO, ResponseType.DOCUMENT] as ResponseType[],
@@ -25,30 +24,42 @@ function validateResponseTypes(types: ResponseType[]): { valid: boolean; message
     return { valid: false, message: '至少需要选择一种响应类型' };
   }
 
-  // 基础类型互斥检查
   const basicTypes = types.filter(type => RESPONSE_TYPE_GROUPS.BASIC.includes(type));
-  if (basicTypes.length > 1) {
-    return { valid: false, message: '基础类型(文本、Markdown、HTML)只能选择其中一种' };
-  }
-
-  // 媒体类型互斥检查
   const mediaTypes = types.filter(type => RESPONSE_TYPE_GROUPS.MEDIA.includes(type));
-  if (mediaTypes.length > 1) {
-    return { valid: false, message: '媒体类型(图片、视频、文档)只能选择其中一种' };
-  }
-
-  // 交互类型互斥检查
   const interactiveTypes = types.filter(type => RESPONSE_TYPE_GROUPS.INTERACTIVE.includes(type));
-  if (interactiveTypes.length > 1) {
-    return { valid: false, message: '交互类型(内联按钮、自定义键盘)只能选择其中一种' };
-  }
 
-  // 必须包含基础类型
-  if (basicTypes.length === 0) {
-    return { valid: false, message: '必须包含至少一种基础类型(文本、Markdown、HTML)' };
-  }
+  if (basicTypes.length > 1) return { valid: false, message: '基础类型只能选择其中一种' };
+  if (mediaTypes.length > 1) return { valid: false, message: '媒体类型只能选择其中一种' };
+  if (interactiveTypes.length > 1) return { valid: false, message: '交互类型只能选择其中一种' };
+  if (basicTypes.length === 0) return { valid: false, message: '必须包含至少一种基础类型' };
 
   return { valid: true };
+}
+
+// 异步同步到 Telegram
+async function syncToTelegram(token: string, menus: MenuItem[]) {
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${token}/setMyCommands`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          commands: menus.map(menu => ({
+            command: menu.command.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+            description: menu.text.slice(0, 256)
+          }))
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Telegram同步失败:', error);
+    }
+  } catch (error) {
+    console.error('Telegram同步请求失败:', error);
+  }
 }
 
 // 获取菜单列表
@@ -59,15 +70,17 @@ export async function GET(
   try {
     await connectDB();
 
-    const { id } = params;
-    if (!isValidObjectId(id)) {
+    if (!isValidObjectId(params.id)) {
       return NextResponse.json(
         { success: false, message: '无效的Bot ID' },
         { status: 400 }
       );
     }
 
-    const bot = await BotModel.findById(id).lean();
+    const bot = await BotModel.findById(params.id)
+      .select('menus')
+      .lean();
+
     if (!bot) {
       return NextResponse.json(
         { success: false, message: 'Bot不存在' },
@@ -98,140 +111,92 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const session = await BotModel.startSession();
   try {
     await connectDB();
     const body = await request.json() as MenuItemInput;
-    console.log('收到请求:', body);
+    let updatedMenu: MenuItem | undefined;
     
-    // 验证响应类型组合
     if (body.response?.types) {
       const validation = validateResponseTypes(body.response.types);
       if (!validation.valid) {
         return NextResponse.json(
-          { success: false, message: validation.message || '响应类型组合无效' },
+          { success: false, message: validation.message },
           { status: 400 }
         );
       }
     }
 
-    const bot = await BotModel.findById(params.id);
-    if (!bot) {
-      return NextResponse.json(
-        { success: false, message: '机器人不存在' },
-        { status: 404 }
-      );
-    }
+    await session.withTransaction(async () => {
+      const bot = await BotModel.findById(params.id).session(session);
+      if (!bot) throw new Error('BOT_NOT_FOUND');
 
-    // 验证命令格式
-    if (!body.command?.match(/^\/[a-z0-9_]{1,31}$/)) {
-      return NextResponse.json(
-        { success: false, message: '命令格式无效' },
-        { status: 400 }
-      );
-    }
-
-    // 确保menus数组存在
-    if (!Array.isArray(bot.menus)) {
-      bot.menus = [];
-    }
-
-    // 检查命令是否已存在（排除当前项）
-    const existingMenuIndex = bot.menus.findIndex(menu => 
-      menu.command.toLowerCase() === body.command.toLowerCase() && 
-      (!body.id || (menu._id && menu._id.toString() !== body.id))
-    );
-
-    if (existingMenuIndex !== -1) {
-      return NextResponse.json(
-        { success: false, message: '命令已存在' },
-        { status: 400 }
-      );
-    }
-
-    let updatedMenu;
-    if (body.id) {
-      // 更新现有菜单项
-      const menuIndex = bot.menus.findIndex(menu => 
-        menu._id && menu._id.toString() === body.id
-      );
-
-      if (menuIndex === -1) {
-        return NextResponse.json(
-          { success: false, message: '菜单项不存在' },
-          { status: 404 }
-        );
+      if (!body.command?.match(/^\/[a-z0-9_]{1,31}$/)) {
+        throw new Error('INVALID_COMMAND');
       }
 
-      const existingMenu = bot.menus[menuIndex];
-      if (!existingMenu?._id) {
-        return NextResponse.json(
-          { success: false, message: '菜单项数据无效' },
-          { status: 400 }
-        );
-      }
+      if (!Array.isArray(bot.menus)) bot.menus = [];
 
-      bot.menus[menuIndex] = {
-        _id: existingMenu._id,
-        text: body.text,
-        command: body.command.toLowerCase(),
-        response: {
-          types: body.response?.types || existingMenu.response?.types || [],
-          content: body.response?.content || existingMenu.response?.content || '',
-          ...(body.response?.buttons && { buttons: body.response.buttons }),
-          ...(body.response?.parseMode && { parseMode: body.response.parseMode })
-        },
-        order: existingMenu.order
-      };
-      updatedMenu = bot.menus[menuIndex];
-    } else {
-      // 创建新菜单项
-      const newMenu: MenuItem = {
-        _id: new Types.ObjectId(),
-        text: body.text,
-        command: body.command.toLowerCase(),
-        response: {
-          types: body.response?.types || [ResponseType.TEXT],
-          content: body.response?.content || '',
-          ...(body.response?.buttons && { buttons: body.response.buttons }),
-          ...(body.response?.parseMode && { parseMode: body.response.parseMode })
-        },
-        order: bot.menus.length
-      };
-      bot.menus.push(newMenu);
-      updatedMenu = newMenu;
-    }
+      const existingMenuIndex = bot.menus.findIndex(menu => 
+        menu.command.toLowerCase() === body.command.toLowerCase() && 
+        (!body.id || (menu._id && menu._id.toString() !== body.id))
+      );
 
-    await bot.save();
+      if (existingMenuIndex !== -1) throw new Error('COMMAND_EXISTS');
 
-    try {
-      // 同步到Telegram
-      const telegramResponse = await fetch(
-        `https://api.telegram.org/bot${bot.token}/setMyCommands`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+      if (body.id) {
+        // 更新现有菜单项
+        const updateResult = await BotModel.findOneAndUpdate(
+          { 
+            _id: params.id,
+            'menus._id': new Types.ObjectId(body.id)
           },
-          body: JSON.stringify({
-            commands: bot.menus.map(menu => ({
-              command: menu.command,
-              description: menu.text.slice(0, 256)
-            }))
-          }),
-        }
-      );
-
-      if (!telegramResponse.ok) {
-        const telegramError = await telegramResponse.json();
-        console.error('Telegram同步失败:', telegramError);
-        // 不要因为 Telegram 同步失败而影响保存结果
-        console.warn('Telegram同步失败，但菜单项已保存');
+          {
+            $set: {
+              'menus.$.text': body.text,
+              'menus.$.command': body.command.toLowerCase(),
+              'menus.$.response': {
+                types: body.response?.types || [],
+                content: body.response?.content || '',
+                ...(body.response?.buttons && { buttons: body.response.buttons }),
+                ...(body.response?.parseMode && { parseMode: body.response.parseMode })
+              }
+            }
+          },
+          { new: true, session }
+        );
+        
+        if (!updateResult) throw new Error('MENU_NOT_FOUND');
+        updatedMenu = updateResult.menus.find(m => m?._id?.toString() === body.id);
+      } else {
+        // 创建新菜单项
+        const newMenu: MenuItem = {
+          _id: new Types.ObjectId(),
+          text: body.text,
+          command: body.command.toLowerCase(),
+          response: {
+            types: body.response?.types || [ResponseType.TEXT],
+            content: body.response?.content || '',
+            ...(body.response?.buttons && { buttons: body.response.buttons }),
+            ...(body.response?.parseMode && { parseMode: body.response.parseMode })
+          },
+          order: bot.menus.length
+        };
+        
+        await BotModel.findByIdAndUpdate(
+          params.id,
+          { $push: { menus: newMenu } },
+          { session }
+        );
+        
+        updatedMenu = newMenu;
       }
-    } catch (error) {
-      // 捕获 fetch 错误但不影响保存结果
-      console.error('Telegram同步请求失败:', error);
-      console.warn('无法连接到Telegram，但菜单项已保存');
-    }
+
+      // 异步同步到 Telegram
+      setImmediate(() => syncToTelegram(bot.token, bot.menus));
+
+      return updatedMenu;
+    });
 
     return NextResponse.json({ 
       success: true, 
@@ -240,14 +205,22 @@ export async function POST(
     });
   } catch (error) {
     console.error('处理菜单项失败:', error);
-    const isParseError = error instanceof Error && error.message.includes('JSON');
+    await session.endSession();
+
+    const errorMessages = {
+      'BOT_NOT_FOUND': { message: '机器人不存在', status: 404 },
+      'INVALID_COMMAND': { message: '命令格式无效', status: 400 },
+      'COMMAND_EXISTS': { message: '命令已存在', status: 400 },
+      'MENU_NOT_FOUND': { message: '菜单项不存在', status: 404 }
+    } as const;
+
+    const errorInfo = error instanceof Error 
+      ? (errorMessages[error.message as keyof typeof errorMessages] ?? { message: '处理菜单项失败', status: 500 })
+      : { message: '处理菜单项失败', status: 500 };
+
     return NextResponse.json(
-      { 
-        success: false, 
-        message: isParseError ? '无效的请求数据' : '处理菜单项失败',
-        error: error instanceof Error ? error.message : '未知错误'
-      },
-      { status: isParseError ? 400 : 500 }
+      { success: false, message: errorInfo.message },
+      { status: errorInfo.status }
     );
   }
 }
@@ -257,60 +230,52 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const session = await BotModel.startSession();
   try {
     await connectDB();
     const body = await request.json();
     
-    const bot = await BotModel.findById(params.id);
-    if (!bot) {
+    await session.withTransaction(async () => {
+      const bot = await BotModel.findById(params.id).session(session);
+      if (!bot) throw new Error('BOT_NOT_FOUND');
+
+      const newMenus = (body.menus || []).map((menu: MenuItemInput) => ({
+        _id: menu.id ? new Types.ObjectId(menu.id) : new Types.ObjectId(),
+        text: menu.text,
+        command: menu.command,
+        response: menu.response,
+        order: menu.order || 0
+      }));
+
+      await BotModel.findByIdAndUpdate(
+        params.id,
+        { $set: { menus: newMenus } },
+        { session }
+      );
+
+      // 异步同步到 Telegram
+      setImmediate(() => syncToTelegram(bot.token, newMenus));
+
+      return newMenus;
+    });
+
+    await session.endSession();
+    return NextResponse.json({ 
+      success: true, 
+      data: body.menus,
+      message: '菜单配置已更新'
+    });
+  } catch (error) {
+    await session.endSession();
+    console.error('更新菜单失败:', error);
+
+    if (error instanceof Error && error.message === 'BOT_NOT_FOUND') {
       return NextResponse.json(
         { success: false, message: '机器人不存在' },
         { status: 404 }
       );
     }
 
-    // 更新菜单
-    bot.menus = (body.menus || []).map((menu: MenuItemInput) => ({
-      _id: menu.id ? new Types.ObjectId(menu.id) : new Types.ObjectId(),
-      text: menu.text,
-      command: menu.command,
-      response: menu.response,
-      order: menu.order || 0
-    }));
-
-    await bot.save();
-
-    // 同步到Telegram
-    const telegramResponse = await fetch(
-      `https://api.telegram.org/bot${bot.token}/setMyCommands`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          commands: bot.menus.map(menu => ({
-            command: menu.command.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
-            description: menu.text.slice(0, 256)
-          }))
-        }),
-      }
-    );
-
-    if (!telegramResponse.ok) {
-      return NextResponse.json(
-        { success: false, message: '同步到Telegram失败' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      data: bot.menus,
-      message: '菜单配置已更新'
-    });
-  } catch (error) {
-    console.error('更新菜单失败:', error);
     return NextResponse.json(
       { success: false, message: '更新菜单失败' },
       { status: 500 }
@@ -323,52 +288,48 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const session = await BotModel.startSession();
   try {
     await connectDB();
 
-    const { id } = params;
-    if (!isValidObjectId(id)) {
+    if (!isValidObjectId(params.id)) {
       return NextResponse.json(
         { success: false, message: '无效的Bot ID' },
         { status: 400 }
       );
     }
 
-    const session = await BotModel.startSession();
-    try {
-      await session.withTransaction(async () => {
-        const bot = await BotModel.findById(id).session(session);
-        if (!bot) {
-          throw new Error('BOT_NOT_FOUND');
-        }
+    await session.withTransaction(async () => {
+      const bot = await BotModel.findByIdAndUpdate(
+        params.id,
+        { $set: { menus: [] } },
+        { session, new: true }
+      );
 
-        bot.menus = [];
-        await bot.save({ session });
-      });
+      if (!bot) throw new Error('BOT_NOT_FOUND');
 
-      await session.endSession();
-      return NextResponse.json({
-        success: true,
-        message: '删除菜单成功'
-      });
-    } catch (error) {
-      await session.endSession();
-      throw error;
-    }
+      // 异步同步到 Telegram
+      setImmediate(() => syncToTelegram(bot.token, []));
+    });
+
+    await session.endSession();
+    return NextResponse.json({
+      success: true,
+      message: '删除菜单成功'
+    });
   } catch (error) {
+    await session.endSession();
     console.error('删除菜单失败:', error);
+
     if (error instanceof Error && error.message === 'BOT_NOT_FOUND') {
       return NextResponse.json(
         { success: false, message: 'Bot不存在' },
         { status: 404 }
       );
     }
+
     return NextResponse.json(
-      {
-        success: false,
-        message: '删除菜单失败',
-        error: error instanceof Error ? error.message : '未知错误'
-      },
+      { success: false, message: '删除菜单失败' },
       { status: 500 }
     );
   }
