@@ -1,3 +1,11 @@
+/**
+ * Bot配置布局组件
+ * 提供机器人的主要配置界面，包括：
+ * - 机器人选择器
+ * - 功能卡片导航
+ * - 菜单设置抽屉
+ */
+
 "use client";
 
 import { useIntl } from "react-intl";
@@ -32,7 +40,17 @@ import { useState } from 'react';
 import { useBotContext } from '@/contexts/BotContext';
 import { useToast } from "@workspace/ui/hooks/use-toast";
 
-// 功能卡片配置
+/**
+ * 功能卡片配置数组
+ * 定义了可用的机器人功能及其属性
+ * @type {Array<{
+ *   id: string,          // 功能唯一标识
+ *   title: string,       // 功能标题（i18n键）
+ *   description: string, // 功能描述（i18n键）
+ *   icon: IconComponent, // 功能图标组件
+ *   href: string        // 功能页面路由
+ * }>}
+ */
 const botFeatures = [
   {
     id: "menu",
@@ -64,14 +82,24 @@ const botFeatures = [
   }
 ];
 
+/**
+ * Bot配置布局组件
+ * 提供机器人配置的主界面，包括机器人选择和功能导航
+ */
 export function BotConfigLayout() {
+  // 获取国际化、路由和上下文
   const intl = useIntl();
   const router = useRouter();
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const { bots = [], selectedBot, isLoading, error, selectBot } = useBotContext();
   const { toast } = useToast();
 
+  /**
+   * 处理功能卡片点击事件
+   * @param feature - 被点击的功能配置对象
+   */
   const handleFeatureClick = (feature: typeof botFeatures[0]) => {
+    // 检查是否已选择机器人
     if (!selectedBot) {
       toast({
         variant: "destructive",
@@ -81,15 +109,17 @@ export function BotConfigLayout() {
       return;
     }
 
+    // 根据功能类型执行不同操作
     if (feature.id === "menu") {
-      setIsMenuDrawerOpen(true);
+      setIsMenuDrawerOpen(true);  // 打开菜单设置抽屉
     } else {
-      router.push(`${feature.href}?botId=${selectedBot.id}`);
+      router.push(`${feature.href}?botId=${selectedBot.id}`);  // 导航到对应功能页面
     }
   };
 
   return (
     <div className="container mx-auto py-6">
+      {/* 页面标题和添加按钮 */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
@@ -105,6 +135,7 @@ export function BotConfigLayout() {
         </Button>
       </div>
 
+      {/* 机器人选择器 */}
       <div className="mb-6">
         <Select
           value={selectedBot?.id || ""}
@@ -145,9 +176,11 @@ export function BotConfigLayout() {
             )}
           </SelectContent>
         </Select>
+        {/* 错误提示 */}
         {error && (
           <p className="text-sm text-destructive mt-2">{error}</p>
         )}
+        {/* 空状态提示 */}
         {!isLoading && bots.length === 0 && !error && (
           <p className="text-sm text-muted-foreground mt-2">
             暂无机器人，请先添加机器人
@@ -155,6 +188,7 @@ export function BotConfigLayout() {
         )}
       </div>
 
+      {/* 功能卡片网格 */}
       <div className="grid gap-6 md:grid-cols-2">
         {botFeatures.map((feature) => {
           const Icon = feature.icon;
@@ -176,6 +210,7 @@ export function BotConfigLayout() {
                     </div>
                     <CardTitle>{intl.formatMessage({ id: feature.title })}</CardTitle>
                   </div>
+                  {/* 功能卡片箭头按钮 */}
                   {selectedBot && (
                     <Button 
                       variant="ghost" 
@@ -201,6 +236,7 @@ export function BotConfigLayout() {
         })}
       </div>
 
+      {/* 菜单设置抽屉 */}
       {selectedBot && (
         <MenuSettings
           isOpen={isMenuDrawerOpen}

@@ -160,10 +160,10 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
    * 在组件加载和机器人选择变更时触发
    */
   useEffect(() => {
-    if (selectedBot) {
+    if (selectedBot && isOpen) {
       fetchMenuItems();
     }
-  }, [selectedBot]);
+  }, [selectedBot?.id, isOpen]);
 
   /**
    * 将当前菜单项状态添加到历史记录

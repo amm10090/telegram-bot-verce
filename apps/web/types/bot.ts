@@ -87,6 +87,15 @@ export interface BotSettings {
   commands?: BotCommand[];       // 命令列表
   allowedUpdates?: string[];     // 允许的更新类型
   customizations?: Record<string, unknown>;  // 自定义配置
+  accessControl?: {
+    enabled: boolean;
+    defaultPolicy: 'allow' | 'deny';
+    whitelistOnly: boolean;
+  };
+  autoReply?: {
+    enabled: boolean;
+    maxRulesPerBot: number;
+  };
 }
 
 /**
@@ -109,11 +118,66 @@ export interface IBot {
 }
 
 /**
+ * Bot配置文件接口
+ * @interface BotProfile
+ */
+export interface BotProfile {
+  description?: string;
+  shortDescription?: string;
+  avatarUrl?: string;
+  username?: string;
+  languageCode?: string;
+  about?: string;
+}
+
+/**
+ * 自动回复规则接口
+ * @interface AutoReplyRule
+ */
+export interface AutoReplyRule {
+  name: string;
+  type: 'keyword' | 'regex';
+  triggers: string[];
+  isEnabled: boolean;
+  priority: number;
+  response: CommandResponse;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/**
+ * 访问控制项接口
+ * @interface AccessControl
+ */
+export interface AccessControl {
+  type: 'user' | 'group';
+  id: string;
+  name?: string;
+  listType: 'whitelist' | 'blacklist';
+  reason?: string;
+  expireAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/**
  * Mongoose文档接口，扩展IBot接口
  * @interface IBotDocument
  */
-export interface IBotDocument extends IBot, Document {
-  id: string;
+export interface IBotDocument extends Document {
+  name: string;
+  token: string;
+  apiKey: string;
+  isEnabled: boolean;
+  status: 'active' | 'inactive';
+  userId?: string;
+  profile?: BotProfile;
+  settings?: BotSettings;
+  menus: MenuItem[];
+  autoReplies?: AutoReplyRule[];
+  accessControls?: AccessControl[];
+  lastUsed?: Date;
+  setWebhook(): Promise<boolean>;
 }
 
 /**

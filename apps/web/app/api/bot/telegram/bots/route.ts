@@ -6,12 +6,17 @@
  * - DELETE: 批量删除机器人
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import BotModel from '@/models/bot';
 import { isValidObjectId } from 'mongoose';
 import { BotResponse } from '@/types/bot';
 import crypto from 'crypto';
+
+// 生成唯一的 API Key
+function generateApiKey(): string {
+  return crypto.randomUUID();
+}
 
 /**
  * 将数据库Bot文档转换为API响应格式
@@ -152,69 +157,96 @@ export async function GET(req: NextRequest) {
  * 功能特点：
  * - 使用MongoDB事务确保数据一致性
  * - 检查token唯一性
- * - 自动创建默认的开始菜单
  * - 自动生成唯一的apiKey
+ * - 自动设置webhook并支持重试
  */
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const body = await req.json();
-
-    // 验证必需的字段
-    if (!body.token || !body.name) {
-      return errorResponse(400, '缺少必需的字段', 'MISSING_REQUIRED_FIELDS', {
-        required: ['token', 'name']
-      });
-    }
-
     await connectDB();
 
-    // 使用会话创建机器人
+    // 使用会话创建Bot
     const session = await BotModel.startSession();
-    let bot;
+    let newBot: any;
 
     try {
       await session.withTransaction(async () => {
-        // 检查 token 是否已存在
-        const existingBot = await BotModel.findOne({ token: body.token }).session(session);
+        // 检查token是否已存在
+        const existingBot = await BotModel.findOne({
+          token: body.token
+        }).session(session);
 
         if (existingBot) {
           throw new Error('TOKEN_EXISTS');
         }
 
-        // 生成唯一的apiKey (使用uuid v4)
-        const apiKey = crypto.randomUUID();
-
-        // 创建机器人
-        bot = await BotModel.create([{
-          name: body.name,
-          token: body.token,
-          apiKey: apiKey,     // 添加API密钥
-          status: 'inactive',
-          settings: body.settings || {},
-          menus: [{
-            text: "开始使用机器人",
-            command: "/start",
-            order: 0
-          }]
+        // 创建新Bot
+        newBot = await BotModel.create([{
+          ...body,
+          apiKey: generateApiKey(),
+          settings: {
+            ...body.settings,
+            allowedUpdates: ['message', 'callback_query']
+          }
         }], { session });
 
-        bot = bot[0]; // 因为create返回的是数组
+        newBot = newBot[0];  // create 返回的是数组
       });
 
       await session.endSession();
-      return successResponse(transformBotToResponse(bot), '创建机器人成功');
+
+      // 设置webhook
+      const webhookResponse = await fetch(`/api/bot/telegram/bots/${newBot._id}/webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const webhookResult = await webhookResponse.json();
+
+      if (!webhookResult.success) {
+        return NextResponse.json({
+          success: true,
+          data: transformBotToResponse(newBot),
+          message: '机器人创建成功，但Webhook设置失败，请稍后在设置中手动配置',
+          warning: {
+            type: 'WEBHOOK_SETUP_FAILED',
+            message: '自动设置Webhook失败，请稍后手动配置',
+            error: webhookResult.error
+          }
+        }, { status: 201 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: transformBotToResponse(newBot),
+        message: '创建成功'
+      });
     } catch (error) {
       await session.endSession();
       throw error;
     }
   } catch (error) {
-    console.error('创建机器人失败:', error);
-    if (error instanceof Error) {
-      if (error.message === 'TOKEN_EXISTS') {
-        return errorResponse(400, 'Token已存在', 'TOKEN_EXISTS');
-      }
+    console.error('创建Bot失败:', error);
+    if (error instanceof Error && error.message === 'TOKEN_EXISTS') {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Token已被使用',
+          error: 'TOKEN_EXISTS'
+        },
+        { status: 400 }
+      );
     }
-    return errorResponse(500, '创建机器人失败', 'INTERNAL_SERVER_ERROR', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: '创建Bot失败',
+        error: error instanceof Error ? error.message : '服务器错误'
+      },
+      { status: 500 }
+    );
   }
 }
 
