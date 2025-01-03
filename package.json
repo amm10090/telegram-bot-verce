@@ -8,7 +8,6 @@
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "tree": "tree -L 20 -I 'node_modules|.git|.next|.turbo|dist|build|coverage' --dirsfirst -a > tree.md",
-    "set-webhook": "ts-node apps/web/scripts/set-webhook.ts"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
