@@ -39,6 +39,7 @@ import { Badge } from "@workspace/ui/components/badge";
 import { useState } from 'react';
 import { useBotContext } from '@/contexts/BotContext';
 import { useToast } from "@workspace/ui/hooks/use-toast";
+import { BotSettingsDrawer } from "@/components/bot/settings/BotSettingsDrawer";
 
 /**
  * 功能卡片配置数组
@@ -91,6 +92,7 @@ export function BotConfigLayout() {
   const intl = useIntl();
   const router = useRouter();
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { bots = [], selectedBot, isLoading, error, selectBot } = useBotContext();
   const { toast } = useToast();
 
@@ -112,6 +114,8 @@ export function BotConfigLayout() {
     // 根据功能类型执行不同操作
     if (feature.id === "menu") {
       setIsMenuDrawerOpen(true);  // 打开菜单设置抽屉
+    } else if (feature.id === "settings") {
+      setIsSettingsOpen(true);  // 打开设置抽屉
     } else {
       router.push(`${feature.href}?botId=${selectedBot.id}`);  // 导航到对应功能页面
     }
@@ -241,6 +245,15 @@ export function BotConfigLayout() {
         <MenuSettings
           isOpen={isMenuDrawerOpen}
           onClose={() => setIsMenuDrawerOpen(false)}
+        />
+      )}
+
+      {/* 设置抽屉 */}
+      {selectedBot && (
+        <BotSettingsDrawer
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          bot={selectedBot}
         />
       )}
     </div>

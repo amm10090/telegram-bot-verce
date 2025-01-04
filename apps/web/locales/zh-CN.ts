@@ -218,7 +218,7 @@ const zhCN = {
   "bots.table.menu.settings": "设置",
 
   // 设置页面
-  "settings.title": "设置",
+  "settings.title": "机器人设置",
   "settings.description": "管理您的账户设置和偏好",
   "settings.form.title": "个人设置",
   "settings.section.profile": "用户资料",
@@ -431,7 +431,6 @@ const zhCN = {
 'bots.select.noData': '暂无机器人',
 'bots.select.loading': '加载中...',
   // Webhook 管理
-  'webhook.url.placeholder': '输入Webhook URL',
   'webhook.actions.set': '设置Webhook',
   'webhook.actions.delete': '删除Webhook',
   'webhook.success.set': 'Webhook设置成功',
@@ -474,6 +473,53 @@ const zhCN = {
   'bot.status.change.description': '确定要将机器人 {botName} 的状态从 {currentStatus} 更改为 {newStatus} 吗？',
   'bot.status.changed': '机器人状态已更改为 {status}',
   'error.statusChange': '更改机器人状态失败',
+
+  // 机器人设置抽屉
+  "bot.settings.title": "机器人设置",
+  "bot.settings.avatar.title": "头像设置",
+  "bot.settings.basicInfo.title": "基本信息",
+  "bot.settings.webhook.title": "Webhook 配置",
+  
+  // 头像上传
+  "avatar.upload.button": "上传头像",
+  "avatar.upload.hint": "支持 JPG、PNG 格式，最大 5MB",
+  "avatar.upload.error.invalidType.title": "文件格式错误",
+  "avatar.upload.error.invalidType.description": "请上传 JPG 或 PNG 格式的图片",
+  "avatar.upload.error.tooLarge.title": "文件过大",
+  "avatar.upload.error.tooLarge.description": "图片大小不能超过 5MB",
+  "avatar.upload.error.failed.title": "上传失败",
+  "avatar.upload.error.failed.description": "图片上传失败，请重试",
+  "avatar.upload.success.title": "上传成功",
+  "avatar.upload.success.description": "头像已更新",
+
+  // 基本信息表单
+  "bot.form.name.label": "机器人名称",
+  "bot.form.name.placeholder": "输入机器人名称",
+  "bot.form.description.label": "机器人介绍",
+  "bot.form.description.placeholder": "输入机器人介绍",
+
+  // Webhook 配置
+  "webhook.url.label": "Webhook URL",
+  "webhook.url.placeholder": "输入 Webhook URL",
+  "webhook.url.description": "接收机器人更新的 URL 地址",
+  "webhook.save.button": "保存",
+  "webhook.delete.button": "删除",
+  "webhook.fetch.error.title": "获取失败",
+  "webhook.fetch.error.description": "获取 Webhook 配置失败",
+  "webhook.save.success.title": "保存成功",
+  "webhook.save.success.description": "Webhook 配置已更新",
+  "webhook.save.error.title": "保存失败",
+  "webhook.save.error.description": "保存 Webhook 配置失败",
+  "webhook.delete.success.title": "删除成功",
+  "webhook.delete.success.description": "Webhook 配置已删除",
+  "webhook.delete.error.title": "删除失败",
+  "webhook.delete.error.description": "删除 Webhook 配置失败",
+
+  // 设置保存
+  "bot.settings.save.success.title": "保存成功",
+  "bot.settings.save.success.description": "机器人设置已更新",
+  "bot.settings.save.error.title": "保存失败",
+  "bot.settings.save.error.description": "更新机器人设置失败",
 } as const;
 
 export default zhCN; 

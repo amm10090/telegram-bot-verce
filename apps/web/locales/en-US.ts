@@ -555,4 +555,51 @@ export default {
   'menu.messages.orderUpdateSuccess': 'Menu order updated successfully',
   'menu.messages.orderUpdateError': 'Failed to update menu order',
   'menu.messages.validationError': 'Invalid menu data format',
+
+  // Bot Settings Drawer
+  "bot.settings.title": "Bot Settings",
+  "bot.settings.avatar.title": "Avatar Settings",
+  "bot.settings.basicInfo.title": "Basic Information",
+  "bot.settings.webhook.title": "Webhook Configuration",
+  
+  // Avatar Upload
+  "avatar.upload.button": "Upload Avatar",
+  "avatar.upload.hint": "Supports JPG, PNG formats, max 5MB",
+  "avatar.upload.error.invalidType.title": "Invalid File Format",
+  "avatar.upload.error.invalidType.description": "Please upload a JPG or PNG image",
+  "avatar.upload.error.tooLarge.title": "File Too Large",
+  "avatar.upload.error.tooLarge.description": "Image size cannot exceed 5MB",
+  "avatar.upload.error.failed.title": "Upload Failed",
+  "avatar.upload.error.failed.description": "Failed to upload image, please try again",
+  "avatar.upload.success.title": "Upload Successful",
+  "avatar.upload.success.description": "Avatar has been updated",
+
+  // Basic Info Form
+  "bot.form.name.label": "Bot Name",
+  "bot.form.name.placeholder": "Enter bot name",
+  "bot.form.description.label": "Bot Description",
+  "bot.form.description.placeholder": "Enter bot description",
+
+  // Webhook Configuration
+  "webhook.url.label": "Webhook URL",
+  "webhook.url.placeholder": "Enter Webhook URL",
+  "webhook.url.description": "URL to receive bot updates",
+  "webhook.save.button": "Save",
+  "webhook.delete.button": "Delete",
+  "webhook.fetch.error.title": "Fetch Failed",
+  "webhook.fetch.error.description": "Failed to fetch webhook configuration",
+  "webhook.save.success.title": "Save Successful",
+  "webhook.save.success.description": "Webhook configuration has been updated",
+  "webhook.save.error.title": "Save Failed",
+  "webhook.save.error.description": "Failed to save webhook configuration",
+  "webhook.delete.success.title": "Delete Successful",
+  "webhook.delete.success.description": "Webhook configuration has been deleted",
+  "webhook.delete.error.title": "Delete Failed",
+  "webhook.delete.error.description": "Failed to delete webhook configuration",
+
+  // Settings Save
+  "bot.settings.save.success.title": "Save Successful",
+  "bot.settings.save.success.description": "Bot settings have been updated",
+  "bot.settings.save.error.title": "Save Failed",
+  "bot.settings.save.error.description": "Failed to update bot settings",
 } as const;
