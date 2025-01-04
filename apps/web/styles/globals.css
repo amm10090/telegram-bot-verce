@@ -2,177 +2,140 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 基础主题变量定义 */
-/* 主题切换动画 */
-* {
-	transition-property: background-color, border-color, color, fill, stroke, backdrop-filter, box-shadow;
-	transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
-	transition-duration: 200ms;
-}
 @layer base {
 	:root {
-		/* 主要颜色 */
 		--background: 0 0% 100%;
-		--foreground: 240 10% 3.9%;
+		--foreground: 222.2 84% 4.9%;
 
-		/* 卡片样式 */
 		--card: 0 0% 100%;
-		--card-foreground: 240 10% 3.9%;
+		--card-foreground: 222.2 84% 4.9%;
 
-		/* 弹出层样式 */
 		--popover: 0 0% 100%;
-		--popover-foreground: 240 10% 3.9%;
+		--popover-foreground: 222.2 84% 4.9%;
 
-		/* 主次要颜色 */
-		--primary: 240 5.9% 10%;
-		--primary-foreground: 0 0% 98%;
-		--secondary: 240 4.8% 95.9%;
-		--secondary-foreground: 240 5.9% 10%;
+		--primary: 222.2 47.4% 11.2%;
+		--primary-foreground: 210 40% 98%;
 
-		/* 静音和强调色 */
-		--muted: 240 4.8% 95.9%;
-		--muted-foreground: 240 3.8% 46.1%;
-		--accent: 240 4.8% 95.9%;
-		--accent-foreground: 240 5.9% 10%;
+		--secondary: 210 40% 96.1%;
+		--secondary-foreground: 222.2 47.4% 11.2%;
 
-		/* 功能性颜色 */
+		--muted: 210 40% 96.1%;
+		--muted-foreground: 215.4 16.3% 46.9%;
+
+		--accent: 210 40% 96.1%;
+		--accent-foreground: 222.2 47.4% 11.2%;
+
 		--destructive: 0 84.2% 60.2%;
-		--destructive-foreground: 0 0% 98%;
-		--border: 240 5.9% 90%;
-		--input: 240 5.9% 90%;
-		--ring: 240 5.9% 10%;
+		--destructive-foreground: 210 40% 98%;
 
-		/* 图表颜色 */
-		--chart-1: 240 5.9% 10%;
-		--chart-2: 142 71% 45%;
-		--chart-3: 201 96% 32%;
-		--chart-4: 280 61% 50%;
-		--chart-5: 323 72% 37%;
+		--border: 214.3 31.8% 91.4%;
+		--input: 214.3 31.8% 91.4%;
+		--ring: 222.2 84% 4.9%;
 
-		/* 圆角半径 */
-		--radius: 0.75rem;
+		--radius: 0.5rem;
 	}
 
-	/* 深色主题变量 */
 	.dark {
-		/* 主背景使用纯黑 */
-		--background: 0 0% 0%;
+		--background: 0 0% 8%;
 		--foreground: 0 0% 100%;
 
-		/* 卡片样式 - Apple风格的深灰 */
 		--card: 0 0% 11%;
 		--card-foreground: 0 0% 100%;
 
-		/* 弹出层样式 */
-		--popover: 0 0% 13%;
+		--popover: 0 0% 11%;
 		--popover-foreground: 0 0% 100%;
 
-		/* 主次要颜色 - 保持简洁的黑白对比 */
 		--primary: 0 0% 100%;
-		--primary-foreground: 0 0% 0%;
-		--secondary: 0 0% 15%;
+		--primary-foreground: 0 0% 11%;
+
+		--secondary: 0 0% 17%;
 		--secondary-foreground: 0 0% 100%;
 
-		/* 静音和强调色 - 优雅的灰度层次 */
-		--muted: 0 0% 15%;
+		--muted: 0 0% 17%;
 		--muted-foreground: 0 0% 65%;
-		--accent: 0 0% 100%;
-		--accent-foreground: 0 0% 0%;
 
-		/* 功能性颜色 */
+		--accent: 0 0% 23%;
+		--accent-foreground: 0 0% 100%;
+
 		--destructive: 0 85% 60%;
 		--destructive-foreground: 0 0% 100%;
-		--border: 0 0% 20%;
-		--input: 0 0% 20%;
+
+		--border: 0 0% 17%;
+		--input: 0 0% 17%;
 		--ring: 0 0% 80%;
-	}
-
-	/* 暗色模式下的 Popover 样式增强 */
-	.dark [data-radix-popper-content-wrapper] {
-		background: hsl(0 0% 13%);
-		border: 1px solid hsl(0 0% 20%);
-		box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-	}
-
-	.dark .bg-popover {
-		background: hsl(0 0% 13%);
-		border: 1px solid hsl(0 0% 20%);
-	}
-
-	/* 暗色模式下的卡片增强 */
-	.dark .card,
-	.dark [class*="card-"] {
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
-					0 1px 2px -1px rgba(0, 0, 0, 0.1),
-					inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
 	}
 }
 
-/* 基础样式设置 */
 @layer base {
-	/* 全局边框颜色 */
 	* {
-		@apply border-border;
+		@apply border-border transition-all duration-default ease-hover;
 	}
 
-	/* 基础页面样式 */
 	body {
-		@apply bg-background text-foreground antialiased;
-		font-feature-settings: 'rlig' 1, 'calt' 1;
+		@apply bg-background text-foreground;
+	}
+}
+
+@layer components {
+	.dark .card {
+		@apply bg-dark-100 shadow-card-dark border border-white/10 p-card-padding;
+		@apply transition-all duration-default ease-hover;
 	}
 
-	/* 暗色模式下的卡片增强 */
-	.dark .card,
-	.dark [class*="card-"] {
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
-					0 1px 2px -1px rgba(0, 0, 0, 0.1),
-					inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
-		backdrop-filter: blur(20px);
+	.dark .card-primary {
+		@apply bg-card-gradient shadow-card-dark border-white/10;
 	}
 
-	/* 暗色模式下的导航链接样式 */
-	.dark nav a,
-	.dark nav button {
-		@apply text-muted-foreground hover:text-foreground transition-colors;
+	.dark .card:hover {
+		@apply shadow-card-hover -translate-y-hover;
 	}
 
-	/* 暗色模式下导航链接的悬浮和激活状态 */
-	.dark nav a:hover,
-	.dark nav button:hover,
-	.dark nav a[aria-current="page"],
-	.dark nav .active {
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-		box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
-		@apply text-white;
+	.dark .popup {
+		@apply bg-dark-200/95 backdrop-blur-popup shadow-popup-dark border-white/10;
 	}
 
-	/* 暗色模式下的悬浮效果 */
-	.dark .card:hover,
-	.dark [class*="card-"]:hover {
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
-		box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.15),
-					0 2px 3px -2px rgba(0, 0, 0, 0.15),
-					inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+	.dark .input {
+		@apply bg-dark-200 border border-white/10;
+		@apply hover:border-white/20 focus:shadow-input-focus;
+		@apply transition-all duration-default;
 	}
 
-	/* 滚动条美化 */
-	::-webkit-scrollbar {
-		width: 8px;
-		height: 8px;
+	.dark .button-primary {
+		@apply bg-dark-300 text-white shadow-card-dark;
+		@apply hover:bg-dark-300/90 active:scale-95;
+		@apply transition-all duration-default;
 	}
 
-	::-webkit-scrollbar-track {
-		@apply bg-secondary;
+	.dark .text-primary {
+		@apply text-white/85 font-medium;
 	}
 
-	::-webkit-scrollbar-thumb {
-		@apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/30 transition-colors;
+	.dark .text-secondary {
+		@apply text-white/60;
 	}
 
-	/* 文本选择样式 */
-	::selection {
-		@apply bg-accent/10 text-accent;
+	.dark .text-tertiary {
+		@apply text-white/30;
+	}
+
+	.dark h1 {
+		@apply text-2xl font-bold text-white/90 mb-4;
+	}
+
+	.dark h2 {
+		@apply text-xl font-semibold text-white/85 mb-3;
+	}
+
+	.dark h3 {
+		@apply text-lg font-medium text-white/80 mb-2;
+	}
+
+	.dark .hover-effect {
+		@apply hover:brightness-110 active:brightness-90;
+		@apply transition-all duration-default ease-hover;
+	}
+
+	.dark .divider {
+		@apply border-white/10;
 	}
 }

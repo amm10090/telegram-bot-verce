@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import React, { Suspense } from 'react';
+import { NextUIProvider } from "@nextui-org/react";
 
 const ClientLayout = dynamic(() => import('./ClientLayout'), {
   ssr: false,
@@ -16,5 +17,9 @@ const ClientLayout = dynamic(() => import('./ClientLayout'), {
 });
 
 export default function ClientProvider({ children }: { children: React.ReactNode }) {
-  return <ClientLayout>{children}</ClientLayout>;
+  return (
+    <NextUIProvider>
+      <ClientLayout>{children}</ClientLayout>
+    </NextUIProvider>
+  );
 } 
