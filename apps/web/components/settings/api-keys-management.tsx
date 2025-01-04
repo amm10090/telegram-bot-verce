@@ -32,6 +32,7 @@ import { useToast } from '@workspace/ui/hooks/use-toast';
 import { TelegramBotService } from '@/components/services/telegram-bot-service';
 import type { BotResponse } from '@/types/bot';
 import { Chip } from "@nextui-org/react";
+import { ActiveIcon, InactiveIcon } from '../icons/status-icons';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -77,9 +78,10 @@ function BotCard({ bot, onDelete, onCopy }: {
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <span className="font-medium text-base">{bot.name}</span>
-            <Chip 
+            <Chip
+              startContent={bot.status === 'active' ? <ActiveIcon /> : <InactiveIcon />}
               variant="flat"
-              color={bot.status === 'active' ? 'success' : 'secondary'}
+              color={bot.status === 'active' ? 'success' : 'default'}
               size="sm"
               radius="sm"
             >
@@ -163,9 +165,10 @@ function BotTableRow({ bot, onDelete, onCopy }: {
       <TableCell>
         <div className="flex items-center gap-2">
           <span>{bot.name}</span>
-          <Chip 
+          <Chip
+            startContent={bot.status === 'active' ? <ActiveIcon /> : <InactiveIcon />}
             variant="flat"
-            color={bot.status === 'active' ? 'success' : 'secondary'}
+            color={bot.status === 'active' ? 'success' : 'default'}
             size="sm"
             radius="sm"
           >
