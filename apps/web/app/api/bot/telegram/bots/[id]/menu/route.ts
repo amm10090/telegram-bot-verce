@@ -196,6 +196,10 @@ export async function POST(
       setImmediate(() => syncToTelegram(bot.token, bot.menus));
 
       return updatedMenu;
+    }, {
+      readPreference: 'primary',
+      readConcern: { level: 'local' },
+      writeConcern: { w: 'majority' }
     });
 
     return NextResponse.json({ 
@@ -255,8 +259,10 @@ export async function PUT(
 
       // 异步同步到 Telegram
       setImmediate(() => syncToTelegram(bot.token, newMenus));
-
-      return newMenus;
+    }, {
+      readPreference: 'primary',
+      readConcern: { level: 'local' },
+      writeConcern: { w: 'majority' }
     });
 
     await session.endSession();

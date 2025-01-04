@@ -47,3 +47,5 @@ next-env.d.ts
 # cursor
 .cursorrules
 prompts
+#tool
+telegram-bot-api

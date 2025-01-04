@@ -191,7 +191,7 @@ export class TelegramBotService {
   /**
    * 更新 Bot 状态
    */
-  async updateBotStatus(id: string, status: 'active' | 'disabled'): Promise<ApiResponse<BotResponse>> {
+  async updateBotStatus(id: string, status: string): Promise<ApiResponse<BotResponse>> {
     try {
       const response = await fetch(`${this.baseUrl}/bots/${id}/status`, {
         method: 'PATCH',
@@ -201,9 +201,15 @@ export class TelegramBotService {
         body: JSON.stringify({ status }),
       });
 
-      return await response.json();
+      const data = await response.json();
+      return data;
     } catch (error) {
-      throw this.handleError(error, '更新 Bot 状态失败');
+      console.error('更新机器人状态失败:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : '更新状态失败',
+        data: null as any
+      };
     }
   }
 
