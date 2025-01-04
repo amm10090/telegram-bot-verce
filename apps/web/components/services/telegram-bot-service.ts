@@ -191,14 +191,14 @@ export class TelegramBotService {
   /**
    * 更新 Bot 状态
    */
-  async updateBotStatus(id: string, isEnabled: boolean): Promise<ApiResponse<BotResponse>> {
+  async updateBotStatus(id: string, status: 'active' | 'disabled'): Promise<ApiResponse<BotResponse>> {
     try {
-      const response = await fetch(`${this.baseUrl}/bots/${id}`, {
+      const response = await fetch(`${this.baseUrl}/bots/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ isEnabled }),
+        body: JSON.stringify({ status }),
       });
 
       return await response.json();

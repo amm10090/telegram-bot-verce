@@ -470,6 +470,10 @@ const zhCN = {
   'bots.actions.add': '添加机器人',
   'bots.select.placeholder': '选择机器人',
   'error.selectBot': '请选择一个机器人',
+  'bot.status.change.title': '更改机器人状态',
+  'bot.status.change.description': '确定要将机器人 {botName} 的状态从 {currentStatus} 更改为 {newStatus} 吗？',
+  'bot.status.changed': '机器人状态已更改为 {status}',
+  'error.statusChange': '更改机器人状态失败',
 } as const;
 
 export default zhCN; 

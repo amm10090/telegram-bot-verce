@@ -139,3 +139,29 @@
 		@apply border-white/10;
 	}
 }
+
+/* 状态芯片翻转动画 */
+.status-chip-flip {
+	perspective: 1000px;
+}
+
+.status-chip-flip-inner {
+	transition: transform 0.3s ease-in-out;
+	transform-style: preserve-3d;
+}
+
+.status-chip-flip.flipping .status-chip-flip-inner {
+	transform: rotateX(180deg);
+}
+
+.status-chip-flip-front,
+.status-chip-flip-back {
+	backface-visibility: hidden;
+	position: absolute;
+	width: 100%;
+	height: 100%;
+}
+
+.status-chip-flip-back {
+	transform: rotateX(180deg);
+}

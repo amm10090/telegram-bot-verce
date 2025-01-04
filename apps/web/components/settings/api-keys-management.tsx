@@ -62,31 +62,56 @@ import { BotSearch } from './bot-search';
 // 创建TelegramBotService单例实例
 const botService = new TelegramBotService();
 
+// 添加状态芯片组件
+function StatusChip({ status, onClick }: { status: string; onClick: () => void }) {
+  const [isFlipping, setIsFlipping] = useState(false);
+
+  const handleClick = () => {
+    setIsFlipping(true);
+    onClick();
+    // 动画结束后重置状态
+    setTimeout(() => setIsFlipping(false), 300);
+  };
+
+  return (
+    <div className={`status-chip-flip ${isFlipping ? 'flipping' : ''}`}>
+      <div className="status-chip-flip-inner">
+        <Chip
+          startContent={status === 'active' ? <ActiveIcon /> : <InactiveIcon />}
+          variant="flat"
+          color={status === 'active' ? 'success' : 'danger'}
+          size="sm"
+          radius="sm"
+          className="cursor-pointer transition-all duration-300"
+          onClick={handleClick}
+        >
+          {status}
+        </Chip>
+      </div>
+    </div>
+  );
+}
+
 // 移动端卡片组件
-function BotCard({ bot, onDelete, onCopy }: { 
+function BotCard({ bot, onDelete, onCopy, onStatusChange }: { 
   bot: BotResponse; 
   onDelete: (id: string) => void;
   onCopy: (token: string) => void;
+  onStatusChange: (bot: BotResponse) => void;
 }) {
   const intl = useIntl();
   const tokenId = bot.token.split(':')[0];
 
   return (
     <div className="p-4 hover:bg-accent/5 transition-colors">
-      {/* 头部：名称和操作按钮 */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <span className="font-medium text-base">{bot.name}</span>
-            <Chip
-              startContent={bot.status === 'active' ? <ActiveIcon /> : <InactiveIcon />}
-              variant="flat"
-              color={bot.status === 'active' ? 'success' : 'default'}
-              size="sm"
-              radius="sm"
-            >
-              {bot.status}
-            </Chip>
+            <StatusChip 
+              status={bot.status} 
+              onClick={() => onStatusChange(bot)} 
+            />
           </div>
           <div className="flex items-center gap-2">
             <code className="text-xs font-mono text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
@@ -152,10 +177,11 @@ function BotCard({ bot, onDelete, onCopy }: {
 }
 
 // 桌面端表格行组件
-function BotTableRow({ bot, onDelete, onCopy }: {
+function BotTableRow({ bot, onDelete, onCopy, onStatusChange }: {
   bot: BotResponse;
   onDelete: (id: string) => void;
   onCopy: (token: string) => void;
+  onStatusChange: (bot: BotResponse) => void;
 }) {
   const intl = useIntl();
   const tokenId = bot.token.split(':')[0];
@@ -165,15 +191,10 @@ function BotTableRow({ bot, onDelete, onCopy }: {
       <TableCell>
         <div className="flex items-center gap-2">
           <span>{bot.name}</span>
-          <Chip
-            startContent={bot.status === 'active' ? <ActiveIcon /> : <InactiveIcon />}
-            variant="flat"
-            color={bot.status === 'active' ? 'success' : 'default'}
-            size="sm"
-            radius="sm"
-          >
-            {bot.status}
-          </Chip>
+          <StatusChip 
+            status={bot.status} 
+            onClick={() => onStatusChange(bot)} 
+          />
         </div>
       </TableCell>
       <TableCell>
@@ -393,6 +414,36 @@ export default function ApiKeysManagement() {
     setShowDeleteDialog(true);
   }, []);
 
+  // 处理状态切换
+  const handleStatusChange = useCallback(async (bot: BotResponse) => {
+    try {
+      const newStatus = bot.status === 'active' ? 'disabled' : 'active';
+      const response = await botService.updateBotStatus(bot.id, newStatus);
+      
+      if (response.success) {
+        toast({
+          description: intl.formatMessage(
+            { id: 'bot.status.changed' },
+            { status: newStatus }
+          ),
+        });
+        loadBots();  // 重新加载列表
+      } else {
+        toast({
+          title: intl.formatMessage({ id: 'error.title' }),
+          description: response.message,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: intl.formatMessage({ id: 'error.title' }),
+        description: intl.formatMessage({ id: 'error.statusChange' }),
+        variant: 'destructive',
+      });
+    }
+  }, [intl, toast, loadBots]);
+
   return (
     <Card>
       <CardHeader>
@@ -460,6 +511,7 @@ export default function ApiKeysManagement() {
                       bot={bot}
                       onDelete={handleDeleteClick}
                       onCopy={copyApiKey}
+                      onStatusChange={handleStatusChange}
                     />
                   ))}
                 </TableBody>
@@ -474,6 +526,7 @@ export default function ApiKeysManagement() {
                   bot={bot}
                   onDelete={handleDeleteClick}
                   onCopy={copyApiKey}
+                  onStatusChange={handleStatusChange}
                 />
               ))}
             </div>
