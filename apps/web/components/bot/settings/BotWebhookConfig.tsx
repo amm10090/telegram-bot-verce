@@ -42,6 +42,11 @@ export function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
   const [hasChanges, setHasChanges] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // 获取基础URL
+  const getBaseWebhookUrl = () => {
+    return `https://bot.amoze.cc/api/bot/telegram/bots/${bot.id}/webhook`;
+  };
+
   // 从API获取webhook状态
   const fetchWebhookInfo = async () => {
     try {
@@ -53,7 +58,7 @@ export function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
       }
       
       return {
-        localUrl: data.data?.webhookUrl || "",
+        localUrl: data.data?.webhookUrl || getBaseWebhookUrl(),
         telegramInfo: data.data?.telegramWebhookInfo || {},
         isConsistent: data.data?.isConsistent || false
       };
@@ -95,6 +100,8 @@ export function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
 
   useEffect(() => {
     if (bot.id && !isInitialized) {
+      // 设置默认的webhook URL
+      setWebhookUrl(getBaseWebhookUrl());
       initializeWebhook();
     }
   }, [bot.id, isInitialized]);
