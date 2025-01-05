@@ -186,11 +186,14 @@ export async function GET(
     await connectDB();
     const { id } = params;
 
-    if (!isValidObjectId(id)) {
-      throw new WebhookError('无效的Bot ID', 'INVALID_BOT_ID');
-    }
+    // 尝试使用原始ID或格式化后的ID
+    const bot = await BotModel.findOne({
+      $or: [
+        { _id: id },
+        { id: id }
+      ]
+    }).lean();
 
-    const bot = await BotModel.findById(id).lean();
     if (!bot) {
       throw new WebhookError('Bot不存在', 'BOT_NOT_FOUND');
     }
@@ -230,10 +233,6 @@ export async function POST(
     await connectDB();
     const { id } = params;
 
-    if (!isValidObjectId(id)) {
-      throw new WebhookError('无效的Bot ID', 'INVALID_BOT_ID');
-    }
-
     // 检查是否是来自Telegram的更新消息
     const contentType = req.headers.get('content-type');
     if (contentType === 'application/json') {
@@ -241,7 +240,14 @@ export async function POST(
       
       // 如果是命令消息
       if (update.message?.text?.startsWith('/')) {
-        const bot = await BotModel.findById(id);
+        // 尝试使用原始ID或格式化后的ID
+        const bot = await BotModel.findOne({
+          $or: [
+            { _id: id },
+            { id: id }
+          ]
+        });
+
         if (!bot) {
           throw new WebhookError('Bot不存在', 'BOT_NOT_FOUND');
         }
@@ -378,7 +384,14 @@ export async function POST(
       throw new WebhookError('无效的Webhook URL', 'INVALID_WEBHOOK_URL');
     }
 
-    const bot = await BotModel.findById(id);
+    // 尝试使用原始ID或格式化后的ID
+    const bot = await BotModel.findOne({
+      $or: [
+        { _id: id },
+        { id: id }
+      ]
+    });
+
     if (!bot) {
       throw new WebhookError('Bot不存在', 'BOT_NOT_FOUND');
     }
@@ -419,11 +432,14 @@ export async function DELETE(
     await connectDB();
     const { id } = params;
 
-    if (!isValidObjectId(id)) {
-      throw new WebhookError('无效的Bot ID', 'INVALID_BOT_ID');
-    }
+    // 尝试使用原始ID或格式化后的ID
+    const bot = await BotModel.findOne({
+      $or: [
+        { _id: id },
+        { id: id }
+      ]
+    });
 
-    const bot = await BotModel.findById(id);
     if (!bot) {
       throw new WebhookError('Bot不存在', 'BOT_NOT_FOUND');
     }
