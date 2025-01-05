@@ -24,12 +24,27 @@ function isValidWebhookUrl(url: string): boolean {
 async function setWebhook(bot: any, customUrl?: string) {
   try {
     // 根据环境确定基础URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.WEBHOOK_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+      process.env.WEBHOOK_BASE_URL || 'http://localhost:3000');
+
+    console.log('环境变量状态:', {
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+      WEBHOOK_BASE_URL: process.env.WEBHOOK_BASE_URL,
+      NODE_ENV: process.env.NODE_ENV
+    });
 
     // 使用自定义URL或构建默认URL
     const webhookUrl = customUrl || `${baseUrl}/api/bot/telegram/bots/${bot._id}/webhook`;
+    console.log('设置webhook URL:', webhookUrl);
+
+    // 获取Telegram API基础URL
+    const telegramBaseUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:8081'
+      : 'https://api.telegram.org';
+    
+    console.log('使用Telegram API基础URL:', telegramBaseUrl);
 
     // 设置重试参数
     let success = false;
@@ -39,9 +54,10 @@ async function setWebhook(bot: any, customUrl?: string) {
 
     while (!success && retryCount < maxRetries) {
       try {
+        console.log(`尝试设置webhook (第${retryCount + 1}次)`);
         // 调用Telegram API设置webhook
         const telegramResponse = await fetch(
-          `https://api.telegram.org/bot${bot.token}/setWebhook`,
+          `${telegramBaseUrl}/bot${bot.token}/setWebhook`,
           {
             method: 'POST',
             headers: {
@@ -49,32 +65,44 @@ async function setWebhook(bot: any, customUrl?: string) {
             },
             body: JSON.stringify({
               url: webhookUrl,
-              allowed_updates: ['message', 'callback_query']
+              allowed_updates: ['message', 'callback_query'],
+              drop_pending_updates: true
             }),
           }
         );
 
+        const responseData = await telegramResponse.json();
+        console.log('Telegram setWebhook响应:', responseData);
+
         if (!telegramResponse.ok) {
-          const error = await telegramResponse.json();
-          throw new Error(JSON.stringify(error));
+          throw new Error(JSON.stringify(responseData));
         }
 
+        // 获取webhook信息以验证设置
+        const webhookInfo = await fetch(
+          `${telegramBaseUrl}/bot${bot.token}/getWebhookInfo`
+        ).then(res => res.json());
+        console.log('Webhook信息验证:', webhookInfo);
+
         // 更新数据库中的webhook配置
-        await BotModel.findByIdAndUpdate(bot._id, {
+        const updateResult = await BotModel.findByIdAndUpdate(bot._id, {
           $set: {
             'settings.webhookUrl': webhookUrl,
             'settings.allowedUpdates': ['message', 'callback_query']
           }
         });
+        console.log('数据库更新结果:', updateResult ? '成功' : '失败');
 
         success = true;
         break;
       } catch (error) {
+        console.error(`第${retryCount + 1}次设置webhook失败:`, error);
         lastError = error;
         retryCount++;
         if (retryCount < maxRetries) {
-          // 指数退避重试
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+          const waitTime = Math.pow(2, retryCount) * 1000;
+          console.log(`等待${waitTime}ms后重试...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }
     }
@@ -198,8 +226,12 @@ async function handleTelegramMessage(bot: any, message: any) {
 
     // 发送响应到 Telegram
     console.log('发送响应:', response);
+    const telegramBaseUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:8081'
+      : 'https://api.telegram.org';
+
     const telegramResponse = await fetch(
-      `https://api.telegram.org/bot${bot.token}/sendMessage`,
+      `${telegramBaseUrl}/bot${bot.token}/sendMessage`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -266,26 +298,38 @@ export async function POST(
 ) {
   try {
     await connectDB();
+    console.log('收到webhook请求:', {
+      method: req.method,
+      headers: Object.fromEntries(req.headers.entries()),
+      id: params.id
+    });
 
     // 如果是 Telegram 的更新消息
     if (req.headers.get('content-type') === 'application/json') {
       const update = await req.json();
+      console.log('Telegram更新消息:', JSON.stringify(update, null, 2));
       
       if (update.message) {
+        console.log('处理Telegram消息:', update.message);
         const bot = await BotModel.findById(params.id);
         if (!bot) {
+          console.error('Bot不存在:', params.id);
           return NextResponse.json({ success: false, message: 'Bot不存在' }, { status: 404 });
         }
 
         // 如果没有设置 webhook，自动设置
         if (!bot.settings?.webhookUrl) {
+          console.log('Bot未设置webhook，开始自动设置');
           const { success, error } = await setWebhook(bot);
           if (!success) {
             console.error('自动设置webhook失败:', error);
+          } else {
+            console.log('自动设置webhook成功');
           }
         }
 
         const result = await handleTelegramMessage(bot, update.message);
+        console.log('消息处理结果:', result);
         return NextResponse.json(result || { success: true });
       }
       
