@@ -14,16 +14,16 @@ function isValidWebhookUrl(url: string): boolean {
   }
 }
 
-// 定义允许的HTTP方法
-export const allowedMethods = ['POST', 'GET', 'DELETE'];
+// 定义允许的HTTP方法（改为内部常量）
+const ALLOWED_METHODS = ['POST', 'GET', 'DELETE'];
 
 // 添加OPTIONS方法处理
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
-      'Allow': allowedMethods.join(', '),
-      'Access-Control-Allow-Methods': allowedMethods.join(', '),
+      'Allow': ALLOWED_METHODS.join(', '),
+      'Access-Control-Allow-Methods': ALLOWED_METHODS.join(', '),
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
