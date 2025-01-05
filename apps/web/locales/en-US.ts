@@ -596,6 +596,22 @@ export default {
   "webhook.delete.success.description": "Webhook configuration has been deleted",
   "webhook.delete.error.title": "Delete Failed",
   "webhook.delete.error.description": "Failed to delete webhook configuration",
+  "webhook.status.pending": "Pending Update",
+  "webhook.cancel.button": "Cancel",
+
+  // Webhook Status and Sync
+  "webhook.sync.warning.title": "Webhook Configuration Inconsistent",
+  "webhook.sync.warning.description": "Telegram platform and local configuration are inconsistent, system will attempt to fix automatically",
+  "webhook.status.inconsistent": "Webhook configuration out of sync",
+  "webhook.status.active": "Webhook active",
+  "webhook.status.error": "Webhook error: {error}",
+  "webhook.init.error.title": "Initialization Failed",
+  "webhook.init.error.description": "Failed to get webhook configuration, please retry",
+  
+  // Webhook Operations
+  "webhook.update.button": "Update Webhook",
+  "webhook.update.success.title": "Update Successful",
+  "webhook.update.success.description": "Webhook configuration has been updated",
 
   // Settings Save
   "bot.settings.save.success.title": "Save Successful",

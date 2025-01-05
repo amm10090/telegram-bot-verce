@@ -514,6 +514,22 @@ const zhCN = {
   "webhook.delete.success.description": "Webhook 配置已删除",
   "webhook.delete.error.title": "删除失败",
   "webhook.delete.error.description": "删除 Webhook 配置失败",
+  "webhook.status.pending": "等待更新",
+  "webhook.cancel.button": "取消",
+
+  // Webhook 状态和同步
+  "webhook.sync.warning.title": "Webhook配置不一致",
+  "webhook.sync.warning.description": "Telegram平台和本地配置不一致，系统将自动尝试修复",
+  "webhook.status.inconsistent": "Webhook配置不同步",
+  "webhook.status.active": "Webhook已激活",
+  "webhook.status.error": "Webhook错误: {error}",
+  "webhook.init.error.title": "初始化失败",
+  "webhook.init.error.description": "获取Webhook配置失败，请重试",
+  
+  // Webhook 操作
+  "webhook.update.button": "更新Webhook",
+  "webhook.update.success.title": "更新成功",
+  "webhook.update.success.description": "Webhook配置已更新",
 
   // 设置保存
   "bot.settings.save.success.title": "保存成功",
