@@ -230,6 +230,10 @@ export async function POST(
     await connectDB();
     const { id } = params;
 
+    if (!isValidObjectId(id)) {
+      throw new WebhookError('无效的Bot ID', 'INVALID_BOT_ID');
+    }
+
     // 检查是否是来自Telegram的更新消息
     const contentType = req.headers.get('content-type');
     if (contentType === 'application/json') {
