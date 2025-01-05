@@ -14,6 +14,21 @@ function isValidWebhookUrl(url: string): boolean {
   }
 }
 
+// 定义允许的HTTP方法
+export const allowedMethods = ['POST', 'GET', 'DELETE'];
+
+// 添加OPTIONS方法处理
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Allow': allowedMethods.join(', '),
+      'Access-Control-Allow-Methods': allowedMethods.join(', '),
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
+
 /**
  * 设置 Webhook
  * @description 配置机器人的 Webhook URL，用于接收 Telegram 的实时更新
@@ -297,8 +312,16 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    // 验证请求方法
+    if (req.method !== 'POST') {
+      return NextResponse.json(
+        { success: false, message: '不支持的请求方法' },
+        { status: 405 }
+      );
+    }
+
     await connectDB();
-    console.log('收到webhook请求:', {
+    console.log('收到webhook POST请求:', {
       method: req.method,
       headers: Object.fromEntries(req.headers.entries()),
       id: params.id
@@ -394,21 +417,88 @@ export async function POST(
   }
 }
 
+// 获取 Webhook 信息
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // 验证请求方法
+    if (req.method !== 'GET') {
+      return NextResponse.json(
+        { success: false, message: '不支持的请求方法' },
+        { status: 405 }
+      );
+    }
+
+    await connectDB();
+    console.log('收到webhook GET请求:', {
+      method: req.method,
+      id: params.id
+    });
+
+    const { id } = params;
+    if (!isValidObjectId(id)) {
+      return NextResponse.json(
+        { success: false, message: '无效的Bot ID' },
+        { status: 400 }
+      );
+    }
+
+    const bot = await BotModel.findById(id).lean();
+    if (!bot) {
+      return NextResponse.json(
+        { success: false, message: 'Bot不存在' },
+        { status: 404 }
+      );
+    }
+
+    // 获取webhook信息
+    const telegramBaseUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:8081'
+      : 'https://api.telegram.org';
+
+    const webhookInfo = await fetch(
+      `${telegramBaseUrl}/bot${bot.token}/getWebhookInfo`
+    ).then(res => res.json());
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        webhookUrl: bot.settings?.webhookUrl,
+        telegramWebhookInfo: webhookInfo
+      },
+      message: '获取Webhook信息成功',
+    });
+  } catch (error) {
+    return handleMethodError(error);
+  }
+}
+
 // 删除 Webhook
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // 验证请求方法
+    if (req.method !== 'DELETE') {
+      return NextResponse.json(
+        { success: false, message: '不支持的请求方法' },
+        { status: 405 }
+      );
+    }
+
     await connectDB();
+    console.log('收到webhook DELETE请求:', {
+      method: req.method,
+      id: params.id
+    });
 
     const { id } = params;
     if (!isValidObjectId(id)) {
       return NextResponse.json(
-        {
-          success: false,
-          message: '无效的Bot ID',
-        },
+        { success: false, message: '无效的Bot ID' },
         { status: 400 }
       );
     }
@@ -416,18 +506,34 @@ export async function DELETE(
     const bot = await BotModel.findById(id);
     if (!bot) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Bot不存在',
-        },
+        { success: false, message: 'Bot不存在' },
         { status: 404 }
       );
     }
 
-    // 删除 Webhook URL
+    // 删除Telegram webhook设置
+    const telegramBaseUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:8081'
+      : 'https://api.telegram.org';
+
+    const telegramResponse = await fetch(
+      `${telegramBaseUrl}/bot${bot.token}/deleteWebhook`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+
+    if (!telegramResponse.ok) {
+      const error = await telegramResponse.json();
+      throw new Error(JSON.stringify(error));
+    }
+
+    // 删除数据库中的webhook配置
     bot.settings = {
       ...bot.settings,
       webhookUrl: undefined,
+      allowedUpdates: undefined
     };
     await bot.save();
 
@@ -436,64 +542,18 @@ export async function DELETE(
       message: 'Webhook删除成功',
     });
   } catch (error) {
-    console.error('删除Webhook失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: '删除Webhook失败',
-        error: error instanceof Error ? error.message : '未知错误',
-      },
-      { status: 500 }
-    );
+    return handleMethodError(error);
   }
 }
 
-// 获取 Webhook 信息
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    await connectDB();
-
-    const { id } = params;
-    if (!isValidObjectId(id)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: '无效的Bot ID',
-        },
-        { status: 400 }
-      );
-    }
-
-    const bot = await BotModel.findById(id).lean();
-    if (!bot) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Bot不存在',
-        },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        webhookUrl: bot.settings?.webhookUrl,
-      },
-      message: '获取Webhook信息成功',
-    });
-  } catch (error) {
-    console.error('获取Webhook信息失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: '获取Webhook信息失败',
-        error: error instanceof Error ? error.message : '未知错误',
-      },
-      { status: 500 }
-    );
-  }
+// 添加错误处理中间件
+function handleMethodError(error: any) {
+  console.error('请求处理错误:', error);
+  return NextResponse.json(
+    {
+      success: false,
+      message: error instanceof Error ? error.message : '未知错误',
+    },
+    { status: 500 }
+  );
 } 
