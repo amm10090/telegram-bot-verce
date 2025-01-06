@@ -85,9 +85,9 @@ export async function POST(
 
     // 合并现有设置和默认设置
     bot.settings = {
-      ...defaultSettings,
       ...bot.settings,
-      webhookUrl: url // 确保webhook URL被更新
+      ...defaultSettings,
+      webhookUrl: url
     };
     
     await bot.save();
