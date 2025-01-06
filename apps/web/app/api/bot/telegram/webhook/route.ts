@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 查找对应的机器人
-    const bot = await BotModel.findOne({ token: authHeader });
+    const bot = await BotModel.findById(authHeader);
     if (!bot) {
       console.error('找不到对应的机器人配置');
       return NextResponse.json({ success: true });

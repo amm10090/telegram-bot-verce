@@ -47,10 +47,13 @@ export async function POST(
 
     const telegramBot = new TelegramClient(bot.token);
     
-    // 使用 bot token 作为 secret token
+    // 生成一个安全的 secret token（只使用字母和数字）
+    const secretToken = bot.id.toString();
+    
+    // 设置 webhook
     const response = await telegramBot.post('/setWebhook', {
       url,
-      secret_token: bot.token,
+      secret_token: secretToken,
       allowed_updates: ['message', 'callback_query']
     });
 

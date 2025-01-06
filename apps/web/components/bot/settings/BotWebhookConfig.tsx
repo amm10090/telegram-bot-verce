@@ -48,9 +48,9 @@ export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
     
     setIsSaving(true);
     try {
-      // 获取当前域名
+      // 修正为正确的 webhook URL
       const domain = window.location.origin;
-      const autoWebhookUrl = `${domain}/api/bot/telegram/bots/${selectedBot.id}/webhook`;
+      const autoWebhookUrl = `${domain}/api/bot/telegram/webhook`;
       
       const response = await fetch(`/api/bot/telegram/bots/${selectedBot.id}/webhook`, {
         method: 'POST',
