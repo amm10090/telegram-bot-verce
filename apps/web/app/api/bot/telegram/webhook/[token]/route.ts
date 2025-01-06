@@ -3,7 +3,10 @@ import BotModel from '@/models/bot';
 import { connectDB } from '@/lib/db';
 import { TelegramClient } from '@/lib/telegram';
 
-export async function POST(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { token: string } }
+) {
   try {
     const update = await request.json();
     
@@ -17,9 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     await connectDB();
-    const bot = await BotModel.findOne({
-      'settings.webhookUrl': { $exists: true, $ne: '' }
-    });
+    const bot = await BotModel.findOne({ token: params.token });
 
     if (!bot) {
       console.error('找不到对应的机器人配置');

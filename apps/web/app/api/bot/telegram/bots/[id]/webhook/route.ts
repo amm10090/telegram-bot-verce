@@ -60,7 +60,8 @@ export async function POST(
     const telegramBot = new TelegramClient(bot.token);
 
     // 设置webhook到Telegram
-    const telegramApiUrl = `https://api.telegram.org/bot${bot.token}/setWebhook?url=${url}`;
+    const webhookUrl = `${url}/api/bot/telegram/webhook/${bot.token}`;
+    const telegramApiUrl = `https://api.telegram.org/bot${bot.token}/setWebhook?url=${webhookUrl}`;
     const setWebhookResult = await fetch(telegramApiUrl);
     const webhookResponse = await setWebhookResult.json();
     
