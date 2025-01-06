@@ -70,10 +70,26 @@ export async function POST(
     }
 
     // 更新数据库中的webhook配置
-    bot.settings = {
-      ...bot.settings,
-      webhookUrl: url
+    const defaultSettings = {
+      webhookUrl: url,
+      accessControl: {
+        enabled: false,
+        defaultPolicy: 'allow' as const,
+        whitelistOnly: false
+      },
+      autoReply: {
+        enabled: true,
+        maxRulesPerBot: 50
+      }
     };
+
+    // 合并现有设置和默认设置
+    bot.settings = {
+      ...defaultSettings,
+      ...bot.settings,
+      webhookUrl: url // 确保webhook URL被更新
+    };
+    
     await bot.save();
 
     return NextResponse.json({
@@ -119,10 +135,23 @@ export async function DELETE(
     }
 
     // 更新数据库中的webhook配置
-    bot.settings = {
-      ...bot.settings,
-      webhookUrl: ''
-    };
+    if (!bot.settings) {
+      bot.settings = {
+        webhookUrl: '',
+        accessControl: {
+          enabled: false,
+          defaultPolicy: 'allow' as const,
+          whitelistOnly: false
+        },
+        autoReply: {
+          enabled: true,
+          maxRulesPerBot: 50
+        }
+      };
+    } else {
+      bot.settings.webhookUrl = '';
+    }
+    
     await bot.save();
 
     return NextResponse.json({
