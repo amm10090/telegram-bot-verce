@@ -133,6 +133,47 @@ export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
     }
   };
 
+  const handleSetWebhook = async () => {
+    try {
+      setIsLoading(true);
+      const domain = window.location.origin;
+      const webhookUrl = `${domain}/api/bot/telegram/webhook`;
+      
+      const response = await fetch(`/api/bot/telegram/bots/${bot.id}/webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: webhookUrl }),
+      });
+
+      if (!response.ok) {
+        throw new Error('设置webhook失败');
+      }
+
+      toast({
+        title: "成功",
+        description: "设置webhook成功"
+      });
+      
+      // 重新获取webhook配置
+      const configResponse = await fetch(`/api/bot/telegram/bots/${bot.id}/webhook`);
+      if (configResponse.ok) {
+        const data = await configResponse.json();
+        setWebhookUrl(data.url || '');
+      }
+    } catch (error) {
+      console.error('设置webhook失败:', error);
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "设置webhook失败"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!selectedBot) {
     return (
       <Card>

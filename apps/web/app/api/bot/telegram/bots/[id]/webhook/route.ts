@@ -38,72 +38,37 @@ export async function POST(
 ) {
   try {
     const { url } = await request.json();
-    
-    if (!url) {
-      return NextResponse.json(
-        { error: 'Webhook URL不能为空' },
-        { status: 400 }
-      );
-    }
 
     await connectDB();
     const bot = await BotModel.findById(params.id);
-    
     if (!bot) {
-      return NextResponse.json(
-        { error: '机器人不存在' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: '找不到机器人' }, { status: 404 });
     }
 
-    // 创建Telegram Bot实例
     const telegramBot = new TelegramClient(bot.token);
-
-    // 设置webhook到Telegram
-    const telegramApiUrl = `https://api.telegram.org/bot${bot.token}/setWebhook?url=${url}`;
-    const setWebhookResult = await fetch(telegramApiUrl);
-    const webhookResponse = await setWebhookResult.json();
     
-    if (!webhookResponse.ok) {
-      return NextResponse.json(
-        { error: '设置Telegram Webhook失败: ' + webhookResponse.description },
-        { status: 500 }
-      );
+    // 使用 bot token 作为 secret token
+    const response = await telegramBot.post('/setWebhook', {
+      url,
+      secret_token: bot.token,
+      allowed_updates: ['message', 'callback_query']
+    });
+
+    if (!response.ok) {
+      throw new Error('设置webhook失败');
     }
 
-    // 更新数据库中的webhook配置
-    const defaultSettings = {
-      webhookUrl: url,
-      accessControl: {
-        enabled: false,
-        defaultPolicy: 'allow' as const,
-        whitelistOnly: false
-      },
-      autoReply: {
-        enabled: true,
-        maxRulesPerBot: 50
-      }
-    };
-
-    // 合并现有设置和默认设置
-    bot.settings = {
-      ...bot.settings,
-      ...defaultSettings,
-      webhookUrl: url
-    };
-    
-    await bot.save();
-
-    return NextResponse.json({
-      success: true,
-      message: 'Webhook设置成功'
+    // 更新数据库中的 webhook URL
+    await BotModel.findByIdAndUpdate(params.id, {
+      'settings.webhook': url,
+      'settings.accessControl': bot.settings?.accessControl || { enabled: false, allowedUsers: [] },
+      'settings.autoReply': bot.settings?.autoReply || { enabled: false, rules: [] }
     });
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('设置webhook失败:', error);
-    return NextResponse.json(
-      { error: '设置webhook失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '设置webhook失败' }, { status: 500 });
   }
 }
 
