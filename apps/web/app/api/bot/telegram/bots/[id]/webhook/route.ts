@@ -98,7 +98,7 @@ export async function POST(
 
     // 更新数据库中的配置
     await BotModel.findByIdAndUpdate(params.id, {
-      'settings.webhook': url,
+      'settings.webhookUrl': url,
       // 如果没有现有配置，设置默认值
       'settings.accessControl': bot.settings?.accessControl || { enabled: false, allowedUsers: [] },
       'settings.autoReply': bot.settings?.autoReply || { enabled: false, rules: [] }

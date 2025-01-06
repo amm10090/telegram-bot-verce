@@ -67,11 +67,21 @@ export async function POST(request: NextRequest) {
 
     // 处理命令消息（以 / 开头的消息）
     if (update.message?.text?.startsWith('/')) {
-      const command = update.message.text.split(' ')[0];
+      // 规范化命令格式：移除多余的下划线，转换为小写
+      const command = update.message.text.split(' ')[0].replace(/\/{2,}/g, '/').replace(/_{2,}/g, '_').toLowerCase();
       console.log('收到命令:', command);
+      console.log('机器人菜单配置:', bot.menus);
       
       // 查找匹配的菜单命令
-      const menuItem = bot.menus.find(menu => menu.command === command);
+      const menuItem = bot.menus.find((menu) => {
+        const normalizedMenuCommand = menu.command.replace(/\/{2,}/g, '/').replace(/_{2,}/g, '_').toLowerCase();
+        console.log('比较命令:', {
+          menuCommand: normalizedMenuCommand,
+          receivedCommand: command,
+          isMatch: normalizedMenuCommand === command,
+        });
+        return normalizedMenuCommand === command;
+      });
       console.log('匹配的菜单项:', menuItem);
       
       // 如果找到匹配的命令并且有响应配置，发送响应
