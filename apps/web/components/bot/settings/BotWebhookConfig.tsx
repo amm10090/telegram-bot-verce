@@ -1,3 +1,18 @@
+/**
+ * Bot Webhook 配置组件
+ * 
+ * 该组件提供了 Telegram Bot Webhook 的可视化配置界面，包括：
+ * 1. 显示当前 webhook URL
+ * 2. 自动设置 webhook
+ * 3. 手动设置 webhook
+ * 4. 删除 webhook
+ * 
+ * 状态管理：
+ * - webhookUrl: 当前配置的 webhook URL
+ * - isLoading: 加载状态标识
+ * - isSaving: 保存操作状态标识
+ */
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -6,17 +21,23 @@ import { useBotContext } from '@/contexts/BotContext';
 import { useToast } from "@workspace/ui/hooks/use-toast";
 
 interface BotWebhookConfigProps {
-  bot: any;
+  bot: any;  // Bot 配置对象
 }
 
 export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
+  // 从上下文获取当前选中的机器人信息
   const { selectedBot } = useBotContext();
   const { toast } = useToast();
+  
+  // 组件状态管理
   const [webhookUrl, setWebhookUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 获取当前webhook配置
+  /**
+   * 初始化时获取当前 webhook 配置
+   * 当选中的机器人变化时重新获取
+   */
   useEffect(() => {
     const fetchWebhookConfig = async () => {
       if (!selectedBot?.id) return;
@@ -42,13 +63,16 @@ export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
     fetchWebhookConfig();
   }, [selectedBot?.id, toast]);
 
-  // 自动设置webhook
+  /**
+   * 自动设置 webhook
+   * 使用当前域名自动生成 webhook URL 并设置
+   */
   const handleAutoSetWebhook = async () => {
     if (!selectedBot?.id) return;
     
     setIsSaving(true);
     try {
-      // 修正为正确的 webhook URL
+      // 使用当前域名构建 webhook URL
       const domain = window.location.origin;
       const autoWebhookUrl = `${domain}/api/bot/telegram/webhook`;
       
@@ -76,7 +100,10 @@ export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
     }
   };
 
-  // 保存webhook配置
+  /**
+   * 保存手动设置的 webhook 配置
+   * 将用户输入的 URL 保存为新的 webhook 地址
+   */
   const handleSaveWebhook = async () => {
     if (!selectedBot?.id) return;
     
@@ -105,7 +132,9 @@ export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
     }
   };
 
-  // 删除webhook配置
+  /**
+   * 删除当前 webhook 配置
+   */
   const handleDeleteWebhook = async () => {
     if (!selectedBot?.id) return;
     
@@ -133,47 +162,7 @@ export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
     }
   };
 
-  const handleSetWebhook = async () => {
-    try {
-      setIsLoading(true);
-      const domain = window.location.origin;
-      const webhookUrl = `${domain}/api/bot/telegram/webhook`;
-      
-      const response = await fetch(`/api/bot/telegram/bots/${bot.id}/webhook`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url: webhookUrl }),
-      });
-
-      if (!response.ok) {
-        throw new Error('设置webhook失败');
-      }
-
-      toast({
-        title: "成功",
-        description: "设置webhook成功"
-      });
-      
-      // 重新获取webhook配置
-      const configResponse = await fetch(`/api/bot/telegram/bots/${bot.id}/webhook`);
-      if (configResponse.ok) {
-        const data = await configResponse.json();
-        setWebhookUrl(data.url || '');
-      }
-    } catch (error) {
-      console.error('设置webhook失败:', error);
-      toast({
-        variant: "destructive",
-        title: "错误",
-        description: "设置webhook失败"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // 如果没有选中机器人，显示提示信息
   if (!selectedBot) {
     return (
       <Card>
@@ -184,6 +173,7 @@ export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
     );
   }
 
+  // 渲染 webhook 配置界面
   return (
     <Card>
       <CardHeader>
