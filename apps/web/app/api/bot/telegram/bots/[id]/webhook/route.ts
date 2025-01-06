@@ -60,11 +60,13 @@ export async function POST(
     const telegramBot = new TelegramClient(bot.token);
 
     // 设置webhook到Telegram
-    const setWebhookResult = await telegramBot.post('/setWebhook', { url });
+    const telegramApiUrl = `https://api.telegram.org/bot${bot.token}/setWebhook?url=${url}`;
+    const setWebhookResult = await fetch(telegramApiUrl);
+    const webhookResponse = await setWebhookResult.json();
     
-    if (!setWebhookResult.ok) {
+    if (!webhookResponse.ok) {
       return NextResponse.json(
-        { error: '设置Telegram Webhook失败' },
+        { error: '设置Telegram Webhook失败: ' + webhookResponse.description },
         { status: 500 }
       );
     }
@@ -125,11 +127,13 @@ export async function DELETE(
     const telegramBot = new TelegramClient(bot.token);
 
     // 删除Telegram的webhook设置
-    const deleteWebhookResult = await telegramBot.post('/deleteWebhook', {});
+    const telegramApiUrl = `https://api.telegram.org/bot${bot.token}/deleteWebhook`;
+    const deleteWebhookResult = await fetch(telegramApiUrl);
+    const webhookResponse = await deleteWebhookResult.json();
     
-    if (!deleteWebhookResult.ok) {
+    if (!webhookResponse.ok) {
       return NextResponse.json(
-        { error: '删除Telegram Webhook失败' },
+        { error: '删除Telegram Webhook失败: ' + webhookResponse.description },
         { status: 500 }
       );
     }
