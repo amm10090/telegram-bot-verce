@@ -11,7 +11,7 @@ import { useToast } from "@workspace/ui/hooks/use-toast";
 import { useIntl } from "react-intl";
 import { BotAvatarUpload } from "./BotAvatarUpload";
 import { BotBasicInfoForm } from "./BotBasicInfoForm";
-import { BotWebhookConfig } from "./BotWebhookConfig";
+import BotWebhookConfig from "./BotWebhookConfig";
 
 interface BotSettingsDrawerProps {
   isOpen: boolean;

@@ -1,163 +1,104 @@
-import { useState, useEffect } from "react";
-import { Input, Button } from "@nextui-org/react";
-import { useIntl } from "react-intl";
+"use client";
+
+import { useState, useEffect } from 'react';
+import { Card, CardHeader, CardBody, CardFooter, Button, Input, Spinner } from "@nextui-org/react";
+import { useBotContext } from '@/contexts/BotContext';
 import { useToast } from "@workspace/ui/hooks/use-toast";
-import { Loader2 } from "lucide-react";
-
-interface WebhookInfo {
-  url?: string;
-  pending_update_count?: number;
-  last_error_message?: string;
-  last_error_date?: number;
-  has_custom_certificate?: boolean;
-  isConsistent?: boolean;
-}
-
-interface WebhookResponse {
-  success: boolean;
-  data?: {
-    webhookUrl: string;
-    telegramWebhookInfo: WebhookInfo;
-    isConsistent: boolean;
-  };
-  error?: {
-    code: string;
-    message: string;
-    details?: any;
-  };
-}
 
 interface BotWebhookConfigProps {
   bot: any;
 }
 
-export function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
-  const intl = useIntl();
+export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
+  const { selectedBot } = useBotContext();
   const { toast } = useToast();
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [originalUrl, setOriginalUrl] = useState("");
-  const [webhookInfo, setWebhookInfo] = useState<WebhookInfo>({});
+  const [webhookUrl, setWebhookUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
 
-  // 获取基础URL
-  const getBaseWebhookUrl = () => {
-    return `https://bot.amoze.cc/api/bot/telegram/bots/${bot.id}/webhook`;
-  };
-
-  // 从API获取webhook状态
-  const fetchWebhookInfo = async () => {
-    try {
-      const response = await fetch(`/api/bot/telegram/bots/${bot.id}/webhook`);
-      const data: WebhookResponse = await response.json();
+  // 获取当前webhook配置
+  useEffect(() => {
+    const fetchWebhookConfig = async () => {
+      if (!selectedBot?.id) return;
       
-      if (!data.success) {
-        throw new Error(data.error?.message || "获取webhook信息失败");
-      }
-      
-      return {
-        localUrl: data.data?.webhookUrl || getBaseWebhookUrl(),
-        telegramInfo: data.data?.telegramWebhookInfo || {},
-        isConsistent: data.data?.isConsistent || false
-      };
-    } catch (error) {
-      console.error("获取webhook信息失败:", error);
-      throw error;
-    }
-  };
-
-  // 初始化webhook配置
-  const initializeWebhook = async () => {
-    try {
       setIsLoading(true);
-      const { localUrl, telegramInfo, isConsistent } = await fetchWebhookInfo();
-      
-      setWebhookUrl(localUrl);
-      setOriginalUrl(localUrl);
-      setWebhookInfo({ ...telegramInfo, isConsistent });
-      
-      if (!isConsistent) {
+      try {
+        const response = await fetch(`/api/bot/telegram/bots/${selectedBot.id}/webhook`);
+        if (!response.ok) throw new Error('获取webhook配置失败');
+        
+        const data = await response.json();
+        setWebhookUrl(data.url || '');
+      } catch (error) {
         toast({
           variant: "destructive",
-          title: intl.formatMessage({ id: "webhook.sync.warning.title" }),
-          description: intl.formatMessage({ id: "webhook.sync.warning.description" }),
+          title: "错误",
+          description: error instanceof Error ? error.message : '获取webhook配置失败'
         });
+      } finally {
+        setIsLoading(false);
       }
+    };
+
+    fetchWebhookConfig();
+  }, [selectedBot?.id, toast]);
+
+  // 自动设置webhook
+  const handleAutoSetWebhook = async () => {
+    if (!selectedBot?.id) return;
+    
+    setIsSaving(true);
+    try {
+      // 获取当前域名
+      const domain = window.location.origin;
+      const autoWebhookUrl = `${domain}/api/bot/telegram/bots/${selectedBot.id}/webhook`;
       
-      setIsInitialized(true);
+      const response = await fetch(`/api/bot/telegram/bots/${selectedBot.id}/webhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: autoWebhookUrl })
+      });
+
+      if (!response.ok) throw new Error('自动设置webhook失败');
+      
+      setWebhookUrl(autoWebhookUrl);
+      toast({
+        title: "成功",
+        description: "Webhook已自动设置"
+      });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: intl.formatMessage({ id: "webhook.init.error.title" }),
-        description: error instanceof Error ? error.message : intl.formatMessage({ id: "webhook.init.error.description" }),
+        title: "错误",
+        description: error instanceof Error ? error.message : '自动设置webhook失败'
       });
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
-  useEffect(() => {
-    if (bot.id && !isInitialized) {
-      // 设置默认的webhook URL
-      setWebhookUrl(getBaseWebhookUrl());
-      initializeWebhook();
-    }
-  }, [bot.id, isInitialized]);
-
-  // 监控URL变化
-  useEffect(() => {
-    setHasChanges(webhookUrl !== originalUrl);
-  }, [webhookUrl, originalUrl]);
-
   // 保存webhook配置
-  const handleSave = async () => {
-    if (!webhookUrl) return;
+  const handleSaveWebhook = async () => {
+    if (!selectedBot?.id) return;
     
-    const previousUrl = originalUrl;
-    const previousInfo = webhookInfo;
-    
+    setIsSaving(true);
     try {
-      setIsSaving(true);
-
-      const response = await fetch(`/api/bot/telegram/bots/${bot.id}/webhook`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: webhookUrl }),
+      const response = await fetch(`/api/bot/telegram/bots/${selectedBot.id}/webhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: webhookUrl })
       });
 
-      const data: WebhookResponse = await response.json();
+      if (!response.ok) throw new Error('保存webhook配置失败');
       
-      if (!data.success) {
-        throw new Error(data.error?.message || "设置webhook失败");
-      }
-
-      // 刷新webhook状态
-      const { localUrl, telegramInfo, isConsistent } = await fetchWebhookInfo();
-      
-      setWebhookUrl(localUrl);
-      setOriginalUrl(localUrl);
-      setWebhookInfo({ ...telegramInfo, isConsistent });
-      setHasChanges(false);
-
       toast({
-        title: intl.formatMessage({ 
-          id: previousUrl ? "webhook.update.success.title" : "webhook.save.success.title" 
-        }),
-        description: intl.formatMessage({ 
-          id: previousUrl ? "webhook.update.success.description" : "webhook.save.success.description" 
-        }),
+        title: "成功",
+        description: "Webhook配置已保存"
       });
     } catch (error) {
-      // 恢复之前的状态
-      setWebhookUrl(previousUrl);
-      setWebhookInfo(previousInfo);
-      
       toast({
         variant: "destructive",
-        title: intl.formatMessage({ id: "webhook.save.error.title" }),
-        description: error instanceof Error ? error.message : intl.formatMessage({ id: "webhook.save.error.description" }),
+        title: "错误",
+        description: error instanceof Error ? error.message : '保存webhook配置失败'
       });
     } finally {
       setIsSaving(false);
@@ -165,153 +106,95 @@ export function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
   };
 
   // 删除webhook配置
-  const handleDelete = async () => {
-    const previousUrl = originalUrl;
-    const previousInfo = webhookInfo;
+  const handleDeleteWebhook = async () => {
+    if (!selectedBot?.id) return;
     
+    setIsSaving(true);
     try {
-      setIsSaving(true);
-
-      const response = await fetch(`/api/bot/telegram/bots/${bot.id}/webhook`, {
-        method: "DELETE",
+      const response = await fetch(`/api/bot/telegram/bots/${selectedBot.id}/webhook`, {
+        method: 'DELETE'
       });
 
-      const data: WebhookResponse = await response.json();
+      if (!response.ok) throw new Error('删除webhook配置失败');
       
-      if (!data.success) {
-        throw new Error(data.error?.message || "删除webhook失败");
-      }
-
-      // 刷新webhook状态
-      const { localUrl, telegramInfo, isConsistent } = await fetchWebhookInfo();
-      
-      setWebhookUrl(localUrl);
-      setOriginalUrl(localUrl);
-      setWebhookInfo({ ...telegramInfo, isConsistent });
-      setHasChanges(false);
-
+      setWebhookUrl('');
       toast({
-        title: intl.formatMessage({ id: "webhook.delete.success.title" }),
-        description: intl.formatMessage({ id: "webhook.delete.success.description" }),
+        title: "成功",
+        description: "Webhook配置已删除"
       });
     } catch (error) {
-      // 恢复之前的状态
-      setWebhookUrl(previousUrl);
-      setWebhookInfo(previousInfo);
-      
       toast({
         variant: "destructive",
-        title: intl.formatMessage({ id: "webhook.delete.error.title" }),
-        description: error instanceof Error ? error.message : intl.formatMessage({ id: "webhook.delete.error.description" }),
+        title: "错误",
+        description: error instanceof Error ? error.message : '删除webhook配置失败'
       });
     } finally {
       setIsSaving(false);
     }
   };
 
-  // 显示webhook状态
-  const renderWebhookStatus = () => {
-    if (!webhookInfo.isConsistent) {
-      return (
-        <div className="text-sm text-warning mt-2">
-          {intl.formatMessage({ id: "webhook.status.inconsistent" })}
-        </div>
-      );
-    }
-
-    if (webhookInfo.last_error_message) {
-      return (
-        <div className="text-sm text-danger mt-2">
-          {intl.formatMessage(
-            { id: "webhook.status.error" },
-            { error: webhookInfo.last_error_message }
-          )}
-        </div>
-      );
-    }
-
-    if (webhookInfo.pending_update_count && webhookInfo.pending_update_count > 0) {
-      return (
-        <div className="text-sm text-warning mt-2">
-          {intl.formatMessage(
-            { id: "webhook.status.pending" },
-            { count: webhookInfo.pending_update_count }
-          )}
-        </div>
-      );
-    }
-
-    if (webhookUrl) {
-      return (
-        <div className="text-sm text-success mt-2">
-          {intl.formatMessage({ id: "webhook.status.active" })}
-        </div>
-      );
-    }
-
-    return null;
-  };
-
-  if (isLoading || !isInitialized) {
+  if (!selectedBot) {
     return (
-      <div className="flex items-center justify-center p-4">
-        <Loader2 className="w-6 h-6 animate-spin" />
-      </div>
+      <Card>
+        <CardBody>
+          <p className="text-center text-default-500">请先选择一个机器人</p>
+        </CardBody>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <Input
-        type="url"
-        label={intl.formatMessage({ id: "webhook.url.label" })}
-        placeholder={intl.formatMessage({ id: "webhook.url.placeholder" })}
-        value={webhookUrl}
-        onChange={(e) => setWebhookUrl(e.target.value)}
-        description={intl.formatMessage({ id: "webhook.url.description" })}
-        errorMessage={webhookInfo.last_error_message}
-        isDisabled={isSaving}
-      />
-
-      {renderWebhookStatus()}
-
-      <div className="flex gap-3">
+    <Card>
+      <CardHeader>
+        <h3 className="text-lg font-semibold">Webhook 配置</h3>
+      </CardHeader>
+      <CardBody>
+        {isLoading ? (
+          <div className="flex justify-center p-4">
+            <Spinner />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-col space-y-2">
+              <Input
+                id="webhook-url"
+                label="Webhook URL"
+                value={webhookUrl}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWebhookUrl(e.target.value)}
+                placeholder="请输入 Webhook URL"
+                isDisabled={isSaving}
+                variant="bordered"
+              />
+            </div>
+          </div>
+        )}
+      </CardBody>
+      <CardFooter className="flex justify-between">
+        <div className="flex gap-2">
+          <Button
+            variant="bordered"
+            onPress={handleAutoSetWebhook}
+            isDisabled={isLoading || isSaving}
+          >
+            自动设置
+          </Button>
+          <Button
+            variant="bordered"
+            color="danger"
+            onPress={handleDeleteWebhook}
+            isDisabled={isLoading || isSaving || !webhookUrl}
+          >
+            删除
+          </Button>
+        </div>
         <Button
           color="primary"
-          onClick={handleSave}
-          isLoading={isSaving}
-          isDisabled={!webhookUrl || !hasChanges || isSaving}
+          onPress={handleSaveWebhook}
+          isDisabled={isLoading || isSaving || !webhookUrl}
         >
-          {originalUrl 
-            ? intl.formatMessage({ id: "webhook.update.button" })
-            : intl.formatMessage({ id: "webhook.save.button" })}
+          保存
         </Button>
-
-        {webhookUrl && (
-          <Button
-            color="danger"
-            variant="light"
-            onClick={handleDelete}
-            isLoading={isSaving}
-            isDisabled={isSaving}
-          >
-            {intl.formatMessage({ id: "webhook.delete.button" })}
-          </Button>
-        )}
-
-        {hasChanges && (
-          <Button
-            variant="light"
-            onClick={() => {
-              setWebhookUrl(originalUrl);
-              setHasChanges(false);
-            }}
-            isDisabled={isSaving}
-          >
-            {intl.formatMessage({ id: "webhook.cancel.button" })}
-          </Button>
-        )}
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
-} 
+}

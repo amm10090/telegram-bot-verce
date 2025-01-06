@@ -68,7 +68,7 @@ export class TelegramClient {
   /**
    * 发送 POST 请求到 Telegram API
    */
-  private async post(endpoint: string, body: any) {
+  async post(endpoint: string, body: any) {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
       headers: {
