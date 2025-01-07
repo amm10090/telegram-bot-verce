@@ -453,18 +453,40 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
       }
 
       // 更新本地状态
-      const updatedItems = menuItems.map(item => 
-        item.id === selectedItem.id 
-          ? { ...result.data, id: result.data._id.toString(), order: item.order }
-          : item
-      );
+      const savedItem = { ...result.data, id: result.data._id.toString() };
+      let updatedItems;
+      
+      if (isNewItem) {
+        // 对于新项目，将其添加到列表中
+        updatedItems = [...menuItems.filter(item => !item.id.startsWith('temp-')), savedItem];
+      } else {
+        // 对于现有项目，更新它
+        updatedItems = menuItems.map(item => 
+          item.id === selectedItem.id ? { ...savedItem, order: item.order } : item
+        );
+      }
 
       setMenuItems(updatedItems);
       addToHistory(updatedItems);
-      
-      // 更新选中项为保存后的新数据
-      const savedItem = { ...result.data, id: result.data._id.toString() };
       setSelectedItem(savedItem);
+
+      // 手动触发同步到 Telegram
+      try {
+        await fetch(`/api/bot/telegram/bots/${selectedBot.id}/menu/sync`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (syncError) {
+        console.error('同步到 Telegram 失败:', syncError);
+        toast({
+          variant: "warning",
+          title: "警告",
+          description: "菜单已保存，但同步到 Telegram 失败，请稍后重试",
+        });
+        return;
+      }
       
       toast({
         title: "成功",

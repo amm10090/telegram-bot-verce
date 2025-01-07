@@ -46,7 +46,7 @@ async function syncToTelegram(token: string, menus: MenuItem[]) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           commands: menus.map(menu => ({
-            command: menu.command.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+            command: menu.command.toLowerCase(),
             description: menu.text.slice(0, 256)
           }))
         }),
