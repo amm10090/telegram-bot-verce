@@ -48,7 +48,11 @@ export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
         if (!response.ok) throw new Error('获取webhook配置失败');
         
         const data = await response.json();
-        setWebhookUrl(data.url || '');
+        if (data.success && data.data) {
+          setWebhookUrl(data.data.url || '');
+        } else {
+          throw new Error(data.message || '获取webhook配置失败');
+        }
       } catch (error) {
         toast({
           variant: "destructive",
@@ -84,11 +88,16 @@ export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
 
       if (!response.ok) throw new Error('自动设置webhook失败');
       
-      setWebhookUrl(autoWebhookUrl);
-      toast({
-        title: "成功",
-        description: "Webhook已自动设置"
-      });
+      const data = await response.json();
+      if (data.success) {
+        setWebhookUrl(autoWebhookUrl);
+        toast({
+          title: "成功",
+          description: data.message || "Webhook已自动设置"
+        });
+      } else {
+        throw new Error(data.message || '自动设置webhook失败');
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -117,10 +126,15 @@ export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
 
       if (!response.ok) throw new Error('保存webhook配置失败');
       
-      toast({
-        title: "成功",
-        description: "Webhook配置已保存"
-      });
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "成功",
+          description: data.message || "Webhook配置已保存"
+        });
+      } else {
+        throw new Error(data.message || '保存webhook配置失败');
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -146,11 +160,16 @@ export default function BotWebhookConfig({ bot }: BotWebhookConfigProps) {
 
       if (!response.ok) throw new Error('删除webhook配置失败');
       
-      setWebhookUrl('');
-      toast({
-        title: "成功",
-        description: "Webhook配置已删除"
-      });
+      const data = await response.json();
+      if (data.success) {
+        setWebhookUrl('');
+        toast({
+          title: "成功",
+          description: data.message || "Webhook配置已删除"
+        });
+      } else {
+        throw new Error(data.message || '删除webhook配置失败');
+      }
     } catch (error) {
       toast({
         variant: "destructive",

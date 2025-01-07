@@ -12,8 +12,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import BotModel from '@/models/bot';
 import { connectDB } from '@/lib/db';
+import BotModel from '@/models/bot';
 import { TelegramClient } from '@/lib/telegram';
 
 /**
@@ -29,24 +29,33 @@ export async function GET(
 ) {
   try {
     await connectDB();
-    // 根据 ID 查找机器人配置
-    const bot = await BotModel.findById(params.id);
     
+    const bot = await BotModel.findById(params.id);
     if (!bot) {
       return NextResponse.json(
-        { error: '机器人不存在' },
+        { success: false, message: '未找到机器人' },
         { status: 404 }
       );
     }
 
-    // 返回当前 webhook URL
+    // 创建Telegram客户端
+    const telegram = new TelegramClient(bot.token);
+    
+    // 获取webhook信息
+    const webhookInfo = await telegram.getWebhookInfo();
+    
     return NextResponse.json({
-      url: bot.settings?.webhookUrl || ''
+      success: true,
+      data: webhookInfo,
     });
   } catch (error) {
     console.error('获取webhook配置失败:', error);
     return NextResponse.json(
-      { error: '获取webhook配置失败' },
+      {
+        success: false,
+        message: '获取webhook配置失败',
+        error: error instanceof Error ? error.message : '未知错误',
+      },
       { status: 500 }
     );
   }
@@ -69,45 +78,41 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 从请求体中获取新的 webhook URL
     const { url } = await request.json();
-
+    
     await connectDB();
-    // 查找对应的机器人配置
+    
     const bot = await BotModel.findById(params.id);
     if (!bot) {
-      return NextResponse.json({ error: '找不到机器人' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, message: '未找到机器人' },
+        { status: 404 }
+      );
     }
 
-    // 创建 Telegram 客户端实例
-    const telegramBot = new TelegramClient(bot.token);
+    // 创建Telegram客户端
+    const telegram = new TelegramClient(bot.token);
     
-    // 生成一个安全的 secret token（使用 bot ID）
-    const secretToken = bot.id.toString();
-    
-    // 调用 Telegram API 设置 webhook
-    const response = await telegramBot.post('/setWebhook', {
+    // 设置webhook
+    await telegram.setWebhook({
       url,
-      secret_token: secretToken,
-      allowed_updates: ['message', 'callback_query']  // 只接收消息和回调查询更新
+      secret_token: bot.id, // 使用bot ID作为secret token
     });
-
-    if (!response.ok) {
-      throw new Error('设置webhook失败');
-    }
-
-    // 更新数据库中的配置
-    await BotModel.findByIdAndUpdate(params.id, {
-      'settings.webhookUrl': url,
-      // 如果没有现有配置，设置默认值
-      'settings.accessControl': bot.settings?.accessControl || { enabled: false, allowedUsers: [] },
-      'settings.autoReply': bot.settings?.autoReply || { enabled: false, rules: [] }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Webhook设置成功',
     });
-
-    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('设置webhook失败:', error);
-    return NextResponse.json({ error: '设置webhook失败' }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        message: '设置webhook失败',
+        error: error instanceof Error ? error.message : '未知错误',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -128,59 +133,33 @@ export async function DELETE(
 ) {
   try {
     await connectDB();
-    const bot = await BotModel.findById(params.id);
     
+    const bot = await BotModel.findById(params.id);
     if (!bot) {
       return NextResponse.json(
-        { error: '机器人不存在' },
+        { success: false, message: '未找到机器人' },
         { status: 404 }
       );
     }
 
-    // 创建 Telegram Bot 实例
-    const telegramBot = new TelegramClient(bot.token);
-
-    // 调用 Telegram API 删除 webhook 设置
-    const telegramApiUrl = `https://api.telegram.org/bot${bot.token}/deleteWebhook`;
-    const deleteWebhookResult = await fetch(telegramApiUrl);
-    const webhookResponse = await deleteWebhookResult.json();
+    // 创建Telegram客户端
+    const telegram = new TelegramClient(bot.token);
     
-    if (!webhookResponse.ok) {
-      return NextResponse.json(
-        { error: '删除Telegram Webhook失败: ' + webhookResponse.description },
-        { status: 500 }
-      );
-    }
-
-    // 更新数据库中的配置
-    // 如果没有现有配置，初始化默认设置
-    if (!bot.settings) {
-      bot.settings = {
-        webhookUrl: '',
-        accessControl: {
-          enabled: false,
-          defaultPolicy: 'allow' as const,
-          whitelistOnly: false
-        },
-        autoReply: {
-          enabled: true,
-          maxRulesPerBot: 50
-        }
-      };
-    } else {
-      bot.settings.webhookUrl = '';
-    }
+    // 删除webhook
+    await telegram.deleteWebhook();
     
-    await bot.save();
-
     return NextResponse.json({
       success: true,
-      message: 'Webhook删除成功'
+      message: 'Webhook删除成功',
     });
   } catch (error) {
     console.error('删除webhook失败:', error);
     return NextResponse.json(
-      { error: '删除webhook失败' },
+      {
+        success: false,
+        message: '删除webhook失败',
+        error: error instanceof Error ? error.message : '未知错误',
+      },
       { status: 500 }
     );
   }

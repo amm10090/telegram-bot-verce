@@ -66,9 +66,36 @@ export class TelegramClient {
   }
 
   /**
+   * 获取webhook信息
+   */
+  async getWebhookInfo() {
+    const response = await fetch(`${this.baseUrl}/getWebhookInfo`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.description || '获取webhook信息失败');
+    }
+    const data = await response.json();
+    return { url: data.result?.url || '' };
+  }
+
+  /**
+   * 删除webhook配置
+   */
+  async deleteWebhook() {
+    return this.post('/deleteWebhook', {});
+  }
+
+  /**
+   * 设置webhook配置
+   */
+  async setWebhook(params: { url: string; secret_token: string }) {
+    return this.post('/setWebhook', params);
+  }
+
+  /**
    * 发送 POST 请求到 Telegram API
    */
-  async post(endpoint: string, body: any) {
+  private async post(endpoint: string, body: any) {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
       headers: {
