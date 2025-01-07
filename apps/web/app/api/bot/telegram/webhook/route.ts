@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import BotModel from '@/models/bot';
 import { connectDB } from '@/lib/db';
 import { TelegramClient } from '@/lib/telegram';
-import { ResponseType } from '@/lib/telegram';
+import { ResponseType } from '@/types/bot';
 
 export async function POST(request: NextRequest) {
   try {
