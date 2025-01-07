@@ -11,9 +11,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@nextui-org/react";
 import { CommandResponse, ResponseType } from "@/types/bot";
-import { X, ChevronDown, MessageSquare, Hash as Markdown, Code, Image, Video, FileText, Layout, Keyboard } from "lucide-react";
+import { X, ChevronDown, MessageSquare, Hash as Markdown, Code, Image, Video, FileText, Layout, Keyboard, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Accordion,
@@ -33,9 +33,23 @@ import {
   ScrollBar
 } from "@workspace/ui/components/scroll-area";
 import { Badge } from "@workspace/ui/components/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
+import { Card, CardBody, CardHeader } from "@nextui-org/react";
 import { marked } from 'marked';
+import DOMPurify from 'isomorphic-dompurify';
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@nextui-org/react";
+import { Tooltip } from "@nextui-org/react";
+
+// 配置 marked 以支持 Telegram Markdown 格式
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+  async: false
+});
 
 /**
  * 按钮配置接口
@@ -272,14 +286,14 @@ export function MenuResponse({
                 placeholder={`输入 ${type === ResponseType.MARKDOWN ? 'Markdown' : 'HTML'} 内容...`}
               />
             </div>
-            <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+            <div className="space-y-2">
               <label className="text-sm font-medium">预览</label>
               <div 
-                className="prose prose-sm dark:prose-invert max-w-none"
+                className="prose prose-sm dark:prose-invert max-w-none bg-background rounded-lg border p-4"
                 dangerouslySetInnerHTML={{ 
                   __html: type === ResponseType.MARKDOWN 
-                    ? marked(response.content || '')
-                    : response.content 
+                    ? DOMPurify.sanitize(marked.parse(response.content || '', { async: false }))
+                    : DOMPurify.sanitize(response.content || '')
                 }}
               />
             </div>
@@ -758,90 +772,81 @@ export function MenuResponse({
    */
   const renderTypeSelector = () => {
     return (
-      <ScrollArea className="w-full">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4">
+      <div className="w-full p-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {responseTypes.map(type => (
             <Card
               key={type.value}
+              isPressable
+              isHoverable
               className={cn(
-                "relative group cursor-pointer transition-all duration-200",
-                "hover:shadow-md hover:border-primary/50",
+                "relative",
                 response.types?.includes(type.value) && "border-primary bg-primary/5",
               )}
-              onClick={() => {
+              onPress={() => {
                 toggleResponseType(type.value);
                 setActiveType(type.value);
               }}
-              role="button"
-              tabIndex={0}
               aria-pressed={response.types?.includes(type.value)}
               aria-label={`${type.label} - ${type.description}`}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  toggleResponseType(type.value);
-                  setActiveType(type.value);
-                }
-              }}
+              shadow="sm"
+              radius="sm"
             >
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
+              <CardBody className="p-2">
+                <div className="flex flex-col items-center text-center gap-2">
                   <div className={cn(
                     "p-2 rounded-lg",
                     response.types?.includes(type.value) 
                       ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
+                      : "bg-default-100"
                   )}>
                     {type.icon}
                   </div>
-                  {response.types?.includes(type.value) && (
-                    <Badge variant="default" className="h-5">已选</Badge>
-                  )}
+                  <div>
+                    <p className="text-sm font-medium">{type.label}</p>
+                    <p className="text-xs text-default-500 line-clamp-2">
+                      {type.description}
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h4 className="font-medium">{type.label}</h4>
-                  <p className="text-xs text-muted-foreground">
-                    {type.description}
-                  </p>
-                </div>
-              </CardContent>
+              </CardBody>
             </Card>
           ))}
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      </div>
     );
   };
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-3">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-base">响应类型</CardTitle>
-              <CardDescription id="response-type-description">
+            <div>
+              <h3 className="text-base font-medium">响应类型</h3>
+              <p className="text-sm text-default-500">
                 选择一个或多个响应类型来丰富回复内容
-              </CardDescription>
+              </p>
             </div>
             <Badge variant="secondary" className="h-6">
               已选择 {response.types?.length || 0} 种类型
             </Badge>
           </div>
         </CardHeader>
-        <CardContent aria-describedby="response-type-description">
+        <CardBody>
           {renderTypeSelector()}
-        </CardContent>
+        </CardBody>
       </Card>
 
       {response.types && response.types.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">响应配置</CardTitle>
-            <CardDescription id="response-config-description">
+        <Card className="shadow-sm">
+          <CardHeader className="pb-2">
+            <h3 className="text-base font-medium">响应配置</h3>
+            <p className="text-sm text-default-500">
               配置每种响应类型的具体内容和行为
-            </CardDescription>
+            </p>
           </CardHeader>
-          <CardContent aria-describedby="response-config-description">
+          <CardBody>
             <Accordion
               type="single"
               collapsible
@@ -871,64 +876,142 @@ export function MenuResponse({
                             <span className="text-sm font-medium">
                               {typeConfig?.label}
                             </span>
-                            <p id={typeId} className="text-xs text-muted-foreground">
+                            <p id={typeId} className="text-xs text-default-500">
                               {typeConfig?.description}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div
-                            role="button"
-                            tabIndex={0}
-                            className={cn(
-                              "h-8 w-8 p-0",
-                              "rounded-md flex items-center justify-center",
-                              "hover:bg-destructive/10 hover:text-destructive",
-                              "opacity-0 group-hover:opacity-100 transition-opacity",
-                              "focus:opacity-100"
-                            )}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleResponseType(type);
+                        {(type === ResponseType.HTML || type === ResponseType.MARKDOWN) && (
+                          <Tooltip
+                            content={
+                              <div className="px-2 py-1">
+                                <p className="font-medium text-small">
+                                  {type === ResponseType.HTML ? '支持的 HTML 标签' : '支持的 Markdown 语法'}
+                                </p>
+                                <div className="mt-1 text-tiny">
+                                  <div className="mb-2">
+                                    <p className="font-medium text-foreground">文本样式</p>
+                                    {type === ResponseType.HTML ? (
+                                      <div className="ml-1 space-y-1 text-default-500">
+                                        <p><code>&lt;b&gt;</code> 或 <code>&lt;strong&gt;</code> - <b>粗体</b></p>
+                                        <p><code>&lt;i&gt;</code> 或 <code>&lt;em&gt;</code> - <i>斜体</i></p>
+                                        <p><code>&lt;u&gt;</code> 或 <code>&lt;ins&gt;</code> - <u>下划线</u></p>
+                                        <p><code>&lt;s&gt;</code> 或 <code>&lt;del&gt;</code> - <s>删除线</s></p>
+                                        <p><code>&lt;tg-spoiler&gt;</code> - 剧透文本</p>
+                                      </div>
+                                    ) : (
+                                      <div className="ml-1 space-y-1 text-default-500">
+                                        <p><code>**文本**</code> 或 <code>__文本__</code> - <b>粗体</b></p>
+                                        <p><code>*文本*</code> 或 <code>_文本_</code> - <i>斜体</i></p>
+                                        <p><code>__*文本*__</code> - <b><i>粗斜体</i></b></p>
+                                        <p><code>~文本~</code> - <s>删除线</s></p>
+                                        <p><code>||文本||</code> - 剧透文本</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="mb-2">
+                                    <p className="font-medium text-foreground">链接</p>
+                                    {type === ResponseType.HTML ? (
+                                      <div className="ml-1 space-y-1 text-default-500">
+                                        <p><code>&lt;a href="URL"&gt;</code> - 超链接</p>
+                                        <p><code>&lt;a href="tg://user?id=123"&gt;</code> - 用户链接</p>
+                                      </div>
+                                    ) : (
+                                      <div className="ml-1 space-y-1 text-default-500">
+                                        <p><code>[文本](URL)</code> - 超链接</p>
+                                        <p><code>[文本](tg://user?id=123)</code> - 用户链接</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-foreground">代码</p>
+                                    {type === ResponseType.HTML ? (
+                                      <div className="ml-1 space-y-1 text-default-500">
+                                        <p><code>&lt;code&gt;</code> - 内联代码</p>
+                                        <p><code>&lt;pre&gt;</code> - 代码块</p>
+                                      </div>
+                                    ) : (
+                                      <div className="ml-1 space-y-1 text-default-500">
+                                        <p><code>`代码`</code> - 内联代码</p>
+                                        <p><code>```语言\n代码\n```</code> - 代码块</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            }
+                            placement="right"
+                            size="lg"
+                            radius="lg"
+                            showArrow={true}
+                            delay={0}
+                            closeDelay={0}
+                            offset={10}
+                            classNames={{
+                              base: "py-2 px-4 shadow-xl",
+                              arrow: "bg-background",
                             }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.stopPropagation();
-                                toggleResponseType(type);
+                            motionProps={{
+                              variants: {
+                                exit: {
+                                  opacity: 0,
+                                  transition: {
+                                    duration: 0.1,
+                                    ease: "easeIn"
+                                  }
+                                },
+                                enter: {
+                                  opacity: 1,
+                                  transition: {
+                                    duration: 0.15,
+                                    ease: "easeOut"
+                                  }
+                                }
                               }
                             }}
                           >
-                            <X className="h-4 w-4" />
-                          </div>
-                          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                        </div>
+                            <Button 
+                              isIconOnly
+                              variant="light" 
+                              size="sm"
+                              radius="full"
+                              className="text-default-500 hover:text-foreground"
+                            >
+                              <HelpCircle className="h-4 w-4" />
+                            </Button>
+                          </Tooltip>
+                        )}
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="px-4 py-3">
-                        <div className="rounded-lg border bg-card">
-                          <div className="p-4">
+                        <Card 
+                          shadow="none" 
+                          radius="sm"
+                          className="border-none bg-default-50"
+                        >
+                          <CardBody>
                             {renderContentEditor(type)}
-                          </div>
-                        </div>
+                          </CardBody>
+                        </Card>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
                 );
               })}
             </Accordion>
-          </CardContent>
+          </CardBody>
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">测试响应</CardTitle>
-          <CardDescription id="test-response-description">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-2">
+          <h3 className="text-base font-medium">测试响应</h3>
+          <p className="text-sm text-default-500">
             发送测试消息以预览响应效果
-          </CardDescription>
+          </p>
         </CardHeader>
-        <CardContent aria-describedby="test-response-description">
+        <CardBody>
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <Input
@@ -938,29 +1021,16 @@ export function MenuResponse({
                 className="h-10"
               />
             </div>
-            <div
-              role="button"
-              tabIndex={0}
-              aria-label="测试响应"
-              aria-disabled={isTesting}
-              className={cn(
-                "min-w-[120px] h-10 px-4 rounded-md",
-                "bg-primary text-primary-foreground",
-                "hover:bg-primary/90",
-                "cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95",
-                "disabled:pointer-events-none disabled:opacity-50"
-              )}
+            <Button
+              color="primary"
+              isLoading={isTesting}
               onClick={onTest}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  onTest();
-                }
-              }}
+              className="min-w-[120px]"
             >
               {isTesting ? '测试中...' : '测试响应'}
-            </div>
+            </Button>
           </div>
-        </CardContent>
+        </CardBody>
       </Card>
 
       {editingButton && (

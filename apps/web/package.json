@@ -43,6 +43,7 @@
     "@workspace/ui": "workspace:*",
     "autoprefixer": "^10.4.20",
     "clsx": "^2.1.1",
+    "isomorphic-dompurify": "^2.19.0",
     "lucide-react": "^0.469.0",
     "marked": "^15.0.4",
     "mongoose-paginate-v2": "^1.8.5",

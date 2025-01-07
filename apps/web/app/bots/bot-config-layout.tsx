@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
-import { MenuSettings } from "@/components/features/menu-settings";
+import { MenuSettings } from "@/components/bot/features/menu-settings";
 import { Badge } from "@workspace/ui/components/badge";
 import { useState } from 'react';
 import { useBotContext } from '@/contexts/BotContext';
