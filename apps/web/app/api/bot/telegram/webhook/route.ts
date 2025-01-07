@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import BotModel from '@/models/bot';
 import { connectDB } from '@/lib/db';
 import { TelegramClient } from '@/lib/telegram';
+import { ResponseType } from '@/lib/telegram';
 
 export async function POST(request: NextRequest) {
   try {
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
         const response = menuItem.response;
         
         // 根据响应类型发送不同的消息
-        if (response.types.includes('photo')) {
+        if (response.types.includes(ResponseType.PHOTO)) {
           await telegramBot.post('/sendPhoto', {
             chat_id: chatId,
             photo: response.mediaUrl,
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
             parse_mode: response.parseMode,
             reply_markup: response.buttons
           });
-        } else if (response.types.includes('video')) {
+        } else if (response.types.includes(ResponseType.VIDEO)) {
           await telegramBot.post('/sendVideo', {
             chat_id: chatId,
             video: response.mediaUrl,
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
             parse_mode: response.parseMode,
             reply_markup: response.buttons
           });
-        } else if (response.types.includes('document')) {
+        } else if (response.types.includes(ResponseType.DOCUMENT)) {
           await telegramBot.post('/sendDocument', {
             chat_id: chatId,
             document: response.mediaUrl,
