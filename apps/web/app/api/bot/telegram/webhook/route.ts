@@ -91,25 +91,25 @@ export async function POST(request: NextRequest) {
         const response = menuItem.response;
         
         // 根据响应类型发送不同的消息
-        if (response.types.includes(ResponseType.PHOTO)) {
-          await telegramBot.post('/sendPhoto', {
-            chat_id: chatId,
+        if (response.types.includes(ResponseType.PHOTO) && response.mediaUrl) {
+          await telegramBot.sendPhoto({
+            chat_id: chatId.toString(),
             photo: response.mediaUrl,
             caption: response.caption || '',
             parse_mode: response.parseMode,
             reply_markup: response.buttons
           });
-        } else if (response.types.includes(ResponseType.VIDEO)) {
-          await telegramBot.post('/sendVideo', {
-            chat_id: chatId,
+        } else if (response.types.includes(ResponseType.VIDEO) && response.mediaUrl) {
+          await telegramBot.sendVideo({
+            chat_id: chatId.toString(),
             video: response.mediaUrl,
             caption: response.caption || '',
             parse_mode: response.parseMode,
             reply_markup: response.buttons
           });
-        } else if (response.types.includes(ResponseType.DOCUMENT)) {
-          await telegramBot.post('/sendDocument', {
-            chat_id: chatId,
+        } else if (response.types.includes(ResponseType.DOCUMENT) && response.mediaUrl) {
+          await telegramBot.sendDocument({
+            chat_id: chatId.toString(),
             document: response.mediaUrl,
             caption: response.caption || '',
             parse_mode: response.parseMode,
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         } else {
           // 默认发送文本消息
           await telegramBot.sendMessage({
-            chat_id: chatId,
+            chat_id: chatId.toString(),
             text: response.content,
             parse_mode: response.parseMode,
             reply_markup: response.buttons
@@ -170,8 +170,10 @@ export async function POST(request: NextRequest) {
     // 处理回调查询（例如按钮点击事件）
     if (update.callback_query) {
       console.log('处理回调查询:', update.callback_query);
-      await telegramBot.post('/answerCallbackQuery', {
-        callback_query_id: update.callback_query.id
+      await telegramBot.sendMessage({
+        chat_id: chatId,
+        text: 'Callback received',
+        parse_mode: 'HTML'
       });
       console.log('回调查询处理成功');
       return NextResponse.json({ success: true });
