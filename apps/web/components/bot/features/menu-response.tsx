@@ -11,9 +11,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@nextui-org/react";
+import { Button, Card, CardBody, CardHeader, Input, Tooltip, Popover, PopoverContent, PopoverTrigger } from "@nextui-org/react";
 import { CommandResponse, ResponseType } from "@/types/bot";
-import { X, ChevronDown, MessageSquare, Hash as Markdown, Code, Image, Video, FileText, Layout, Keyboard, HelpCircle } from "lucide-react";
+import { X, ChevronDown, MessageSquare, Hash as Markdown, Code, Image, Video, FileText, Layout, Keyboard, HelpCircle, Link, Zap, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Accordion,
@@ -21,7 +21,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@workspace/ui/components/accordion";
-import { Input } from "@workspace/ui/components/input";
 import {
   Sheet,
   SheetContent,
@@ -33,16 +32,9 @@ import {
   ScrollBar
 } from "@workspace/ui/components/scroll-area";
 import { Badge } from "@workspace/ui/components/badge";
-import { Card, CardBody, CardHeader } from "@nextui-org/react";
 import { marked } from 'marked';
 import DOMPurify from 'isomorphic-dompurify';
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@nextui-org/react";
-import { Tooltip } from "@nextui-org/react";
 
 // 配置 marked 以支持 Telegram Markdown 格式
 marked.setOptions({
@@ -309,9 +301,19 @@ export function MenuResponse({
               <label className="text-sm font-medium">媒体 URL</label>
               <Input
                 value={response.mediaUrl || ''}
-                onChange={(e) => onChange({ ...response, mediaUrl: e.target.value })}
-                className="w-full"
+                onValueChange={(value) => onChange({ ...response, mediaUrl: value })}
                 placeholder="输入媒体文件的 URL..."
+                variant="bordered"
+                radius="sm"
+                classNames={{
+                  input: "text-sm",
+                  inputWrapper: "h-10"
+                }}
+                startContent={
+                  <div className="pointer-events-none flex items-center">
+                    <FileText className="text-default-400 h-4 w-4" />
+                  </div>
+                }
               />
             </div>
             <div className="space-y-2">
@@ -525,11 +527,18 @@ export function MenuResponse({
                   </label>
                   <Input
                     value={response.inputPlaceholder || ''}
-                    onChange={(e) => onChange({ 
+                    onValueChange={(value) => onChange({ 
                       ...response, 
-                      inputPlaceholder: e.target.value 
+                      inputPlaceholder: value 
                     })}
-                    placeholder="请输入..."
+                    placeholder="请输入提示文本..."
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{
+                      input: "text-sm",
+                      inputWrapper: "h-10"
+                    }}
+                    description="用户看到的输入框提示文本"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1016,9 +1025,20 @@ export function MenuResponse({
             <div className="flex-1">
               <Input
                 value={receiverId}
-                onChange={(e) => onReceiverIdChange(e.target.value)}
+                onValueChange={onReceiverIdChange}
                 placeholder="输入接收消息的用户ID"
-                className="h-10"
+                variant="bordered"
+                radius="sm"
+                classNames={{
+                  input: "text-sm",
+                  inputWrapper: "h-10"
+                }}
+                startContent={
+                  <div className="pointer-events-none flex items-center">
+                    <User className="text-default-400 h-4 w-4" />
+                  </div>
+                }
+                description="用于测试消息发送的目标用户ID"
               />
             </div>
             <Button
@@ -1051,11 +1071,17 @@ export function MenuResponse({
                     </label>
                     <Input
                       value={editingButton.button.text}
-                      onChange={(e) => setEditingButton({
+                      onValueChange={(value) => setEditingButton({
                         ...editingButton,
-                        button: { ...editingButton.button, text: e.target.value }
+                        button: { ...editingButton.button, text: value }
                       })}
-                      className="h-10"
+                      placeholder="输入按钮显示文本"
+                      variant="bordered"
+                      radius="sm"
+                      classNames={{
+                        input: "text-sm",
+                        inputWrapper: "h-10"
+                      }}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1081,11 +1107,26 @@ export function MenuResponse({
                   </label>
                   <Input
                     value={editingButton.button.value}
-                    onChange={(e) => setEditingButton({
+                    onValueChange={(value) => setEditingButton({
                       ...editingButton,
-                      button: { ...editingButton.button, value: e.target.value }
+                      button: { ...editingButton.button, value: value }
                     })}
-                    className="h-10"
+                    placeholder={editingButton.button.type === 'url' ? '输入链接地址' : '输入回调数据'}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{
+                      input: "text-sm",
+                      inputWrapper: "h-10"
+                    }}
+                    startContent={
+                      <div className="pointer-events-none flex items-center">
+                        {editingButton.button.type === 'url' ? (
+                          <Link className="text-default-400 h-4 w-4" />
+                        ) : (
+                          <Zap className="text-default-400 h-4 w-4" />
+                        )}
+                      </div>
+                    }
                   />
                 </div>
               </div>
