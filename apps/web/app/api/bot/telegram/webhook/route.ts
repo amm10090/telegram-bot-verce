@@ -87,12 +87,43 @@ export async function POST(request: NextRequest) {
       // 如果找到匹配的命令并且有响应配置，发送响应
       if (menuItem?.response) {
         console.log('发送菜单响应');
-        await telegramBot.sendMessage({
-          chat_id: chatId,
-          text: menuItem.response.content,
-          parse_mode: menuItem.response.parseMode,
-          reply_markup: menuItem.response.buttons
-        });
+        const response = menuItem.response;
+        
+        // 根据响应类型发送不同的消息
+        if (response.types.includes('photo')) {
+          await telegramBot.post('/sendPhoto', {
+            chat_id: chatId,
+            photo: response.mediaUrl,
+            caption: response.caption || '',
+            parse_mode: response.parseMode,
+            reply_markup: response.buttons
+          });
+        } else if (response.types.includes('video')) {
+          await telegramBot.post('/sendVideo', {
+            chat_id: chatId,
+            video: response.mediaUrl,
+            caption: response.caption || '',
+            parse_mode: response.parseMode,
+            reply_markup: response.buttons
+          });
+        } else if (response.types.includes('document')) {
+          await telegramBot.post('/sendDocument', {
+            chat_id: chatId,
+            document: response.mediaUrl,
+            caption: response.caption || '',
+            parse_mode: response.parseMode,
+            reply_markup: response.buttons
+          });
+        } else {
+          // 默认发送文本消息
+          await telegramBot.sendMessage({
+            chat_id: chatId,
+            text: response.content,
+            parse_mode: response.parseMode,
+            reply_markup: response.buttons
+          });
+        }
+        
         console.log('菜单响应发送成功');
         return NextResponse.json({ success: true });
       }
