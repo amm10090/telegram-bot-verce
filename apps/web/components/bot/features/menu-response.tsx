@@ -11,7 +11,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Card, CardBody, CardHeader, Input, Tooltip, Popover, PopoverContent, PopoverTrigger, Image as NextImage } from "@nextui-org/react";
+import { Button, Card, CardBody, CardHeader, Input, Tooltip, Popover, PopoverContent, PopoverTrigger } from "@nextui-org/react";
 import { CommandResponse, ResponseType } from "@/types/bot";
 import { X, ChevronDown, MessageSquare, Hash as Markdown, Code, Image, Video, FileText, Layout, Keyboard, HelpCircle, Link, Zap, User } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -146,23 +146,6 @@ const responseTypes: TypeConfig[] = [
     icon: <Keyboard className="h-4 w-4" />
   },
 ];
-
-// 添加 URL 验证函数
-const isValidUrl = (url: string): boolean => {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-// 添加图片格式验证函数
-const isValidImageUrl = (url: string): boolean => {
-  if (!isValidUrl(url)) return false;
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-  return imageExtensions.some(ext => url.toLowerCase().endsWith(ext));
-};
 
 export function MenuResponse({ 
   response, 
@@ -320,22 +303,6 @@ export function MenuResponse({
                 value={response.mediaUrl || ''}
                 onValueChange={(value) => onChange({ ...response, mediaUrl: value })}
                 placeholder="输入媒体文件的 URL..."
-                type="url"
-                isInvalid={response.mediaUrl ? !isValidUrl(response.mediaUrl) : false}
-                errorMessage={
-                  response.mediaUrl && !isValidUrl(response.mediaUrl) 
-                    ? "请输入有效的URL地址" 
-                    : type === ResponseType.PHOTO && response.mediaUrl && !isValidImageUrl(response.mediaUrl)
-                      ? "请输入有效的图片URL（支持jpg、jpeg、png、gif、webp格式）"
-                      : ""
-                }
-                description={
-                  type === ResponseType.PHOTO 
-                    ? "支持 JPEG、PNG、GIF、WEBP 等格式"
-                    : type === ResponseType.VIDEO
-                      ? "支持 MP4、AVI、MOV 等常见视频格式"
-                      : "支持各类文档格式"
-                }
                 variant="bordered"
                 radius="sm"
                 classNames={{
@@ -344,64 +311,29 @@ export function MenuResponse({
                 }}
                 startContent={
                   <div className="pointer-events-none flex items-center">
-                    {type === ResponseType.PHOTO ? (
-                      <Image className="text-default-400 h-4 w-4" />
-                    ) : type === ResponseType.VIDEO ? (
-                      <Video className="text-default-400 h-4 w-4" />
-                    ) : (
-                      <FileText className="text-default-400 h-4 w-4" />
-                    )}
+                    <FileText className="text-default-400 h-4 w-4" />
                   </div>
                 }
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">说明文本</label>
-              <Input
+              <textarea
                 value={response.caption || ''}
-                onValueChange={(value) => onChange({ ...response, caption: value })}
+                onChange={(e) => onChange({ ...response, caption: e.target.value })}
+                className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2"
                 placeholder="输入媒体说明文本..."
-                maxLength={1024}
-                description={`${response.caption?.length || 0}/1024 字符`}
-                variant="bordered"
-                radius="sm"
-                classNames={{
-                  input: "text-sm",
-                  inputWrapper: "h-10"
-                }}
-                isInvalid={response.caption ? response.caption.length > 1024 : false}
-                errorMessage={
-                  response.caption && response.caption.length > 1024 
-                    ? "说明文本不能超过1024个字符" 
-                    : ""
-                }
               />
             </div>
-            {response.mediaUrl && isValidUrl(response.mediaUrl) && (
+            {response.mediaUrl && (
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
                 <label className="text-sm font-medium">预览</label>
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden">
-                  {type === ResponseType.PHOTO && isValidImageUrl(response.mediaUrl) && (
-                    <NextImage
+                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                  {type === ResponseType.PHOTO && (
+                    <img
                       src={response.mediaUrl}
                       alt={response.caption || '预览图片'}
-                      classNames={{
-                        wrapper: "w-full h-full",
-                        img: "w-full h-full object-contain"
-                      }}
-                      radius="lg"
-                      shadow="sm"
-                      isBlurred
-                      isZoomed
-                      disableSkeleton={false}
-                      loading="lazy"
-                      onError={() => {
-                        // 图片加载失败时的处理
-                        onChange({
-                          ...response,
-                          mediaUrl: ""
-                        });
-                      }}
+                      className="max-h-full rounded-lg object-contain"
                     />
                   )}
                   {type === ResponseType.VIDEO && (

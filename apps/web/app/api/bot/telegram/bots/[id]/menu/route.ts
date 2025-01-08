@@ -13,7 +13,8 @@ interface MenuItemInput {
 }
 
 const RESPONSE_TYPE_GROUPS = {
-  BASIC: [ResponseType.TEXT, ResponseType.MARKDOWN, ResponseType.HTML, ResponseType.PHOTO, ResponseType.VIDEO, ResponseType.DOCUMENT] as ResponseType[],
+  BASIC: [ResponseType.TEXT, ResponseType.MARKDOWN, ResponseType.HTML] as ResponseType[],
+  MEDIA: [ResponseType.PHOTO, ResponseType.VIDEO, ResponseType.DOCUMENT] as ResponseType[],
   INTERACTIVE: [ResponseType.INLINE_BUTTONS, ResponseType.KEYBOARD] as ResponseType[]
 } as const;
 
@@ -24,29 +25,13 @@ function validateResponseTypes(types: ResponseType[]): { valid: boolean; message
   }
 
   const basicTypes = types.filter(type => RESPONSE_TYPE_GROUPS.BASIC.includes(type));
+  const mediaTypes = types.filter(type => RESPONSE_TYPE_GROUPS.MEDIA.includes(type));
   const interactiveTypes = types.filter(type => RESPONSE_TYPE_GROUPS.INTERACTIVE.includes(type));
 
-  // 检查基础类型
-  if (basicTypes.length === 0) {
-    return { valid: false, message: '必须包含至少一种基础类型' };
-  }
-
-  // 检查交互类型
-  if (interactiveTypes.length > 1) {
-    return { valid: false, message: '交互类型只能选择其中一种' };
-  }
-
-  // 检查文本类型互斥
-  const textTypes = types.filter(type => [ResponseType.TEXT, ResponseType.MARKDOWN, ResponseType.HTML].includes(type));
-  if (textTypes.length > 1) {
-    return { valid: false, message: '文本类型(纯文本、Markdown、HTML)只能选择其中一种' };
-  }
-
-  // 检查媒体类型互斥
-  const mediaTypes = types.filter(type => [ResponseType.PHOTO, ResponseType.VIDEO, ResponseType.DOCUMENT].includes(type));
-  if (mediaTypes.length > 1) {
-    return { valid: false, message: '媒体类型(图片、视频、文档)只能选择其中一种' };
-  }
+  if (basicTypes.length > 1) return { valid: false, message: '基础类型只能选择其中一种' };
+  if (mediaTypes.length > 1) return { valid: false, message: '媒体类型只能选择其中一种' };
+  if (interactiveTypes.length > 1) return { valid: false, message: '交互类型只能选择其中一种' };
+  if (basicTypes.length === 0) return { valid: false, message: '必须包含至少一种基础类型' };
 
   return { valid: true };
 }
@@ -121,38 +106,6 @@ export async function GET(
   }
 }
 
-// 构建响应对象
-function buildResponseData(response?: CommandResponse): CommandResponse {
-  const isMediaType = response?.types?.some(type => 
-    [ResponseType.PHOTO, ResponseType.VIDEO, ResponseType.DOCUMENT].includes(type)
-  );
-
-  const baseResponse = {
-    types: response?.types || [],
-    content: isMediaType ? '' : (response?.content || ''),
-  };
-
-  if (isMediaType) {
-    return {
-      ...baseResponse,
-      mediaUrl: response?.mediaUrl || '',
-      caption: response?.caption || '',
-      ...(response?.buttons && { buttons: response.buttons }),
-      ...(response?.parseMode && { parseMode: response.parseMode }),
-    };
-  }
-
-  return {
-    ...baseResponse,
-    ...(response?.buttons && { buttons: response.buttons }),
-    ...(response?.parseMode && { parseMode: response.parseMode }),
-    ...(response?.inputPlaceholder && { inputPlaceholder: response.inputPlaceholder }),
-    ...(response?.resizeKeyboard !== undefined && { resizeKeyboard: response.resizeKeyboard }),
-    ...(response?.oneTimeKeyboard !== undefined && { oneTimeKeyboard: response.oneTimeKeyboard }),
-    ...(response?.selective !== undefined && { selective: response.selective })
-  };
-}
-
 // 更新单个菜单项
 export async function POST(
   request: Request,
@@ -175,10 +128,7 @@ export async function POST(
     }
 
     await session.withTransaction(async () => {
-      const bot = await BotModel.findById(params.id)
-        .session(session)
-        .read('primary');  // 强制使用主节点读取
-        
+      const bot = await BotModel.findById(params.id).session(session);
       if (!bot) throw new Error('BOT_NOT_FOUND');
 
       if (!body.command?.match(/^\/[a-z0-9_]{1,31}$/)) {
@@ -194,9 +144,8 @@ export async function POST(
 
       if (existingMenuIndex !== -1) throw new Error('COMMAND_EXISTS');
 
-      const responseData = buildResponseData(body.response);
-
       if (body.id) {
+        // 更新现有菜单项
         const updateResult = await BotModel.findOneAndUpdate(
           { 
             _id: params.id,
@@ -206,46 +155,53 @@ export async function POST(
             $set: {
               'menus.$.text': body.text,
               'menus.$.command': body.command.toLowerCase(),
-              'menus.$.response': responseData
+              'menus.$.response': {
+                types: body.response?.types || [],
+                content: body.response?.content || '',
+                ...(body.response?.buttons && { buttons: body.response.buttons }),
+                ...(body.response?.parseMode && { parseMode: body.response.parseMode })
+              }
             }
           },
-          { 
-            new: true, 
-            session,
-            readPreference: 'primary'  // 强制使用主节点读取
-          }
+          { new: true, session }
         );
         
         if (!updateResult) throw new Error('MENU_NOT_FOUND');
         updatedMenu = updateResult.menus.find(m => m?._id?.toString() === body.id);
       } else {
+        // 创建新菜单项
         const newMenu: MenuItem = {
           _id: new Types.ObjectId(),
           text: body.text,
           command: body.command.toLowerCase(),
-          response: responseData,
+          response: {
+            types: body.response?.types || [ResponseType.TEXT],
+            content: body.response?.content || '',
+            ...(body.response?.buttons && { buttons: body.response.buttons }),
+            ...(body.response?.parseMode && { parseMode: body.response.parseMode })
+          },
           order: bot.menus.length
         };
         
         await BotModel.findByIdAndUpdate(
           params.id,
           { $push: { menus: newMenu } },
-          { 
-            session,
-            readPreference: 'primary'  // 强制使用主节点读取
-          }
+          { session }
         );
         
         updatedMenu = newMenu;
       }
 
+      // 异步同步到 Telegram
       setImmediate(() => syncToTelegram(bot.token, bot.menus));
+
       return updatedMenu;
     }, {
-      readPreference: 'primary'  // 设置事务的读取首选项
+      readPreference: 'primary',
+      readConcern: { level: 'local' },
+      writeConcern: { w: 'majority' }
     });
 
-    await session.endSession();  // 确保会话被正确关闭
     return NextResponse.json({ 
       success: true, 
       data: updatedMenu,
@@ -253,7 +209,7 @@ export async function POST(
     });
   } catch (error) {
     console.error('处理菜单项失败:', error);
-    await session.endSession();  // 确保错误时也关闭会话
+    await session.endSession();
 
     const errorMessages = {
       'BOT_NOT_FOUND': { message: '机器人不存在', status: 404 },
