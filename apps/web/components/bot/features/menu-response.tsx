@@ -382,24 +382,14 @@ export function MenuResponse({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">内联按钮配置</label>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  className={cn(
-                    "px-3 py-1.5 rounded-md text-sm",
-                    "bg-muted text-muted-foreground",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    "cursor-pointer transition-colors"
-                  )}
-                  onClick={addRow}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      addRow();
-                    }
-                  }}
+                <Button
+                  size="sm"
+                  variant="light"
+                  onPress={addRow}
+                  className="text-sm"
                 >
                   添加按钮行
-                </div>
+                </Button>
               </div>
               <div className="space-y-2">
                 {buttons.map((row, rowIndex) => (
@@ -407,29 +397,15 @@ export function MenuResponse({
                     <div className="flex-1 flex items-center gap-2">
                       {row.map((button, buttonIndex) => (
                         <div key={buttonIndex} className="flex-1">
-                          <div
-                            role="button"
-                            tabIndex={0}
-                            className={cn(
-                              "w-full flex items-center px-4 py-2 rounded-md",
-                              "bg-background border border-input",
-                              "hover:bg-accent hover:text-accent-foreground",
-                              "cursor-pointer transition-colors"
-                            )}
-                            onClick={() => setEditingButton({
+                          <Button
+                            size="sm"
+                            variant="light"
+                            className="w-full flex items-center justify-start"
+                            onPress={() => setEditingButton({
                               rowIndex,
                               buttonIndex,
                               button
                             })}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                setEditingButton({
-                                  rowIndex,
-                                  buttonIndex,
-                                  button
-                                });
-                              }
-                            }}
                           >
                             {button.text || '未命名按钮'}
                             {button.type === 'url' && (
@@ -442,28 +418,18 @@ export function MenuResponse({
                                 ⚡
                               </span>
                             )}
-                          </div>
+                          </Button>
                         </div>
                       ))}
                       {row.length < 5 && (
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          className={cn(
-                            "px-3 py-1.5 rounded-md text-sm",
-                            "bg-muted text-muted-foreground",
-                            "hover:bg-accent hover:text-accent-foreground",
-                            "cursor-pointer transition-colors"
-                          )}
-                          onClick={() => addButtonToRow(rowIndex)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              addButtonToRow(rowIndex);
-                            }
-                          }}
+                        <Button
+                          size="sm"
+                          variant="light"
+                          onPress={() => addButtonToRow(rowIndex)}
+                          className="text-sm"
                         >
                           添加按钮
-                        </div>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -595,24 +561,14 @@ export function MenuResponse({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">自定义键盘配置</label>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  className={cn(
-                    "px-3 py-1.5 rounded-md text-sm",
-                    "bg-muted text-muted-foreground",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    "cursor-pointer transition-colors"
-                  )}
-                  onClick={addRow}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      addRow();
-                    }
-                  }}
+                <Button
+                  size="sm"
+                  variant="light"
+                  onPress={addRow}
+                  className="text-sm"
                 >
                   添加按钮行
-                </div>
+                </Button>
               </div>
               <div className="space-y-2">
                 {buttons.map((row, rowIndex) => (
@@ -620,29 +576,15 @@ export function MenuResponse({
                     <div className="flex-1 flex items-center gap-2">
                       {row.map((button, buttonIndex) => (
                         <div key={buttonIndex} className="flex-1">
-                          <div
-                            role="button"
-                            tabIndex={0}
-                            className={cn(
-                              "w-full flex items-center px-4 py-2 rounded-md",
-                              "bg-background border border-input",
-                              "hover:bg-accent hover:text-accent-foreground",
-                              "cursor-pointer transition-colors"
-                            )}
-                            onClick={() => setEditingButton({
+                          <Button
+                            size="sm"
+                            variant="light"
+                            className="w-full flex items-center justify-start"
+                            onPress={() => setEditingButton({
                               rowIndex,
                               buttonIndex,
                               button
                             })}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                setEditingButton({
-                                  rowIndex,
-                                  buttonIndex,
-                                  button
-                                });
-                              }
-                            }}
                           >
                             {button.text || '未命名按钮'}
                             {button.type === 'url' && (
@@ -655,28 +597,18 @@ export function MenuResponse({
                                 ⚡
                               </span>
                             )}
-                          </div>
+                          </Button>
                         </div>
                       ))}
                       {row.length < 5 && (
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          className={cn(
-                            "px-3 py-1.5 rounded-md text-sm",
-                            "bg-muted text-muted-foreground",
-                            "hover:bg-accent hover:text-accent-foreground",
-                            "cursor-pointer transition-colors"
-                          )}
-                          onClick={() => addButtonToRow(rowIndex)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              addButtonToRow(rowIndex);
-                            }
-                          }}
+                        <Button
+                          size="sm"
+                          variant="light"
+                          onPress={() => addButtonToRow(rowIndex)}
+                          className="text-sm"
                         >
                           添加按钮
-                        </div>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -1044,7 +976,7 @@ export function MenuResponse({
             <Button
               color="primary"
               isLoading={isTesting}
-              onClick={onTest}
+              onPress={onTest}
               className="min-w-[120px]"
             >
               {isTesting ? '测试中...' : '测试响应'}
@@ -1132,36 +1064,16 @@ export function MenuResponse({
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label="取消编辑按钮"
-                className={cn(
-                  "px-4 py-2 rounded-md",
-                  "bg-background text-foreground border border-input",
-                  "hover:bg-accent hover:text-accent-foreground",
-                  "cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
-                )}
-                onClick={() => setEditingButton(null)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    setEditingButton(null);
-                  }
-                }}
+              <Button
+                variant="light"
+                onPress={() => setEditingButton(null)}
+                className="bg-background text-foreground border border-input"
               >
                 取消
-              </div>
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label="保存按钮设置"
-                className={cn(
-                  "px-4 py-2 rounded-md",
-                  "bg-primary text-primary-foreground",
-                  "hover:bg-primary/90",
-                  "cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
-                )}
-                onClick={() => {
+              </Button>
+              <Button
+                color="primary"
+                onPress={() => {
                   updateButton(
                     editingButton.rowIndex,
                     editingButton.buttonIndex,
@@ -1169,19 +1081,9 @@ export function MenuResponse({
                   );
                   setEditingButton(null);
                 }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    updateButton(
-                      editingButton.rowIndex,
-                      editingButton.buttonIndex,
-                      editingButton.button
-                    );
-                    setEditingButton(null);
-                  }
-                }}
               >
                 保存
-              </div>
+              </Button>
             </div>
           </SheetContent>
         </Sheet>

@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ChevronDown, Loader2, Command, Link, MessageSquare } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@nextui-org/react";
 import { Input } from "@workspace/ui/components/input";
 import {
   Form,
@@ -444,18 +444,20 @@ export function MenuForm({
               {/* 表单操作按钮 */}
               <div className="flex items-center gap-4">
                 <Button 
+                  color="primary"
                   type="submit"
-                  disabled={saving}
+                  isDisabled={saving}
+                  isLoading={saving}
+                  spinner={<Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   className="flex-1"
                 >
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   保存更改
                 </Button>
                 <Button
+                  variant="light"
                   type="button"
-                  variant="outline"
-                  onClick={() => form.reset()}
-                  disabled={saving}
+                  onPress={() => form.reset()}
+                  isDisabled={saving}
                 >
                   重置
                 </Button>
