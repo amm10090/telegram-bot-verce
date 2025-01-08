@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     // 处理回调查询
     if (update.callback_query) {
-      await telegramBot.post('/answerCallbackQuery', {
+      await telegramBot.answerCallbackQuery({
         callback_query_id: update.callback_query.id
       });
       return NextResponse.json({ success: true });

@@ -93,6 +93,19 @@ export class TelegramClient {
   }
 
   /**
+   * 回复回调查询
+   */
+  async answerCallbackQuery(params: {
+    callback_query_id: string;
+    text?: string;
+    show_alert?: boolean;
+    url?: string;
+    cache_time?: number;
+  }) {
+    return this.post('/answerCallbackQuery', params);
+  }
+
+  /**
    * 发送 POST 请求到 Telegram API
    */
   private async post(endpoint: string, body: any) {
