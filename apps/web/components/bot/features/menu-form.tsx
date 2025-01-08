@@ -421,13 +421,13 @@ export function MenuForm({
                             </div>
                           </div>
                         </FormControl>
-                        <FormDescription className="space-y-1">
-                          <p>用于触发此菜单项的命令，必须符合以下规则：</p>
+                        <div className="text-[0.8rem] text-muted-foreground space-y-1">
+                          <div>用于触发此菜单项的命令，必须符合以下规则：</div>
                           <ul className="text-xs list-disc list-inside space-y-1">
                             <li>只能包含小写字母、数字和下划线</li>
                             <li>长度不超过32个字符（含/）</li>
                           </ul>
-                        </FormDescription>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
