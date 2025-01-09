@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { TelegramClient } from "@/lib/telegram";
-import { ResponseType } from "@/types/bot";
+import { ResponseType, Button, CommandResponse } from "@/types/bot";
 import { connectDB } from "@/lib/db";
 import BotModel from "@/models/bot";
 import { isValidObjectId } from "mongoose";
@@ -46,7 +46,12 @@ export async function POST(
       );
     }
 
-    const { command, response, receiverId } = await request.json();
+    const { command, response, receiverId } = await request.json() as {
+      command: string;
+      response: CommandResponse;
+      receiverId: string;
+    };
+    
     if (!receiverId) {
       return NextResponse.json(
         { error: "请提供接收者ID" },
@@ -57,6 +62,33 @@ export async function POST(
     const telegram = new TelegramClient(botToken);
     const chat_id = receiverId;
 
+    // 格式化按钮数据
+    let replyMarkup;
+    if (response.buttons?.buttons) {
+      if (response.types.includes(ResponseType.INLINE_BUTTONS)) {
+        // 内联按钮格式
+        replyMarkup = {
+          inline_keyboard: (response.buttons.buttons as Button[][]).map(row => 
+            row.map((button) => ({
+              text: button.text,
+              ...(button.type === 'url' ? { url: button.value } : { callback_data: button.value })
+            }))
+          )
+        };
+      } else if (response.types.includes(ResponseType.KEYBOARD)) {
+        // 自定义键盘格式
+        replyMarkup = {
+          keyboard: (response.buttons.buttons as Button[][]).map(row => 
+            row.map((button) => ({ text: button.text }))
+          ),
+          resize_keyboard: response.resizeKeyboard ?? true,
+          one_time_keyboard: response.oneTimeKeyboard ?? false,
+          selective: response.selective ?? false,
+          input_field_placeholder: response.inputPlaceholder
+        };
+      }
+    }
+
     for (const type of response.types) {
       try {
         switch (type) {
@@ -65,39 +97,39 @@ export async function POST(
           case ResponseType.HTML:
             await telegram.sendMessage({
               chat_id,
-              text: response.content,
-              parse_mode: response.parseMode,
-              reply_markup: response.buttons
+              text: response.content || '',
+              parse_mode: response.parseMode || undefined,
+              reply_markup: replyMarkup
             });
             break;
 
           case ResponseType.PHOTO:
             await telegram.sendPhoto({
               chat_id,
-              photo: response.mediaUrl,
-              caption: response.caption,
-              parse_mode: response.parseMode,
-              reply_markup: response.buttons
+              photo: response.mediaUrl || '',
+              caption: response.caption || '',
+              parse_mode: response.parseMode || undefined,
+              reply_markup: replyMarkup
             });
             break;
 
           case ResponseType.VIDEO:
             await telegram.sendVideo({
               chat_id,
-              video: response.mediaUrl,
-              caption: response.caption,
-              parse_mode: response.parseMode,
-              reply_markup: response.buttons
+              video: response.mediaUrl || '',
+              caption: response.caption || '',
+              parse_mode: response.parseMode || undefined,
+              reply_markup: replyMarkup
             });
             break;
 
           case ResponseType.DOCUMENT:
             await telegram.sendDocument({
               chat_id,
-              document: response.mediaUrl,
-              caption: response.caption,
-              parse_mode: response.parseMode,
-              reply_markup: response.buttons
+              document: response.mediaUrl || '',
+              caption: response.caption || '',
+              parse_mode: response.parseMode || undefined,
+              reply_markup: replyMarkup
             });
             break;
         }

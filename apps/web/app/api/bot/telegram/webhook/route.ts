@@ -15,7 +15,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import BotModel from '@/models/bot';
 import { connectDB } from '@/lib/db';
 import { TelegramClient } from '@/lib/telegram';
-import { ResponseType } from '@/types/bot';
+import { ResponseType, CommandResponse, MenuItem as TelegramMenuItem } from '@/types/bot';
+
+interface Button {
+  text: string;
+  type: 'url' | 'callback';
+  value: string;
+}
+
+interface ButtonLayout {
+  buttons: Button[][];
+}
+
+interface Response {
+  types: ResponseType[];
+  content?: string;
+  buttons?: ButtonLayout;
+  parseMode?: 'HTML' | 'Markdown';
+  mediaUrl?: string;
+  caption?: string;
+  resizeKeyboard?: boolean;
+  oneTimeKeyboard?: boolean;
+  selective?: boolean;
+  inputPlaceholder?: string;
+}
+
+interface MenuItem {
+  response: Response;
+}
 
 // 定义重试策略
 const RETRY_ATTEMPTS = 3;
@@ -47,11 +74,11 @@ async function handleCallbackQuery(telegramBot: TelegramClient, query: any) {
 }
 
 // 处理命令消息的函数
-async function handleCommand(telegramBot: TelegramClient, message: any, menuItem: any) {
-  if (!menuItem?.response) return;
+async function handleCommand(telegramBot: TelegramClient, message: { chat: { id: number } }, menuItem: TelegramMenuItem) {
+  const response = menuItem.response;
+  if (!response) return;
 
   const chatId = message.chat.id;
-  const response = menuItem.response;
 
   try {
     // 发送"正在输入"状态
@@ -59,6 +86,33 @@ async function handleCommand(telegramBot: TelegramClient, message: any, menuItem
       chat_id: chatId.toString(),
       action: 'typing'
     });
+
+    // 格式化按钮数据
+    let replyMarkup;
+    if (response.buttons?.buttons) {
+      if (response.types.includes(ResponseType.INLINE_BUTTONS)) {
+        // 内联按钮格式
+        replyMarkup = {
+          inline_keyboard: response.buttons.buttons.map((row) => 
+            row.map((button) => ({
+              text: button.text,
+              ...(button.type === 'url' ? { url: button.value } : { callback_data: button.value })
+            }))
+          )
+        };
+      } else if (response.types.includes(ResponseType.KEYBOARD)) {
+        // 自定义键盘格式
+        replyMarkup = {
+          keyboard: response.buttons.buttons.map((row) => 
+            row.map((button) => ({ text: button.text }))
+          ),
+          resize_keyboard: response.resizeKeyboard ?? true,
+          one_time_keyboard: response.oneTimeKeyboard ?? false,
+          selective: response.selective ?? false,
+          input_field_placeholder: response.inputPlaceholder
+        };
+      }
+    }
 
     // 根据响应类型发送不同的消息
     if (response.types.includes(ResponseType.PHOTO) && response.mediaUrl) {
@@ -70,8 +124,8 @@ async function handleCommand(telegramBot: TelegramClient, message: any, menuItem
         chat_id: chatId.toString(),
         photo: response.mediaUrl,
         caption: response.caption || '',
-        parse_mode: response.parseMode,
-        reply_markup: response.buttons
+        parse_mode: response.parseMode || undefined,
+        reply_markup: replyMarkup
       });
     } else if (response.types.includes(ResponseType.VIDEO) && response.mediaUrl) {
       await telegramBot.sendChatAction({
@@ -82,8 +136,8 @@ async function handleCommand(telegramBot: TelegramClient, message: any, menuItem
         chat_id: chatId.toString(),
         video: response.mediaUrl,
         caption: response.caption || '',
-        parse_mode: response.parseMode,
-        reply_markup: response.buttons
+        parse_mode: response.parseMode || undefined,
+        reply_markup: replyMarkup
       });
     } else if (response.types.includes(ResponseType.DOCUMENT) && response.mediaUrl) {
       await telegramBot.sendChatAction({
@@ -94,15 +148,15 @@ async function handleCommand(telegramBot: TelegramClient, message: any, menuItem
         chat_id: chatId.toString(),
         document: response.mediaUrl,
         caption: response.caption || '',
-        parse_mode: response.parseMode,
-        reply_markup: response.buttons
+        parse_mode: response.parseMode || undefined,
+        reply_markup: replyMarkup
       });
     } else {
       await telegramBot.sendMessage({
         chat_id: chatId.toString(),
         text: response.content,
-        parse_mode: response.parseMode,
-        reply_markup: response.buttons
+        parse_mode: response.parseMode || undefined,
+        reply_markup: replyMarkup
       });
     }
   } catch (error) {
