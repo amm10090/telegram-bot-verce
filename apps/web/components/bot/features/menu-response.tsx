@@ -493,6 +493,43 @@ export function MenuResponse({
                     {type === ResponseType.TEXT && (
                       <p className="text-sm whitespace-pre-wrap">{processHtml(previewContent || '')}</p>
                     )}
+                    {(type === ResponseType.INLINE_BUTTONS || type === ResponseType.KEYBOARD) && (
+                      <div className="space-y-2">
+                        {response.content && (
+                          <p className="text-sm whitespace-pre-wrap mb-2">{processHtml(response.content || '')}</p>
+                        )}
+                        {response.buttons?.buttons && (
+                          <div className="space-y-1">
+                            {response.buttons.buttons.map((row, rowIndex) => (
+                              <div key={rowIndex} className="flex items-center gap-1">
+                                {row.map((button, buttonIndex) => (
+                                  <Button
+                                    key={buttonIndex}
+                                    size="sm"
+                                    variant={type === ResponseType.INLINE_BUTTONS ? "light" : "solid"}
+                                    color={type === ResponseType.INLINE_BUTTONS ? "default" : "default"}
+                                    className={cn(
+                                      "flex-1 min-w-0 h-8 px-3",
+                                      type === ResponseType.INLINE_BUTTONS 
+                                        ? "bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700" 
+                                        : "bg-zinc-200 hover:bg-zinc-300",
+                                      "rounded-md"
+                                    )}
+                                    startContent={button.type === 'url' ? (
+                                      <Link className="h-3.5 w-3.5 text-blue-500" />
+                                    ) : button.type === 'callback' ? (
+                                      <Zap className="h-3.5 w-3.5 text-blue-500" />
+                                    ) : null}
+                                  >
+                                    <span className="truncate text-sm text-zinc-800 dark:text-zinc-200">{button.text}</span>
+                                  </Button>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {RESPONSE_TYPE_GROUPS.MEDIA.types.find(t => t.value === type) && (
                       <div className="space-y-2">
                         {response.mediaUrl && (
