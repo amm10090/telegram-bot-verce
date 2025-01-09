@@ -484,87 +484,19 @@ export function MenuResponse({
                 <label className="text-sm font-medium">
                   {type === ResponseType.MARKDOWN ? 'Markdown' : 'HTML'} 内容
                 </label>
-                <Tooltip
-                  content={
-                    <div className="px-2 py-1">
-                      <p className="font-medium text-small">
-                        {type === ResponseType.HTML ? '支持的 HTML 标签' : '支持的 Markdown 语法'}
-                      </p>
-                      <div className="mt-1 text-tiny">
-                        <div className="mb-2">
-                          <p className="font-medium text-foreground">文本样式</p>
-                          {type === ResponseType.HTML ? (
-                            <div className="ml-1 space-y-1 text-default-500">
-                              <p><code>&lt;b&gt;</code> 或 <code>&lt;strong&gt;</code> - <b>粗体</b></p>
-                              <p><code>&lt;i&gt;</code> 或 <code>&lt;em&gt;</code> - <i>斜体</i></p>
-                              <p><code>&lt;u&gt;</code> 或 <code>&lt;ins&gt;</code> - <u>下划线</u></p>
-                              <p><code>&lt;s&gt;</code> 或 <code>&lt;del&gt;</code> - <s>删除线</s></p>
-                              <p><code>&lt;tg-spoiler&gt;</code> - 剧透文本</p>
-                            </div>
-                          ) : (
-                            <div className="ml-1 space-y-1 text-default-500">
-                              <p><code>**文本**</code> 或 <code>__文本__</code> - <b>粗体</b></p>
-                              <p><code>*文本*</code> 或 <code>_文本_</code> - <i>斜体</i></p>
-                              <p><code>__*文本*__</code> - <b><i>粗斜体</i></b></p>
-                              <p><code>~文本~</code> - <s>删除线</s></p>
-                              <p><code>||文本||</code> - 剧透文本</p>
-                            </div>
-                          )}
-                        </div>
-                        <div className="mb-2">
-                          <p className="font-medium text-foreground">链接</p>
-                          {type === ResponseType.HTML ? (
-                            <div className="ml-1 space-y-1 text-default-500">
-                              <p><code>&lt;a href="URL"&gt;</code> - 超链接</p>
-                              <p><code>&lt;a href="tg://user?id=123"&gt;</code> - 用户链接</p>
-                            </div>
-                          ) : (
-                            <div className="ml-1 space-y-1 text-default-500">
-                              <p><code>[文本](URL)</code> - 超链接</p>
-                              <p><code>[文本](tg://user?id=123)</code> - 用户链接</p>
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">代码</p>
-                          {type === ResponseType.HTML ? (
-                            <div className="ml-1 space-y-1 text-default-500">
-                              <p><code>&lt;code&gt;</code> - 内联代码</p>
-                              <p><code>&lt;pre&gt;</code> - 代码块</p>
-                            </div>
-                          ) : (
-                            <div className="ml-1 space-y-1 text-default-500">
-                              <p><code>`代码`</code> - 内联代码</p>
-                              <p><code>```语言\n代码\n```</code> - 代码块</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  }
-                  placement="right"
-                >
-                  <Button 
-                    isIconOnly
-                    variant="light" 
-                    size="sm"
-                    radius="full"
-                    className="text-default-500 hover:text-foreground"
-                  >
-                    <HelpCircle className="h-4 w-4" />
-                  </Button>
-                </Tooltip>
               </div>
-              <textarea
-                value={response.content}
-                onChange={(e) => onChange({ 
-                  ...response, 
-                  content: e.target.value,
-                  parseMode: type === ResponseType.MARKDOWN ? 'Markdown' : 'HTML'
-                })}
-                className="w-full min-h-[150px] font-mono rounded-md border border-input bg-background px-3 py-2"
-                placeholder={`输入 ${type === ResponseType.MARKDOWN ? 'Markdown' : 'HTML'} 内容...`}
-              />
+              <div className="space-y-2">
+                <textarea
+                  value={response.content}
+                  onChange={(e) => onChange({ 
+                    ...response, 
+                    content: e.target.value,
+                    parseMode: type === ResponseType.MARKDOWN ? 'Markdown' : 'HTML'
+                  })}
+                  className="w-full min-h-[150px] font-mono rounded-md border border-input bg-background px-3 py-2"
+                  placeholder={`输入 ${type === ResponseType.MARKDOWN ? 'Markdown' : 'HTML'} 内容...`}
+                />
+              </div>
             </div>
             {renderPreview()}
           </div>
