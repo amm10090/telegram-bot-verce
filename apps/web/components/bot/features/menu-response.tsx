@@ -11,9 +11,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Card, CardBody, CardHeader, Input, Tooltip, Popover, PopoverContent, PopoverTrigger } from "@nextui-org/react";
+import { Button, Card, CardBody, CardHeader, Input, Tooltip, Popover, PopoverContent, PopoverTrigger, Image as NextImage } from "@nextui-org/react";
 import { CommandResponse, ResponseType } from "@/types/bot";
-import { X, ChevronDown, MessageSquare, Hash as Markdown, Code, Image, Video, FileText, Layout, Keyboard, HelpCircle, Link, Zap, User, Plus } from "lucide-react";
+import { X, ChevronDown, MessageSquare, Hash as Markdown, Code, ImageIcon, Video, FileText, Layout, Keyboard, HelpCircle, Link, Zap, User, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Accordion,
@@ -123,7 +123,7 @@ const responseTypes: TypeConfig[] = [
     value: ResponseType.PHOTO, 
     label: '图片',
     description: '发送图片消息',
-    icon: <Image className="h-4 w-4" />
+    icon: <ImageIcon className="h-4 w-4" />
   },
   { 
     value: ResponseType.VIDEO, 
@@ -189,7 +189,7 @@ const RESPONSE_TYPE_GROUPS = {
         value: ResponseType.PHOTO, 
         label: '图片',
         description: '发送图片消息',
-        icon: <Image className="h-4 w-4" />
+        icon: <ImageIcon className="h-4 w-4" />
       },
       { 
         value: ResponseType.VIDEO, 
@@ -497,10 +497,19 @@ export function MenuResponse({
                         {response.mediaUrl && (
                           <div className="relative">
                             {type === ResponseType.PHOTO && (
-                              <img
-                                src={response.mediaUrl}
+                              <NextImage
+                                src={response.mediaUrl || ''}
                                 alt={previewCaption || '预览图片'}
-                                className="max-h-[300px] w-full rounded-lg object-cover"
+                                classNames={{
+                                  wrapper: "max-h-[300px] w-full",
+                                  img: "object-cover rounded-lg"
+                                }}
+                                radius="lg"
+                                isBlurred
+                                isZoomed
+                                loading="lazy"
+                                fallbackSrc="/placeholder-image.jpg"
+                                disableSkeleton={false}
                               />
                             )}
                             {type === ResponseType.VIDEO && (
@@ -508,6 +517,7 @@ export function MenuResponse({
                                 src={response.mediaUrl}
                                 controls
                                 className="max-h-[300px] w-full rounded-lg"
+                                poster="/video-placeholder.jpg"
                               />
                             )}
                             {type === ResponseType.DOCUMENT && (
