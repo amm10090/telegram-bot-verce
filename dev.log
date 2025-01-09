@@ -13,3 +13,7 @@
 3. 改进 API 错误信息格式化
 4. 优化 HTTP 请求错误捕获
 5. 添加请求参数和 URL 日志记录
+
+## 2025-01-09 15:55:12
+1. 修复 TelegramClient sendChatAction 方法的 endpoint 路径错误
+2. 修正 API URL 拼接问题，确保所有 endpoint 以 / 开头

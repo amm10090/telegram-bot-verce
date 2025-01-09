@@ -106,7 +106,7 @@ export class TelegramClient {
   }
 
   async sendChatAction(params: { chat_id: string; action: 'typing' | 'upload_photo' | 'upload_video' | 'upload_document' }) {
-    return this.post('sendChatAction', params);
+    return this.post('/sendChatAction', params);
   }
 
   /**
