@@ -317,6 +317,37 @@ export function MenuResponse({
    * @param type 响应类型
    */
   const renderContentEditor = (type: ResponseType) => {
+    const processHtml = (text: string) => {
+      if (!text) return '';
+      
+      // 处理代码块
+      text = text.replace(/<pre><code(?:\s+class="language-(\w+)")?>(.*?)<\/code><\/pre>/gs, (match, lang, code) => {
+        // 处理 Python 代码高亮
+        if (lang === 'python') {
+          return `<pre><code class="language-python">${code
+            .replace(/\b(def|class|return|import|from|as|if|else|elif|for|while|try|except|finally|with|in|is|not|and|or|True|False|None)\b/g, '<span class="keyword">$1</span>')
+            .replace(/(?<=def\s+)(\w+)(?=\s*\()/g, '<span class="function">$1</span>')
+            .replace(/"([^"]*)"|\\'([^']*)\\'|'([^']*)'/g, '<span class="string">$1$2$3</span>')
+            .replace(/\b(True|False)\b/g, '<span class="boolean">$1</span>')
+            .replace(/(?<!["\'])\b\d+(\.\d+)?\b/g, '<span class="number">$&</span>')
+            .replace(/#.*/g, '<span class="comment">$&</span>')}</code></pre>`;
+        }
+        return `<pre><code>${code}</code></pre>`;
+      });
+
+      // 处理其他 HTML
+      return text
+        // 处理行内代码
+        .replace(/<code>(.*?)<\/code>/g, '<span class="inline-code">$1</span>')
+        // 处理剧透
+        .replace(/<(tg-spoiler|span class="tg-spoiler")>(.*?)<\/(tg-spoiler|span)>/g, '<span class="spoiler">$2</span>')
+        // 处理列表
+        .replace(/^[•◦]\s+(.*)$/gm, '<span class="list-item">$1</span>')
+        .replace(/^\d+\.\s+(.*)$/gm, '<span class="list-item">$1</span>')
+        // 保持其他 HTML 标签不变
+        .replace(/\n/g, '<br/>');
+    };
+
     const renderPreview = () => {
       let previewContent = response.content;
       let previewCaption = response.caption;
@@ -365,6 +396,14 @@ export function MenuResponse({
         }
       }
 
+      // 处理 HTML 格式
+      if (response.types.includes(ResponseType.HTML)) {
+        previewContent = processHtml(previewContent);
+        if (previewCaption) {
+          previewCaption = processHtml(previewCaption);
+        }
+      }
+
       return (
         <div className="space-y-4 mt-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -372,7 +411,7 @@ export function MenuResponse({
             <span>预览效果</span>
             <Badge variant="secondary" className="h-5 px-1.5 text-xs font-normal">Telegram 预览</Badge>
           </div>
-          <Card className="bg-muted/30">
+          <Card className="bg-muted/50">
             <CardBody>
               <div className="flex items-start gap-3">
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -383,6 +422,43 @@ export function MenuResponse({
                     <span className="font-medium">Bot Name</span>
                   </div>
                   <div className="space-y-2">
+                    {type === ResponseType.HTML && (
+                      <div 
+                        className={cn(
+                          "text-sm leading-normal",
+                          "font-normal text-foreground",
+                          "[&_b]:font-semibold [&_strong]:font-semibold",
+                          "[&_i]:italic [&_em]:italic",
+                          "[&_u]:underline [&_ins]:underline",
+                          "[&_s]:line-through [&_del]:line-through [&_strike]:line-through",
+                          // 暗色模式
+                          "dark:[&_pre]:bg-[#1e1e1e] dark:[&_pre_code]:text-[#d4d4d4]",
+                          "dark:[&_pre_.keyword]:text-[#569cd6] dark:[&_pre_.function]:text-[#dcdcaa]",
+                          "dark:[&_pre_.string]:text-[#ce9178] dark:[&_pre_.boolean]:text-[#569cd6]",
+                          "dark:[&_pre_.number]:text-[#b5cea8] dark:[&_pre_.comment]:text-[#6a9955]",
+                          "dark:[&_.inline-code]:bg-[#1e1e1e] dark:[&_.inline-code]:text-[#d4d4d4]",
+                          // 亮色模式
+                          "light:[&_pre]:bg-[#f5f5f5] light:[&_pre_code]:text-[#24292e]",
+                          "light:[&_pre_.keyword]:text-[#d73a49] light:[&_pre_.function]:text-[#6f42c1]",
+                          "light:[&_pre_.string]:text-[#032f62] light:[&_pre_.boolean]:text-[#005cc5]",
+                          "light:[&_pre_.number]:text-[#005cc5] light:[&_pre_.comment]:text-[#6a737d]",
+                          "light:[&_.inline-code]:bg-[#f6f8fa] light:[&_.inline-code]:text-[#24292e]",
+                          // 通用样式
+                          "[&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-3 [&_pre]:shadow-sm [&_pre]:border [&_pre]:border-border/50",
+                          "[&_pre_code]:block [&_pre_code]:font-mono [&_pre_code]:text-[14px] [&_pre_code]:leading-[1.6]",
+                          "[&_pre_.keyword]:font-medium [&_pre_.comment]:italic",
+                          "[&_.inline-code]:font-mono [&_.inline-code]:px-2 [&_.inline-code]:py-1 [&_.inline-code]:rounded-md [&_.inline-code]:text-[14px] [&_.inline-code]:whitespace-nowrap [&_.inline-code]:border [&_.inline-code]:border-border/50",
+                          "[&_.spoiler]:bg-muted-foreground/20 [&_.spoiler]:hover:bg-transparent [&_.spoiler]:transition-colors",
+                          "[&_a]:text-blue-500 [&_a]:no-underline hover:[&_a]:underline",
+                          "[&_blockquote]:border-l-4 [&_blockquote]:border-muted-foreground/30 [&_blockquote]:pl-4 [&_blockquote]:py-2 [&_blockquote]:my-3",
+                          "[&_ul]:pl-6 [&_ol]:pl-6 [&_li]:my-1",
+                          "whitespace-pre-wrap break-words"
+                        )}
+                        dangerouslySetInnerHTML={{ 
+                          __html: DOMPurify.sanitize(processHtml(previewContent || ''))
+                        }}
+                      />
+                    )}
                     {type === ResponseType.MARKDOWN && (
                       <div 
                         className={cn(
@@ -395,20 +471,12 @@ export function MenuResponse({
                           "[&_li]:my-0"
                         )}
                         dangerouslySetInnerHTML={{ 
-                          __html: DOMPurify.sanitize(previewContent || '') 
-                        }}
-                      />
-                    )}
-                    {type === ResponseType.HTML && (
-                      <div 
-                        className="prose prose-sm dark:prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ 
-                          __html: DOMPurify.sanitize(previewContent || '')
+                          __html: DOMPurify.sanitize(processHtml(previewContent || ''))
                         }}
                       />
                     )}
                     {type === ResponseType.TEXT && (
-                      <p className="text-sm whitespace-pre-wrap">{previewContent}</p>
+                      <p className="text-sm whitespace-pre-wrap">{processHtml(previewContent || '')}</p>
                     )}
                     {RESPONSE_TYPE_GROUPS.MEDIA.types.find(t => t.value === type) && (
                       <div className="space-y-2">
