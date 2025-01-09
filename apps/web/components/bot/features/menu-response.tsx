@@ -245,6 +245,7 @@ export function MenuResponse({
   const [activeType, setActiveType] = useState<ResponseType | null>(
     response?.types?.[0] || null
   );
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   // 获取当前按钮布局
   const buttons = response?.buttons?.buttons || [[]];
@@ -603,26 +604,91 @@ export function MenuResponse({
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">媒体 URL</label>
-              <Input
-                value={response.mediaUrl || ''}
-                onValueChange={(value) => onChange({ 
-                  ...response, 
-                  mediaUrl: value,
-                  types: [type]  // 确保设置正确的响应类型
-                })}
-                placeholder="输入媒体文件的 URL..."
-                variant="bordered"
-                radius="sm"
-                classNames={{
-                  input: "text-sm",
-                  inputWrapper: "h-10"
-                }}
-                startContent={
-                  <div className="pointer-events-none flex items-center">
-                    <FileText className="text-default-400 h-4 w-4" />
-                  </div>
-                }
-              />
+              {type === ResponseType.PHOTO && (
+                <div className="space-y-2">
+                  <Input
+                    value={response.mediaUrl || ''}
+                    onValueChange={(value) => {
+                      // 验证URL格式
+                      const isValidUrl = (url: string) => {
+                        try {
+                          new URL(url);
+                          return true;
+                        } catch {
+                          return false;
+                        }
+                      };
+
+                      // 验证图片URL
+                      const isImageUrl = async (url: string) => {
+                        // 如果URL为空，不进行验证
+                        if (!url) return true;
+                        
+                        // 先验证URL格式
+                        if (!isValidUrl(url)) return false;
+
+                        // 更新状态，清除之前的错误
+                        onChange({ 
+                          ...response, 
+                          mediaUrl: value,
+                          types: [type]
+                        });
+                        setUrlError(null);
+
+                        // 如果URL无效，显示错误
+                        if (!isValidUrl(value)) {
+                          setUrlError('URL格式无效');
+                          return;
+                        }
+                      };
+
+                      // 更新状态
+                      onChange({ 
+                        ...response, 
+                        mediaUrl: value,
+                        types: [type]
+                      });
+                    }}
+                    placeholder="输入媒体文件的 URL..."
+                    variant="bordered"
+                    radius="sm"
+                    isInvalid={!!urlError}
+                    errorMessage={urlError}
+                    classNames={{
+                      input: "text-sm",
+                      inputWrapper: "h-10",
+                      errorMessage: "text-xs text-danger"
+                    }}
+                    startContent={
+                      <div className="pointer-events-none flex items-center">
+                        <FileText className="text-default-400 h-4 w-4" />
+                      </div>
+                    }
+                  />
+                </div>
+              )}
+              {type !== ResponseType.PHOTO && (
+                <Input
+                  value={response.mediaUrl || ''}
+                  onValueChange={(value) => onChange({ 
+                    ...response, 
+                    mediaUrl: value,
+                    types: [type]
+                  })}
+                  placeholder="输入媒体文件的 URL..."
+                  variant="bordered"
+                  radius="sm"
+                  classNames={{
+                    input: "text-sm",
+                    inputWrapper: "h-10"
+                  }}
+                  startContent={
+                    <div className="pointer-events-none flex items-center">
+                      <FileText className="text-default-400 h-4 w-4" />
+                    </div>
+                  }
+                />
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">说明文本</label>
