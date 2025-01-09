@@ -45,15 +45,17 @@ marked.setOptions({
 
 /**
  * 按钮配置接口
+ * 定义了按钮的基本属性结构
  */
 interface Button {
   text: string;           // 按钮文本
   type: 'url' | 'callback';  // 按钮类型：链接或回调
-  value: string;          // 按钮值
+  value: string;          // 按钮值：URL或回调数据
 }
 
 /**
  * 按钮布局接口
+ * 使用二维数组表示按钮的行列布局
  */
 interface ButtonLayout {
   buttons: Button[][];    // 二维数组，表示按钮的行列布局
@@ -61,6 +63,7 @@ interface ButtonLayout {
 
 /**
  * 响应组件属性接口
+ * 定义了组件所需的所有配置项
  */
 interface ResponseProps {
   response: {
@@ -84,6 +87,7 @@ interface ResponseProps {
 
 /**
  * 响应类型配置接口
+ * 定义了每种响应类型的展示信息
  */
 interface TypeConfig {
   value: ResponseType;    // 响应类型值
@@ -147,7 +151,8 @@ const responseTypes: TypeConfig[] = [
   },
 ];
 
-// 响应类型分组
+// 响应类型分组配置
+// 将不同类型的响应按功能分组，便于用户选择
 const RESPONSE_TYPE_GROUPS = {
   TEXT: {
     label: '文本消息',
@@ -219,6 +224,10 @@ const RESPONSE_TYPE_GROUPS = {
   }
 } as const;
 
+/**
+ * 菜单响应组件
+ * 用于配置和预览机器人的各种响应类型
+ */
 export function MenuResponse({ 
   response, 
   onChange, 
@@ -250,6 +259,7 @@ export function MenuResponse({
 
   /**
    * 添加新的按钮行
+   * 在现有按钮布局中添加一个新的空行
    */
   const addRow = () => {
     const newButtons = [...buttons, []];
@@ -317,6 +327,10 @@ export function MenuResponse({
    * @param type 响应类型
    */
   const renderContentEditor = (type: ResponseType) => {
+    /**
+     * 处理HTML内容
+     * 添加语法高亮和格式化
+     */
     const processHtml = (text: string) => {
       if (!text) return '';
       
@@ -335,19 +349,19 @@ export function MenuResponse({
         return `<pre><code>${code}</code></pre>`;
       });
 
-      // 处理其他 HTML
+      // 处理其他 HTML 标签和格式
       return text
-        // 处理行内代码
         .replace(/<code>(.*?)<\/code>/g, '<span class="inline-code">$1</span>')
-        // 处理剧透
         .replace(/<(tg-spoiler|span class="tg-spoiler")>(.*?)<\/(tg-spoiler|span)>/g, '<span class="spoiler">$2</span>')
-        // 处理列表
         .replace(/^[•◦]\s+(.*)$/gm, '<span class="list-item">$1</span>')
         .replace(/^\d+\.\s+(.*)$/gm, '<span class="list-item">$1</span>')
-        // 保持其他 HTML 标签不变
         .replace(/\n/g, '<br/>');
     };
 
+    /**
+     * 渲染预览内容
+     * 根据不同的响应类型展示预览效果
+     */
     const renderPreview = () => {
       let previewContent = response.content;
       let previewCaption = response.caption;
@@ -445,9 +459,9 @@ export function MenuResponse({
                           "light:[&_.inline-code]:bg-[#f6f8fa] light:[&_.inline-code]:text-[#24292e]",
                           // 通用样式
                           "[&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-3 [&_pre]:shadow-sm [&_pre]:border [&_pre]:border-border/50",
-                          "[&_pre_code]:block [&_pre_code]:font-mono [&_pre_code]:text-[14px] [&_pre_code]:leading-[1.6]",
+                          "[&_pre_code]:block [&_pre_code]:font-mono [&_pre_code]:text-[14px] [&_pre_code]:leading-[1.6] [&_pre_code]:whitespace-pre-wrap [&_pre_code]:break-all",
                           "[&_pre_.keyword]:font-medium [&_pre_.comment]:italic",
-                          "[&_.inline-code]:font-mono [&_.inline-code]:px-2 [&_.inline-code]:py-1 [&_.inline-code]:rounded-md [&_.inline-code]:text-[14px] [&_.inline-code]:whitespace-nowrap [&_.inline-code]:border [&_.inline-code]:border-border/50",
+                          "[&_.inline-code]:font-mono [&_.inline-code]:px-2 [&_.inline-code]:py-1 [&_.inline-code]:rounded-md [&_.inline-code]:text-[14px] [&_.inline-code]:whitespace-normal [&_.inline-code]:break-all [&_.inline-code]:border [&_.inline-code]:border-border/50",
                           "[&_.spoiler]:bg-muted-foreground/20 [&_.spoiler]:hover:bg-transparent [&_.spoiler]:transition-colors",
                           "[&_a]:text-blue-500 [&_a]:no-underline hover:[&_a]:underline",
                           "[&_blockquote]:border-l-4 [&_blockquote]:border-muted-foreground/30 [&_blockquote]:pl-4 [&_blockquote]:py-2 [&_blockquote]:my-3",
@@ -527,6 +541,7 @@ export function MenuResponse({
       );
     };
 
+    // 根据不同的响应类型渲染对应的编辑器
     switch (type) {
       case ResponseType.TEXT:
         return (
@@ -850,9 +865,11 @@ export function MenuResponse({
     );
   };
 
+  // 渲染主组件
   return (
-    <div className="space-y-6">
-      <Card className="shadow-sm">
+    <div className="w-full space-y-6">
+      {/* 响应类型选择卡片 */}
+      <Card className="w-full shadow-sm">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div>
@@ -871,8 +888,9 @@ export function MenuResponse({
         </CardBody>
       </Card>
 
+      {/* 响应配置卡片 */}
       {response.types && response.types.length > 0 && (
-        <Card className="shadow-sm">
+        <Card className="w-full shadow-sm">
           <CardHeader className="pb-2">
             <h3 className="text-base font-medium">响应配置</h3>
             <p className="text-sm text-default-500">
@@ -1037,7 +1055,7 @@ export function MenuResponse({
         </Card>
       )}
 
-      <Card className="shadow-sm">
+      <Card className="w-full shadow-sm">
         <CardHeader className="pb-2">
           <h3 className="text-base font-medium">测试响应</h3>
           <p className="text-sm text-default-500">
@@ -1077,9 +1095,10 @@ export function MenuResponse({
         </CardBody>
       </Card>
 
+      {/* 按钮编辑弹出层 */}
       {editingButton && (
         <Sheet open={!!editingButton} onOpenChange={() => setEditingButton(null)}>
-          <SheetContent className="sm:max-w-[600px]">
+          <SheetContent className="w-full max-w-[100vw] sm:max-w-[90vw] md:max-w-[600px]">
             <SheetHeader>
               <SheetTitle>编辑按钮</SheetTitle>
               <DialogPrimitive.Description className="text-sm text-muted-foreground">
