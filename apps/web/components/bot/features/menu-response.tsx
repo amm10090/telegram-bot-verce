@@ -318,142 +318,128 @@ export function MenuResponse({
    */
   const renderContentEditor = (type: ResponseType) => {
     const renderPreview = () => {
-      const previewContent = response.content || '';
-      const previewCaption = response.caption;
-      const previewButtons = response.buttons?.buttons || [];
-      
+      let previewContent = response.content;
+      let previewCaption = response.caption;
+
+      // 处理 Markdown 格式
+      if (type === ResponseType.MARKDOWN) {
+        // 处理 Telegram 特殊的 Markdown 语法
+        const processMarkdown = (text: string) => {
+          if (!text) return '';
+          return text
+            // 处理粗体
+            .replace(/\*\*(.*?)\*\*|__(.*?)__/g, '<b>$1$2</b>')
+            // 处理斜体
+            .replace(/\*(.*?)\*|_(.*?)_/g, '<i>$1$2</i>')
+            // 处理删除线
+            .replace(/~(.*?)~/g, '<del>$1</del>')
+            // 处理剧透文本
+            .replace(/\|\|(.*?)\|\|/g, '<tg-spoiler>$1</tg-spoiler>')
+            // 处理代码块
+            .replace(/```(.*?)\n(.*?)```/gs, '<pre><code>$2</code></pre>')
+            // 处理行内代码
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            // 处理链接
+            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
+            // 处理用户提及
+            .replace(/@(\w+)/g, '<a href="tg://user?id=$1">@$1</a>')
+            // 处理话题标签
+            .replace(/#(\w+)/g, '<a href="https://t.me/hashtag/$1">#$1</a>')
+            // 处理列表
+            .replace(/^\d+\.\s+(.*)$/gm, '<li>$1</li>')
+            .replace(/^[•\-\*]\s+(.*)$/gm, '<li>$1</li>')
+            // 处理换行
+            .replace(/\n/g, '<br/>');
+        };
+
+        previewContent = processMarkdown(previewContent);
+        if (previewCaption) {
+          previewCaption = processMarkdown(previewCaption);
+        }
+      }
+
       return (
-        <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">预览效果</label>
-            <Badge variant="secondary" className="px-2 py-1 text-xs bg-primary/10 text-primary">
-              Telegram 预览
-            </Badge>
+        <div className="space-y-4 mt-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            <User className="h-4 w-4" />
+            <span>预览效果</span>
+            <Badge variant="secondary" className="h-5 px-1.5 text-xs font-normal">Telegram 预览</Badge>
           </div>
-          <div className="rounded-lg border bg-background">
-            <div className="flex items-start gap-3 p-4">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="h-4 w-4 text-primary" />
-              </div>
-              <div className="flex-1 space-y-4">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">Bot Name</p>
-                  {type === ResponseType.MARKDOWN && (
-                    <div 
-                      className="prose prose-sm dark:prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ 
-                        __html: DOMPurify.sanitize(marked.parse(previewContent || '', { async: false }))
-                      }}
-                    />
-                  )}
-                  {type === ResponseType.HTML && (
-                    <div 
-                      className="prose prose-sm dark:prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ 
-                        __html: DOMPurify.sanitize(previewContent || '')
-                      }}
-                    />
-                  )}
-                  {type === ResponseType.TEXT && (
-                    <p className="text-sm whitespace-pre-wrap">{previewContent}</p>
-                  )}
-                  {RESPONSE_TYPE_GROUPS.MEDIA.types.find(t => t.value === type) && (
-                    <div className="space-y-2">
-                      {response.mediaUrl && (
-                        <div className="relative">
-                          {type === ResponseType.PHOTO && (
-                            <img
-                              src={response.mediaUrl}
-                              alt={previewCaption || '预览图片'}
-                              className="max-h-[300px] w-full rounded-lg object-cover"
-                            />
-                          )}
-                          {type === ResponseType.VIDEO && (
-                            <video
-                              src={response.mediaUrl}
-                              controls
-                              className="max-h-[300px] w-full rounded-lg"
-                            />
-                          )}
-                          {type === ResponseType.DOCUMENT && (
-                            <div className="flex items-center gap-3 p-4 bg-muted/10 rounded-lg">
-                              <div className="h-10 w-10 flex items-center justify-center rounded bg-primary/10">
-                                <FileText className="h-6 w-6 text-primary" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium truncate">
-                                  {response.mediaUrl.split('/').pop() || '文档文件'}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  点击下载文件
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {previewCaption && (
-                        <p className="text-sm text-muted-foreground">{previewCaption}</p>
-                      )}
-                    </div>
-                  )}
+          <Card className="bg-muted/30">
+            <CardBody>
+              <div className="flex items-start gap-3">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-4 w-4 text-primary" />
                 </div>
-                
-                {previewButtons.length > 0 && (
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Bot Name</span>
+                  </div>
                   <div className="space-y-2">
-                    {type === ResponseType.INLINE_BUTTONS ? (
-                      previewButtons.map((row, rowIndex) => (
-                        <div key={rowIndex} className="flex gap-2">
-                          {row.map((button, buttonIndex) => (
-                            <div
-                              key={buttonIndex}
-                              className={cn(
-                                "flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm",
-                                "bg-primary/10 text-primary hover:bg-primary/20 transition-colors",
-                                "cursor-pointer"
-                              )}
-                            >
-                              <span>{button.text}</span>
-                              {button.type === 'url' && (
-                                <Link className="ml-1 h-3 w-3" />
-                              )}
-                              {button.type === 'callback' && (
-                                <Zap className="ml-1 h-3 w-3" />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="space-y-2 bg-muted/10 p-4 rounded-lg">
-                        {previewButtons.map((row, rowIndex) => (
-                          <div key={rowIndex} className="flex gap-2">
-                            {row.map((button, buttonIndex) => (
-                              <div
-                                key={buttonIndex}
-                                className={cn(
-                                  "flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm",
-                                  "bg-background border hover:bg-muted/50 transition-colors",
-                                  "cursor-pointer"
-                                )}
-                              >
-                                <span>{button.text}</span>
+                    {type === ResponseType.MARKDOWN && (
+                      <div 
+                        className="prose prose-sm dark:prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ 
+                          __html: DOMPurify.sanitize(previewContent || '') 
+                        }}
+                      />
+                    )}
+                    {type === ResponseType.HTML && (
+                      <div 
+                        className="prose prose-sm dark:prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ 
+                          __html: DOMPurify.sanitize(previewContent || '')
+                        }}
+                      />
+                    )}
+                    {type === ResponseType.TEXT && (
+                      <p className="text-sm whitespace-pre-wrap">{previewContent}</p>
+                    )}
+                    {RESPONSE_TYPE_GROUPS.MEDIA.types.find(t => t.value === type) && (
+                      <div className="space-y-2">
+                        {response.mediaUrl && (
+                          <div className="relative">
+                            {type === ResponseType.PHOTO && (
+                              <img
+                                src={response.mediaUrl}
+                                alt={previewCaption || '预览图片'}
+                                className="max-h-[300px] w-full rounded-lg object-cover"
+                              />
+                            )}
+                            {type === ResponseType.VIDEO && (
+                              <video
+                                src={response.mediaUrl}
+                                controls
+                                className="max-h-[300px] w-full rounded-lg"
+                              />
+                            )}
+                            {type === ResponseType.DOCUMENT && (
+                              <div className="flex items-center gap-3 p-4 bg-muted/10 rounded-lg">
+                                <div className="h-10 w-10 flex items-center justify-center rounded bg-primary/10">
+                                  <FileText className="h-6 w-6 text-primary" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium truncate">
+                                    {response.mediaUrl.split('/').pop() || '文档文件'}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    点击下载文件
+                                  </div>
+                                </div>
                               </div>
-                            ))}
+                            )}
                           </div>
-                        ))}
-                        {response.inputPlaceholder && (
-                          <div className="mt-2 px-3 py-2 bg-background rounded text-sm text-muted-foreground border">
-                            {response.inputPlaceholder}
-                          </div>
+                        )}
+                        {previewCaption && (
+                          <p className="text-sm text-muted-foreground">{previewCaption}</p>
                         )}
                       </div>
                     )}
                   </div>
-                )}
+                </div>
               </div>
-            </div>
-          </div>
+            </CardBody>
+          </Card>
         </div>
       );
     };
