@@ -595,7 +595,11 @@ export function MenuResponse({
               <label className="text-sm font-medium">媒体 URL</label>
               <Input
                 value={response.mediaUrl || ''}
-                onValueChange={(value) => onChange({ ...response, mediaUrl: value })}
+                onValueChange={(value) => onChange({ 
+                  ...response, 
+                  mediaUrl: value,
+                  types: [type]  // 确保设置正确的响应类型
+                })}
                 placeholder="输入媒体文件的 URL..."
                 variant="bordered"
                 radius="sm"
@@ -614,7 +618,11 @@ export function MenuResponse({
               <label className="text-sm font-medium">说明文本</label>
               <textarea
                 value={response.caption || ''}
-                onChange={(e) => onChange({ ...response, caption: e.target.value })}
+                onChange={(e) => onChange({ 
+                  ...response, 
+                  caption: e.target.value,
+                  types: [type]  // 确保设置正确的响应类型
+                })}
                 className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2"
                 placeholder="输入媒体说明文本..."
               />

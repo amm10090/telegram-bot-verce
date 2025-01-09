@@ -1,31 +1,54 @@
+/**
+ * Telegram Bot 菜单管理 API 路由
+ * 
+ * 该模块提供了以下功能：
+ * - 获取机器人的菜单列表
+ * - 创建/更新菜单项
+ * - 删除菜单项
+ * - 同步菜单到 Telegram
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import BotModel from '@/models/bot';
 import { isValidObjectId, Types } from 'mongoose';
 import { MenuItem, CommandResponse, ResponseType } from '@/types/bot';
 
+/**
+ * 菜单项输入接口
+ * 定义了创建或更新菜单项时需要的数据结构
+ */
 interface MenuItemInput {
-  id?: string;
-  text: string;
-  command: string;
-  response?: CommandResponse;
-  order?: number;
+  id?: string;                // 菜单项ID,更新时必需
+  text: string;               // 菜单项显示文本
+  command: string;            // 菜单命令(以/开头)
+  response?: CommandResponse; // 响应配置
+  order?: number;            // 排序序号
 }
 
-// 响应类型分组定义
+/**
+ * 响应类型分组定义
+ * 将不同类型的响应按功能分组,便于管理和验证
+ */
 const RESPONSE_TYPE_GROUPS = {
-  TEXT: [ResponseType.TEXT] as ResponseType[],
-  FORMATTED: [ResponseType.MARKDOWN, ResponseType.HTML] as ResponseType[],
-  MEDIA: [ResponseType.PHOTO, ResponseType.VIDEO, ResponseType.DOCUMENT] as ResponseType[],
-  INTERACTIVE: [ResponseType.INLINE_BUTTONS, ResponseType.KEYBOARD] as ResponseType[]
+  TEXT: [ResponseType.TEXT] as ResponseType[],                                    // 纯文本
+  FORMATTED: [ResponseType.MARKDOWN, ResponseType.HTML] as ResponseType[],        // 格式化文本
+  MEDIA: [ResponseType.PHOTO, ResponseType.VIDEO, ResponseType.DOCUMENT] as ResponseType[],  // 媒体文件
+  INTERACTIVE: [ResponseType.INLINE_BUTTONS, ResponseType.KEYBOARD] as ResponseType[]        // 交互元素
 } as const;
 
-// 验证响应类型的合法性
+/**
+ * 验证响应类型的合法性
+ * @param types 响应类型数组
+ * @returns 验证结果对象,包含验证状态和错误信息
+ */
 function validateResponseTypes(types: ResponseType[]): { valid: boolean; message?: string } {
+  // 检查是否为空
   if (!Array.isArray(types) || types.length === 0) {
     return { valid: false, message: '请选择一种响应类型' };
   }
 
+  // 检查是否只选择了一种类型
   if (types.length > 1) {
     return { valid: false, message: '只能选择一种主要响应类型' };
   }
@@ -34,7 +57,6 @@ function validateResponseTypes(types: ResponseType[]): { valid: boolean; message
   
   // 验证类型是否在支持的范围内
   const allTypes = Object.values(ResponseType);
-
   if (!allTypes.includes(type)) {
     return { valid: false, message: '不支持的响应类型' };
   }
@@ -42,33 +64,68 @@ function validateResponseTypes(types: ResponseType[]): { valid: boolean; message
   return { valid: true };
 }
 
-// 异步同步到 Telegram
+/**
+ * 同步菜单配置到 Telegram
+ * 使用 Telegram Bot API 更新机器人的命令列表
+ * 
+ * @param token Bot的访问令牌
+ * @param menus 要同步的菜单列表
+ */
 async function syncToTelegram(token: string, menus: MenuItem[]) {
-  try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${token}/setMyCommands`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          commands: menus.map(menu => ({
-            command: menu.command.toLowerCase(),
-            description: menu.text.slice(0, 256)
-          }))
-        }),
-      }
-    );
+  const maxRetries = 3;        // 最大重试次数
+  const retryDelay = 1000;     // 基础重试延迟(毫秒)
 
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('Telegram同步失败:', error);
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(
+        `https://api.telegram.org/bot${token}/setMyCommands`,
+        {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'User-Agent': 'TGBot-WebApp/1.0'
+          },
+          body: JSON.stringify({
+            commands: menus.map(menu => ({
+              command: menu.command.toLowerCase(),
+              description: menu.text.slice(0, 256)  // Telegram 限制描述最长 256 字符
+            }))
+          }),
+          signal: AbortSignal.timeout(5000)  // 5秒超时
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error(`Telegram同步失败 (尝试 ${attempt}/${maxRetries}):`, error);
+        if (attempt === maxRetries) {
+          throw new Error(`Telegram API 错误: ${JSON.stringify(error)}`);
+        }
+      } else {
+        console.log('Telegram同步成功');
+        return;
+      }
+    } catch (error) {
+      console.error(`同步失败 (尝试 ${attempt}/${maxRetries}):`, error);
+      if (attempt === maxRetries) {
+        throw error;
+      }
     }
-  } catch (error) {
-    console.error('Telegram同步请求失败:', error);
+
+    // 在重试之前等待,延迟时间随重试次数增加
+    if (attempt < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+    }
   }
 }
 
-// 获取菜单列表
+/**
+ * GET 处理器 - 获取机器人的菜单列表
+ * 
+ * @param req NextRequest 请求对象
+ * @param params 路由参数,包含机器人ID
+ * @returns 包含菜单列表的 JSON 响应
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -76,6 +133,7 @@ export async function GET(
   try {
     await connectDB();
 
+    // 验证机器人ID格式
     if (!isValidObjectId(params.id)) {
       return NextResponse.json(
         { success: false, message: '无效的Bot ID' },
@@ -83,6 +141,7 @@ export async function GET(
       );
     }
 
+    // 查询机器人菜单
     const bot = await BotModel.findById(params.id)
       .select('menus')
       .lean();
@@ -112,7 +171,13 @@ export async function GET(
   }
 }
 
-// 更新单个菜单项
+/**
+ * POST 处理器 - 创建或更新菜单项
+ * 
+ * @param request Request 请求对象
+ * @param params 路由参数,包含机器人ID
+ * @returns 包含更新后菜单项的 JSON 响应
+ */
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
@@ -218,16 +283,19 @@ export async function POST(
       }
     }
 
+    // 使用事务处理菜单更新
     await session.withTransaction(async () => {
       const bot = await BotModel.findById(params.id).session(session);
       if (!bot) throw new Error('BOT_NOT_FOUND');
 
+      // 验证命令格式
       if (!body.command?.match(/^\/[a-z0-9_]{1,31}$/)) {
         throw new Error('INVALID_COMMAND');
       }
 
       if (!Array.isArray(bot.menus)) bot.menus = [];
 
+      // 检查命令是否已存在
       const existingMenuIndex = bot.menus.findIndex(menu => 
         menu.command.toLowerCase() === body.command.toLowerCase() && 
         (!body.id || (menu._id && menu._id.toString() !== body.id))
@@ -250,7 +318,13 @@ export async function POST(
                 types: body.response?.types || [],
                 content: body.response?.content || '',
                 ...(body.response?.buttons && { buttons: body.response.buttons }),
-                ...(body.response?.parseMode && { parseMode: body.response.parseMode })
+                ...(body.response?.parseMode && { parseMode: body.response.parseMode }),
+                ...(body.response?.mediaUrl && { mediaUrl: body.response.mediaUrl }),
+                ...(body.response?.caption && { caption: body.response.caption }),
+                ...(body.response?.inputPlaceholder && { inputPlaceholder: body.response.inputPlaceholder }),
+                ...(body.response?.resizeKeyboard !== undefined && { resizeKeyboard: body.response.resizeKeyboard }),
+                ...(body.response?.oneTimeKeyboard !== undefined && { oneTimeKeyboard: body.response.oneTimeKeyboard }),
+                ...(body.response?.selective !== undefined && { selective: body.response.selective })
               }
             }
           },
@@ -269,7 +343,13 @@ export async function POST(
             types: body.response?.types || [ResponseType.TEXT],
             content: body.response?.content || '',
             ...(body.response?.buttons && { buttons: body.response.buttons }),
-            ...(body.response?.parseMode && { parseMode: body.response.parseMode })
+            ...(body.response?.parseMode && { parseMode: body.response.parseMode }),
+            ...(body.response?.mediaUrl && { mediaUrl: body.response.mediaUrl }),
+            ...(body.response?.caption && { caption: body.response.caption }),
+            ...(body.response?.inputPlaceholder && { inputPlaceholder: body.response.inputPlaceholder }),
+            ...(body.response?.resizeKeyboard !== undefined && { resizeKeyboard: body.response.resizeKeyboard }),
+            ...(body.response?.oneTimeKeyboard !== undefined && { oneTimeKeyboard: body.response.oneTimeKeyboard }),
+            ...(body.response?.selective !== undefined && { selective: body.response.selective })
           },
           order: bot.menus.length
         };
@@ -302,6 +382,7 @@ export async function POST(
     console.error('处理菜单项失败:', error);
     await session.endSession();
 
+    // 错误信息映射
     const errorMessages = {
       'BOT_NOT_FOUND': { message: '机器人不存在', status: 404 },
       'INVALID_COMMAND': { message: '命令格式无效', status: 400 },
