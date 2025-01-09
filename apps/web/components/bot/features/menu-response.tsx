@@ -326,29 +326,36 @@ export function MenuResponse({
         // 处理 Telegram 特殊的 Markdown 语法
         const processMarkdown = (text: string) => {
           if (!text) return '';
+          
+          // 处理代码块
+          text = text.replace(/```(.*?)\n(.*?)```/gs, (match, lang, code) => {
+            return `<pre><code class="language-${lang || 'text'}">${code.trim()}</code></pre>`;
+          });
+
+          // 处理其他格式
           return text
             // 处理粗体
-            .replace(/\*\*(.*?)\*\*|__(.*?)__/g, '<b>$1$2</b>')
+            .replace(/\*\*(.*?)\*\*|__(.*?)__/g, '<strong>$1$2</strong>')
             // 处理斜体
-            .replace(/\*(.*?)\*|_(.*?)_/g, '<i>$1$2</i>')
+            .replace(/\*(.*?)\*|_(.*?)_/g, '<em>$1$2</em>')
             // 处理删除线
             .replace(/~(.*?)~/g, '<del>$1</del>')
             // 处理剧透文本
-            .replace(/\|\|(.*?)\|\|/g, '<tg-spoiler>$1</tg-spoiler>')
-            // 处理代码块
-            .replace(/```(.*?)\n(.*?)```/gs, '<pre><code>$2</code></pre>')
+            .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler">$1</span>')
             // 处理行内代码
-            .replace(/`(.*?)`/g, '<code>$1</code>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
             // 处理链接
             .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
             // 处理用户提及
             .replace(/@(\w+)/g, '<a href="tg://user?id=$1">@$1</a>')
             // 处理话题标签
             .replace(/#(\w+)/g, '<a href="https://t.me/hashtag/$1">#$1</a>')
-            // 处理列表
+            // 处理有序列表
             .replace(/^\d+\.\s+(.*)$/gm, '<li>$1</li>')
+            // 处理无序列表
             .replace(/^[•\-\*]\s+(.*)$/gm, '<li>$1</li>')
             // 处理换行
+            .replace(/\n\n/g, '</p><p>')
             .replace(/\n/g, '<br/>');
         };
 
@@ -378,7 +385,15 @@ export function MenuResponse({
                   <div className="space-y-2">
                     {type === ResponseType.MARKDOWN && (
                       <div 
-                        className="prose prose-sm dark:prose-invert max-w-none"
+                        className={cn(
+                          "prose prose-sm dark:prose-invert max-w-none",
+                          "prose-headings:my-0 prose-p:my-0",
+                          "prose-pre:bg-muted/50 prose-pre:p-3 prose-pre:rounded-md",
+                          "prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
+                          "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
+                          "[&_.spoiler]:bg-muted-foreground/20 [&_.spoiler]:hover:bg-transparent",
+                          "[&_li]:my-0"
+                        )}
                         dangerouslySetInnerHTML={{ 
                           __html: DOMPurify.sanitize(previewContent || '') 
                         }}
