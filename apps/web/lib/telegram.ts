@@ -113,19 +113,33 @@ export class TelegramClient {
    * 发送 POST 请求到 Telegram API
    */
   private async post(endpoint: string, body: any) {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+    const url = `${this.baseUrl}${endpoint}`;
+    console.log(`发送请求到 Telegram API: ${url}`, body);
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.description || '请求失败');
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Telegram API 错误响应:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: data
+        });
+        throw new Error(data.description || `请求失败: ${response.status} ${response.statusText}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Telegram API 请求失败:', error);
+      throw error;
     }
-
-    return response.json();
   }
 } 
