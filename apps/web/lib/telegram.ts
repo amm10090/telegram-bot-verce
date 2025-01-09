@@ -105,6 +105,10 @@ export class TelegramClient {
     return this.post('/answerCallbackQuery', params);
   }
 
+  async sendChatAction(params: { chat_id: string; action: 'typing' | 'upload_photo' | 'upload_video' | 'upload_document' }) {
+    return this.post('sendChatAction', params);
+  }
+
   /**
    * 发送 POST 请求到 Telegram API
    */

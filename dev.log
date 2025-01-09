@@ -1,0 +1,8 @@
+# Development Log
+## 2025年1月9日15:22:02
+1. 重构 webhook 处理逻辑，提高代码可维护性
+2. 添加用户交互状态反馈（typing、uploading等）
+3. 优化回调查询处理，提升响应速度
+4. 增强错误处理和重试机制
+5. 添加数据库连接状态追踪
+6. 完善 TelegramClient 类，添加 sendChatAction 方法

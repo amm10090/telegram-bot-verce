@@ -12,26 +12,32 @@ interface MenuItemInput {
   order?: number;
 }
 
+// 响应类型分组定义
 const RESPONSE_TYPE_GROUPS = {
-  BASIC: [ResponseType.TEXT, ResponseType.MARKDOWN, ResponseType.HTML] as ResponseType[],
+  TEXT: [ResponseType.TEXT] as ResponseType[],
+  FORMATTED: [ResponseType.MARKDOWN, ResponseType.HTML] as ResponseType[],
   MEDIA: [ResponseType.PHOTO, ResponseType.VIDEO, ResponseType.DOCUMENT] as ResponseType[],
   INTERACTIVE: [ResponseType.INLINE_BUTTONS, ResponseType.KEYBOARD] as ResponseType[]
 } as const;
 
-// 验证响应类型组合的合法性
+// 验证响应类型的合法性
 function validateResponseTypes(types: ResponseType[]): { valid: boolean; message?: string } {
-  if (!types || types.length === 0) {
-    return { valid: false, message: '至少需要选择一种响应类型' };
+  if (!Array.isArray(types) || types.length === 0) {
+    return { valid: false, message: '请选择一种响应类型' };
   }
 
-  const basicTypes = types.filter(type => RESPONSE_TYPE_GROUPS.BASIC.includes(type));
-  const mediaTypes = types.filter(type => RESPONSE_TYPE_GROUPS.MEDIA.includes(type));
-  const interactiveTypes = types.filter(type => RESPONSE_TYPE_GROUPS.INTERACTIVE.includes(type));
+  if (types.length > 1) {
+    return { valid: false, message: '只能选择一种主要响应类型' };
+  }
 
-  if (basicTypes.length > 1) return { valid: false, message: '基础类型只能选择其中一种' };
-  if (mediaTypes.length > 1) return { valid: false, message: '媒体类型只能选择其中一种' };
-  if (interactiveTypes.length > 1) return { valid: false, message: '交互类型只能选择其中一种' };
-  if (basicTypes.length === 0) return { valid: false, message: '必须包含至少一种基础类型' };
+  const type = types[0]!;
+  
+  // 验证类型是否在支持的范围内
+  const allTypes = Object.values(ResponseType);
+
+  if (!allTypes.includes(type)) {
+    return { valid: false, message: '不支持的响应类型' };
+  }
 
   return { valid: true };
 }
@@ -117,6 +123,7 @@ export async function POST(
     const body = await request.json() as MenuItemInput;
     let updatedMenu: MenuItem | undefined;
     
+    // 验证响应类型
     if (body.response?.types) {
       const validation = validateResponseTypes(body.response.types);
       if (!validation.valid) {
@@ -124,6 +131,90 @@ export async function POST(
           { success: false, message: validation.message },
           { status: 400 }
         );
+      }
+
+      // 验证响应内容
+      const type = body.response.types[0]!;
+      
+      // 验证文本内容
+      if ([...RESPONSE_TYPE_GROUPS.TEXT, ...RESPONSE_TYPE_GROUPS.FORMATTED].includes(type)) {
+        if (!body.response.content?.trim()) {
+          return NextResponse.json(
+            { success: false, message: '请输入响应内容' },
+            { status: 400 }
+          );
+        }
+      }
+
+      // 验证媒体内容
+      if (RESPONSE_TYPE_GROUPS.MEDIA.includes(type)) {
+        if (!body.response.mediaUrl?.trim()) {
+          return NextResponse.json(
+            { success: false, message: '请提供媒体文件 URL' },
+            { status: 400 }
+          );
+        }
+      }
+
+      // 验证按钮配置
+      if (body.response.buttons) {
+        const { buttons } = body.response.buttons;
+        
+        // 验证行数限制
+        if (buttons.length > 8) {
+          return NextResponse.json(
+            { success: false, message: '按钮行数不能超过 8 行' },
+            { status: 400 }
+          );
+        }
+
+        // 验证每行按钮数限制
+        for (const row of buttons) {
+          if (row.length > 8) {
+            return NextResponse.json(
+              { success: false, message: '每行按钮数不能超过 8 个' },
+              { status: 400 }
+            );
+          }
+
+          // 验证按钮配置
+          for (const button of row) {
+            if (!button.text?.trim()) {
+              return NextResponse.json(
+                { success: false, message: '按钮文本不能为空' },
+                { status: 400 }
+              );
+            }
+
+            if (button.text.length > 64) {
+              return NextResponse.json(
+                { success: false, message: '按钮文本不能超过 64 个字符' },
+                { status: 400 }
+              );
+            }
+
+            if (button.type === 'url' && !button.value?.trim()) {
+              return NextResponse.json(
+                { success: false, message: '请输入按钮链接' },
+                { status: 400 }
+              );
+            }
+
+            if (button.type === 'callback' && !button.value?.trim()) {
+              return NextResponse.json(
+                { success: false, message: '请输入回调数据' },
+                { status: 400 }
+              );
+            }
+
+            if (button.type === 'callback' && button.value.length > 64) {
+              return NextResponse.json(
+                { success: false, message: '回调数据不能超过 64 个字符' },
+                { status: 400 }
+              );
+            }
+          }
+        }
       }
     }
 
