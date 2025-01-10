@@ -58,7 +58,6 @@ const botFeatures = [
     title: "bots.features.menu.title",
     description: "bots.features.menu.description",
     icon: MenuIcon,
-    href: "/bots/menu-settings"
   },
   {
     id: "keywords",

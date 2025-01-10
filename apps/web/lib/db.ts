@@ -1,241 +1,83 @@
+/**
+ * MongoDB 数据库连接管理模块
+ * 
+ * 该模块实现了MongoDB数据库连接的单例模式,通过全局缓存来复用数据库连接。
+ * 主要功能:
+ * 1. 缓存数据库连接,避免重复创建连接
+ * 2. 处理连接错误和重试
+ * 3. 优化连接池配置
+ */
+
 import mongoose from 'mongoose';
 
-declare const process: {
-  env: {
-    [key: string]: string | undefined;
-    NODE_ENV: 'development' | 'production' | 'test';
-  };
-  on(event: string, listener: Function): void;
-};
-
-// 配置常量
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/tgbot';
-const MAX_RETRIES = 3;
-const INITIAL_RETRY_INTERVAL = 1000;
-const MAX_RETRY_INTERVAL = 30000;
-const CONNECTION_TIMEOUT = 10000;
-const POOL_SIZE = 2;
-const MIN_POOL_SIZE = 2;
-const MAX_IDLE_TIME = 60000;
-const WAIT_QUEUE_TIMEOUT = 10000;
-
-const isDevelopment = process.env.NODE_ENV !== 'production';
-
-// 日志工具
-const logger = {
-  debug: (...args: any[]) => {
-    if (isDevelopment) {
-      console.log('[MongoDB Debug]', ...args);
-    }
-  },
-  info: (...args: any[]) => {
-    console.log('[MongoDB Info]', ...args);
-  },
-  warn: (...args: any[]) => {
-    console.warn('[MongoDB Warn]', ...args);
-  },
-  error: (...args: any[]) => {
-    console.error('[MongoDB Error]', ...args);
-  }
-};
-
-// 开发环境启用查询日志
-if (isDevelopment) {
-  mongoose.set('debug', { 
-    color: true,
-    shell: true 
-  });
+// 定义缓存连接的接口类型
+interface CachedConnection {
+  conn: typeof mongoose | null;    // 当前的mongoose连接实例
+  promise: Promise<typeof mongoose> | null;  // 正在进行的连接Promise
 }
 
-// 设置全局配置
-mongoose.set('maxTimeMS', 5000);
-mongoose.set('bufferCommands', true);
-
-// 性能监控指标
-interface PerformanceMetrics {
-  connectTime: number;
-  reconnectCount: number;
-  lastConnectTime: number;
-  averageConnectTime: number;
-  failedAttempts: number;
+// 在全局作用域中声明mongoose变量类型
+declare global {
+  var mongoose: CachedConnection | undefined;
 }
 
-interface ConnectionState {
-  isConnected: boolean;
-  isConnecting: boolean;
-  retryCount: number;
-  lastError?: Error;
-  metrics: PerformanceMetrics;
+// 从环境变量获取MongoDB连接URI
+const MONGODB_URI = process.env.MONGODB_URI!;
+
+// 验证MongoDB连接URI是否存在
+if (!MONGODB_URI) {
+  throw new Error('请在环境变量中设置 MONGODB_URI');
 }
 
-const state: ConnectionState = {
-  isConnected: false,
-  isConnecting: false,
-  retryCount: 0,
-  metrics: {
-    connectTime: 0,
-    reconnectCount: 0,
-    lastConnectTime: 0,
-    averageConnectTime: 0,
-    failedAttempts: 0
-  }
-};
+// 初始化缓存连接对象,优先使用全局缓存,否则创建新的缓存对象
+let cached: CachedConnection = (global as any).mongoose || { conn: null, promise: null };
 
-function getRetryDelay(retryCount: number): number {
-  const delay = Math.min(
-    INITIAL_RETRY_INTERVAL * Math.pow(2, retryCount),
-    MAX_RETRY_INTERVAL
-  );
-  return delay + Math.random() * 1000;
+// 确保全局缓存对象存在
+if (!global.mongoose) {
+  global.mongoose = cached;
 }
 
-function updateMetrics(connectTime: number, success: boolean) {
-  const metrics = state.metrics;
-  metrics.lastConnectTime = connectTime;
-  
-  if (success) {
-    metrics.connectTime = connectTime;
-    metrics.reconnectCount++;
-    metrics.averageConnectTime = (
-      (metrics.averageConnectTime * (metrics.reconnectCount - 1) + connectTime) / 
-      metrics.reconnectCount
-    );
-  } else {
-    metrics.failedAttempts++;
+/**
+ * 连接数据库的异步函数
+ * 
+ * 实现了以下功能:
+ * 1. 如果已存在连接,直接返回该连接
+ * 2. 如果正在连接,等待连接完成
+ * 3. 如果需要新建连接,使用优化的连接选项
+ * 
+ * @returns Promise<typeof mongoose> 返回mongoose连接实例
+ * @throws 如果连接失败,会抛出错误
+ */
+export async function connectDB() {
+  // 如果已经存在连接,直接返回
+  if (cached.conn) {
+    return cached.conn;
   }
 
-  // 只在开发环境或出现异常时记录性能指标
-  if (isDevelopment || !success) {
-    logger.debug('连接性能指标:', {
-      averageConnectTime: `${metrics.averageConnectTime.toFixed(2)}ms`,
-      reconnectCount: metrics.reconnectCount,
-      failedAttempts: metrics.failedAttempts,
-      lastConnectTime: `${metrics.lastConnectTime.toFixed(2)}ms`
-    });
-  }
-}
-
-export async function connectDB(retryCount = 0): Promise<void> {
-  if (state.isConnected) {
-    return;
-  }
-
-  if (state.isConnecting) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return connectDB(retryCount);
-  }
-
-  const startTime = Date.now();
-  
-  try {
-    state.isConnecting = true;
-
-    const options: mongoose.ConnectOptions = {
-      bufferCommands: true,
-      serverSelectionTimeoutMS: CONNECTION_TIMEOUT,
-      socketTimeoutMS: 45000,
-      family: 4,
-      maxPoolSize: POOL_SIZE,
-      minPoolSize: MIN_POOL_SIZE,
-      connectTimeoutMS: CONNECTION_TIMEOUT,
-      heartbeatFrequencyMS: 10000,
-      maxIdleTimeMS: MAX_IDLE_TIME,
-      waitQueueTimeoutMS: WAIT_QUEUE_TIMEOUT,
-      autoIndex: isDevelopment,
-      readPreference: 'primaryPreferred',
-      retryWrites: true
+  // 如果没有正在进行的连接,创建新的连接
+  if (!cached.promise) {
+    // 配置MongoDB连接选项
+    const opts = {
+      bufferCommands: true,      // 启用命令缓冲
+      maxPoolSize: 10,           // 最大连接池大小
+      minPoolSize: 5,            // 最小连接池大小
+      socketTimeoutMS: 5000,     // Socket超时时间
+      serverSelectionTimeoutMS: 5000,  // 服务器选择超时时间
+      family: 4                  // 使用IPv4
     };
 
-    await mongoose.connect(MONGODB_URI!, options);
-    
-    const connectTime = Date.now() - startTime;
-    updateMetrics(connectTime, true);
-    
-    state.isConnected = true;
-    state.isConnecting = false;
-    state.retryCount = 0;
-    state.lastError = undefined;
-    
-    logger.info(`连接成功 (${connectTime}ms)`);
-
-    mongoose.connection.on('error', handleConnectionError);
-    mongoose.connection.on('disconnected', handleDisconnection);
-    mongoose.connection.on('reconnected', () => {
-      logger.info('重连成功');
-    });
-
-    // 只在开发环境监控连接状态
-    if (isDevelopment) {
-      setInterval(() => {
-        const readyState = mongoose.connection.readyState;
-        if (readyState !== 1) {  // 只在非连接状态时记录
-          logger.debug('连接状态:', {
-            readyState,
-            status: ['已断开', '已连接', '连接中', '断开中'][readyState] || '未知'
-          });
-        }
-      }, 30000);
-    }
-
-  } catch (error) {
-    const connectTime = Date.now() - startTime;
-    updateMetrics(connectTime, false);
-    
-    state.isConnecting = false;
-    state.lastError = error as Error;
-
-    if (retryCount < MAX_RETRIES) {
-      const delay = getRetryDelay(retryCount);
-      logger.warn(`连接失败，${(delay / 1000).toFixed(1)}秒后重试(${retryCount + 1}/${MAX_RETRIES})...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return connectDB(retryCount + 1);
-    }
-
-    logger.error('连接失败，已达到最大重试次数:', error);
-    throw new Error(`数据库连接失败: ${error instanceof Error ? error.message : '未知错误'}`);
-  }
-}
-
-function handleConnectionError(error: Error) {
-  logger.error('连接错误:', error);
-  if (state.isConnected) {
-    state.isConnected = false;
-    handleDisconnection();
-  }
-}
-
-async function handleDisconnection() {
-  if (!state.isConnected) return;
-  
-  logger.warn('连接断开，尝试重新连接...');
-  state.isConnected = false;
-  state.retryCount = 0;
-  
-  try {
-    await connectDB();
-  } catch (error) {
-    logger.error('重新连接失败:', error);
-  }
-}
-
-export async function disconnectDB(): Promise<void> {
-  if (!state.isConnected) {
-    return;
+    // 创建新的连接Promise
+    cached.promise = mongoose.connect(MONGODB_URI, opts);
   }
 
   try {
-    await mongoose.disconnect();
-    state.isConnected = false;
-    state.isConnecting = false;
-    logger.info('断开连接成功');
-  } catch (error) {
-    logger.error('断开连接失败:', error);
-    throw new Error(`断开连接失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    // 等待连接完成并缓存连接实例
+    cached.conn = await cached.promise;
+  } catch (e) {
+    // 如果连接失败,清除Promise缓存并抛出错误
+    cached.promise = null;
+    throw e;
   }
-}
 
-['SIGTERM', 'SIGINT', 'beforeExit'].forEach((signal) => {
-  process.on(signal, async () => {
-    await disconnectDB();
-  });
-}); 
+  return cached.conn;
+} 

@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import { MenuItem } from '@/types/bot';
 import BotModel from '@/models/bot';
-import { Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
 
 interface OrderItem {
   id: string;
   order: number;
 }
 
-// 扩展 MenuItem 接口以包含 MongoDB 文档属性
-interface MenuItemDocument extends Omit<MenuItem, 'id'>, Document {
+interface MenuDoc {
   _id: Types.ObjectId;
-  toObject(): MenuItem & { _id: Types.ObjectId };
+  order: number;
+  command: string;
+  text: string;
+}
+
+interface BotDoc {
+  menus: MenuDoc[];
+  token: string;
 }
 
 export async function PUT(
@@ -22,18 +27,8 @@ export async function PUT(
   try {
     await connectDB();
     const body = await request.json();
-    console.log('收到排序请求体:', body);
     
-    const bot = await BotModel.findById(context.params.id);
-    if (!bot || !bot.menus) {
-      return NextResponse.json(
-        { success: false, message: '机器人不存在或没有菜单配置' },
-        { status: 404 }
-      );
-    }
-
     if (!Array.isArray(body.orders)) {
-      console.log('无效的请求体格式:', body);
       return NextResponse.json(
         { success: false, message: '无效的排序数据格式' },
         { status: 400 }
@@ -41,13 +36,24 @@ export async function PUT(
     }
 
     const orders = body.orders as OrderItem[];
-    console.log('处理排序请求:', orders);
-
-    // 验证所有id是否存在
-    const validIds = (bot.menus as MenuItemDocument[]).map(menu => menu._id.toString());
-    console.log('有效的id列表:', validIds);
     
+    // 1. 使用投影只获取必要字段
+    const bot = await BotModel.findById(
+      context.params.id,
+      { menus: 1, token: 1 }
+    ).lean() as BotDoc;
+
+    if (!bot || !bot.menus) {
+      return NextResponse.json(
+        { success: false, message: '机器人不存在或没有菜单配置' },
+        { status: 404 }
+      );
+    }
+
+    // 2. 验证ID并创建更新操作
+    const validIds = bot.menus.map(menu => (menu._id as Types.ObjectId).toString());
     const allIdsValid = orders.every(order => validIds.includes(order.id));
+    
     if (!allIdsValid) {
       return NextResponse.json(
         { success: false, message: '存在无效的菜单ID' },
@@ -55,50 +61,68 @@ export async function PUT(
       );
     }
 
-    // 更新排序
-    const updatedMenus = (bot.menus as MenuItemDocument[]).map(menu => {
-      const orderItem = orders.find(o => o.id === menu._id.toString());
-      const menuObj = menu.toObject();
-      return {
-        ...menuObj,
-        order: orderItem ? orderItem.order : menu.order
-      };
-    });
-
-    // 按order排序
-    updatedMenus.sort((a, b) => a.order - b.order);
-    bot.menus = updatedMenus;
-    await bot.save();
-
-    // 同步到Telegram
-    const telegramResponse = await fetch(
-      `https://api.telegram.org/bot${bot.token}/setMyCommands`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+    // 3. 构建批量更新操作
+    const bulkOps = orders.map(({ id, order }) => ({
+      updateOne: {
+        filter: {
+          _id: context.params.id,
+          "menus._id": id
         },
-        body: JSON.stringify({
-          commands: updatedMenus.map(menu => ({
-            command: menu.command,
-            description: menu.text
-          }))
-        }),
+        update: {
+          $set: { "menus.$.order": order }
+        }
       }
-    );
+    }));
 
-    if (!telegramResponse.ok) {
-      return NextResponse.json(
-        { success: false, message: '同步到Telegram失败' },
-        { status: 500 }
-      );
-    }
+    // 4. 执行批量更新
+    await BotModel.bulkWrite(bulkOps, { ordered: false });
+
+    // 5. 异步同步到Telegram
+    const syncToTelegram = async () => {
+      try {
+        // 重新获取排序后的菜单
+        const updatedBot = await BotModel.findById(
+          context.params.id,
+          { menus: 1 }
+        ).lean();
+
+        if (!updatedBot?.menus) return;
+
+        // 按order排序
+        const sortedMenus = [...updatedBot.menus].sort((a, b) => a.order - b.order);
+
+        const telegramResponse = await fetch(
+          `https://api.telegram.org/bot${bot.token}/setMyCommands`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              commands: sortedMenus.map(menu => ({
+                command: menu.command,
+                description: menu.text
+              }))
+            })
+          }
+        );
+
+        if (!telegramResponse.ok) {
+          console.error('同步到Telegram失败:', await telegramResponse.text());
+        }
+      } catch (error) {
+        console.error('同步到Telegram失败:', error);
+      }
+    };
+
+    // 异步执行Telegram同步
+    syncToTelegram().catch(console.error);
 
     return NextResponse.json({ 
-      success: true, 
-      data: updatedMenus,
+      success: true,
       message: '菜单排序更新成功'
     });
+
   } catch (error) {
     console.error('更新菜单排序失败:', error);
     return NextResponse.json(

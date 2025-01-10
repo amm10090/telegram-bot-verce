@@ -181,6 +181,8 @@ botSchema.plugin(mongoosePaginate);
 
 // 添加数据库索引以优化查询性能
 botSchema.index({ userId: 1 });
+botSchema.index({ 'menus._id': 1 });
+botSchema.index({ 'menus.order': 1 });
 botSchema.index({ 'menus.command': 1 });
 
 // 添加新的索引

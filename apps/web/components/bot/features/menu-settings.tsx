@@ -393,7 +393,7 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          items: updatedItems.map(item => ({
+          orders: updatedItems.map(item => ({
             id: item.id,
             order: item.order
           }))
@@ -577,7 +577,7 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-[1000px] p-0 flex flex-col h-full bg-background">
+      <SheetContent className="w-full sm:max-w-[1000px] p-0 flex flex-col h-full bg-background [&>button]:hidden">
         <div className="flex-none border-b bg-card">
           <div className="flex items-center justify-between p-6">
             <div className="flex items-center gap-3">
@@ -589,9 +589,11 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
                 </DialogPrimitive.Description>
               </div>
             </div>
-            <SheetClose className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-muted transition-colors">
-              <X className="h-4 w-4" />
-              <span className="sr-only">关闭</span>
+            <SheetClose asChild>
+              <button className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-muted transition-colors">
+                <X className="h-4 w-4" />
+                <span className="sr-only">关闭</span>
+              </button>
             </SheetClose>
           </div>
         </div>
