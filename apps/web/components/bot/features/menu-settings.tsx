@@ -577,14 +577,18 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-[1000px] p-0 flex flex-col h-full bg-background [&>button]:hidden">
+      <SheetContent className={cn(
+        "w-full sm:max-w-[1000px] p-0 flex flex-col h-full bg-background [&>button]:hidden",
+        // 移动端优化
+        "sm:max-h-[100dvh]", // 使用动态视口高度
+      )}>
         <div className="flex-none border-b bg-card">
-          <div className="flex items-center justify-between p-6">
+          <div className="flex items-center justify-between p-4 lg:p-6">
             <div className="flex items-center gap-3">
               <Command className="h-6 w-6 text-primary" />
               <div>
-                <SheetTitle className="text-xl font-semibold">菜单设置</SheetTitle>
-                <DialogPrimitive.Description className="text-sm text-muted-foreground mt-1">
+                <SheetTitle className="text-lg lg:text-xl font-semibold">菜单设置</SheetTitle>
+                <DialogPrimitive.Description className="text-sm text-muted-foreground mt-1 hidden sm:block">
                   配置机器人的命令菜单和响应行为
                 </DialogPrimitive.Description>
               </div>
@@ -598,10 +602,47 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0">
-          <div className="h-full flex flex-col sm:flex-row">
+        <div className="flex-1 min-h-0 relative">
+          {/* 添加移动端切换视图按钮 */}
+          <div className={cn(
+            "lg:hidden sticky top-0 z-20 flex items-center gap-2 p-2 bg-background border-b",
+            "overflow-x-auto scrollbar-none"
+          )}>
+            <Button
+              variant={!selectedItem ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSelectedItem(null)}
+              className="flex-none"
+            >
+              菜单列表
+            </Button>
+            {selectedItem && (
+              <>
+                <ChevronRight className="h-4 w-4 flex-none text-muted-foreground" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex-none"
+                >
+                  {selectedItem.text}
+                </Button>
+              </>
+            )}
+          </div>
+
+          <div className={cn(
+            "h-[calc(100%-48px)] lg:h-full flex flex-col lg:flex-row",
+            // 移动端视图切换
+            selectedItem ? "lg:flex" : "flex",
+          )}>
             {/* 左侧菜单列表 */}
-            <div className="w-full sm:w-[320px] border-b sm:border-b-0 sm:border-r flex flex-col min-h-[200px] sm:min-h-0 bg-muted/30">
+            <div className={cn(
+              "w-full lg:w-[320px] border-b lg:border-b-0 lg:border-r",
+              "flex flex-col bg-muted/30",
+              "h-[calc(100vh-200px)] lg:h-full", // 移动端使用视口高度
+              // 移动端视图切换
+              selectedItem ? "hidden lg:flex" : "flex",
+            )}>
               <div className="flex-none p-4 border-b bg-card">
                 <div className="flex items-center justify-between mb-4">
                   <div className="space-y-1" id="menu-list-description">
@@ -635,32 +676,30 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
                 </div>
               </div>
               
-              <ScrollArea className="flex-1">
-                <div className="p-2">
-                  <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable droppableId="menu-items">
-                      {(provided) => (
-                        <div
-                          {...provided.droppableProps}
-                          ref={provided.innerRef}
-                          className="space-y-2"
-                        >
-                          {menuItems.map((item, index) => (
-                            <MenuItemComponent
-                              key={item.id}
-                              item={item}
-                              index={index}
-                              selected={selectedItem?.id === item.id}
-                              onSelect={() => setSelectedItem(item)}
-                              onRemove={() => removeMenuItem(item)}
-                            />
-                          ))}
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
-                  </DragDropContext>
-                </div>
+              <ScrollArea className="flex-1 p-2">
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="menu-items">
+                    {(provided) => (
+                      <div
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className="space-y-2"
+                      >
+                        {menuItems.map((item, index) => (
+                          <MenuItemComponent
+                            key={item.id}
+                            item={item}
+                            index={index}
+                            selected={selectedItem?.id === item.id}
+                            onSelect={() => setSelectedItem(item)}
+                            onRemove={() => removeMenuItem(item)}
+                          />
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
               </ScrollArea>
 
               <div className="flex-none p-4 bg-card border-t">
@@ -678,12 +717,23 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
             </div>
 
             {/* 右侧编辑区域 */}
-            <div className="flex-1 flex flex-col min-h-0 bg-card">
+            <div className={cn(
+              "flex-1 flex flex-col min-h-0 bg-card",
+              // 移动端视图切换
+              !selectedItem ? "hidden lg:flex" : "flex",
+            )}>
               {selectedItem ? (
                 <div className="h-full flex flex-col">
                   <div className="flex-none p-4 border-b bg-muted/30">
                     <div className="flex items-center gap-2">
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="lg:hidden h-8 w-8"
+                        onClick={() => setSelectedItem(null)}
+                      >
+                        <ChevronRight className="h-4 w-4 rotate-180" />
+                      </Button>
                       <h3 className="font-medium">
                         {selectedItem.text}
                       </h3>
@@ -693,7 +743,7 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
                     </div>
                   </div>
                   <ScrollArea className="flex-1">
-                    <div className="p-6">
+                    <div className="p-4 lg:p-6">
                       <MenuForm
                         selectedItem={selectedItem}
                         menuItems={menuItems}
