@@ -7,6 +7,7 @@ const zhCN = {
   'nav.profile': '个人资料',
   'nav.open': '打开',
   'nav.mainNavigation': '主导航',
+  'nav.close': '关闭',
   
   // 搜索
   'search.placeholder': '搜索...',

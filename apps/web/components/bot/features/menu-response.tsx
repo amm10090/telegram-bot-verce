@@ -503,26 +503,26 @@ export function MenuResponse({
                             {response.buttons.buttons.map((row, rowIndex) => (
                               <div key={rowIndex} className="flex items-center gap-1">
                                 {row.map((button, buttonIndex) => (
-                                  <Button
+                                  <div
                                     key={buttonIndex}
-                                    size="sm"
-                                    variant={type === ResponseType.INLINE_BUTTONS ? "light" : "solid"}
-                                    color={type === ResponseType.INLINE_BUTTONS ? "default" : "default"}
                                     className={cn(
-                                      "flex-1 min-w-0 h-8 px-3",
+                                      "flex-1 min-w-0 h-8 px-3 flex items-center justify-center",
                                       type === ResponseType.INLINE_BUTTONS 
                                         ? "bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700" 
                                         : "bg-zinc-200 hover:bg-zinc-300",
-                                      "rounded-md"
+                                      "rounded-md cursor-pointer"
                                     )}
-                                    startContent={button.type === 'url' ? (
-                                      <Link className="h-3.5 w-3.5 text-blue-500" />
-                                    ) : button.type === 'callback' ? (
-                                      <Zap className="h-3.5 w-3.5 text-blue-500" />
-                                    ) : null}
                                   >
-                                    <span className="truncate text-sm text-zinc-800 dark:text-zinc-200">{button.text}</span>
-                                  </Button>
+                                    {button.type === 'url' && (
+                                      <Link className="h-3.5 w-3.5 text-blue-500 mr-1" />
+                                    )}
+                                    {button.type === 'callback' && (
+                                      <Zap className="h-3.5 w-3.5 text-blue-500 mr-1" />
+                                    )}
+                                    <span className="truncate text-sm text-zinc-800 dark:text-zinc-200">
+                                      {button.text}
+                                    </span>
+                                  </div>
                                 ))}
                               </div>
                             ))}
@@ -846,15 +846,17 @@ export function MenuResponse({
                 <label className="text-sm font-medium">
                   {type === ResponseType.INLINE_BUTTONS ? '内联按钮配置' : '自定义键盘配置'}
                 </label>
-                <Button
-                  size="sm"
-                  variant="light"
-                  onPress={addRow}
-                  className="text-sm"
-                  startContent={<Plus className="h-4 w-4" />}
+                <div
+                  className={cn(
+                    "flex items-center gap-1 px-3 py-1.5 rounded-md",
+                    "bg-default-100 hover:bg-default-200",
+                    "cursor-pointer transition-colors text-sm"
+                  )}
+                  onClick={addRow}
                 >
-                  添加按钮行
-                </Button>
+                  <Plus className="h-4 w-4" />
+                  <span>添加按钮行</span>
+                </div>
               </div>
               <div className="space-y-2">
                 {buttons.map((row, rowIndex) => (
@@ -864,15 +866,15 @@ export function MenuResponse({
                         <div key={buttonIndex} className="flex-1">
                           <Button
                             size="sm"
-                            variant="light"
-                            className="w-full flex items-center justify-start"
+                            variant="flat"
+                            className="w-full justify-start"
                             onPress={() => setEditingButton({
                               rowIndex,
                               buttonIndex,
                               button
                             })}
                           >
-                            {button.text || '未命名按钮'}
+                            <span className="text-sm">{button.text || '未命名按钮'}</span>
                             {button.type === 'url' && (
                               <Link className="ml-1 h-3 w-3 text-muted-foreground" />
                             )}
@@ -885,9 +887,9 @@ export function MenuResponse({
                       {row.length < 8 && (
                         <Button
                           size="sm"
-                          variant="light"
-                          onPress={() => addButtonToRow(rowIndex)}
+                          variant="flat"
                           className="text-sm"
+                          onPress={() => addButtonToRow(rowIndex)}
                           startContent={<Plus className="h-4 w-4" />}
                         >
                           添加按钮
@@ -897,9 +899,9 @@ export function MenuResponse({
                     {buttons.length > 1 && (
                       <Button
                         size="sm"
-                        variant="light"
-                        isIconOnly
+                        variant="flat"
                         color="danger"
+                        isIconOnly
                         onPress={() => removeButton(rowIndex, 0)}
                       >
                         <X className="h-4 w-4" />
@@ -983,87 +985,6 @@ export function MenuResponse({
                             </p>
                           </div>
                         </div>
-                        {(typeConfig.value === ResponseType.HTML || typeConfig.value === ResponseType.MARKDOWN || typeConfig.value === ResponseType.VIDEO) && (
-                          <Tooltip
-                            content={
-                              <div className="px-2 py-1">
-                                <p className="font-medium text-small">
-                                  {typeConfig.value === ResponseType.HTML ? '支持的 HTML 标签' : 
-                                   typeConfig.value === ResponseType.MARKDOWN ? '支持的 Markdown 语法' :
-                                   'Telegram 视频要求'}
-                                </p>
-                                <div className="mt-1 text-tiny">
-                                  {typeConfig.value === ResponseType.HTML ? (
-                                    <div className="ml-1 space-y-1 text-default-500">
-                                      <p><code>&lt;b&gt;</code> 或 <code>&lt;strong&gt;</code> - <b>粗体</b></p>
-                                      <p><code>&lt;i&gt;</code> 或 <code>&lt;em&gt;</code> - <i>斜体</i></p>
-                                      <p><code>&lt;u&gt;</code> 或 <code>&lt;ins&gt;</code> - <u>下划线</u></p>
-                                      <p><code>&lt;s&gt;</code> 或 <code>&lt;del&gt;</code> - <s>删除线</s></p>
-                                      <p><code>&lt;tg-spoiler&gt;</code> - 剧透文本</p>
-                                    </div>
-                                  ) : typeConfig.value === ResponseType.MARKDOWN ? (
-                                    <div className="ml-1 space-y-1 text-default-500">
-                                      <p><code>**文本**</code> 或 <code>__文本__</code> - <b>粗体</b></p>
-                                      <p><code>*文本*</code> 或 <code>_文本_</code> - <i>斜体</i></p>
-                                      <p><code>__*文本*__</code> - <b><i>粗斜体</i></b></p>
-                                      <p><code>~文本~</code> - <s>删除线</s></p>
-                                      <p><code>||文本||</code> - 剧透文本</p>
-                                    </div>
-                                  ) : (
-                                    <div className="ml-1 space-y-1 text-default-500">
-                                      <p className="font-medium text-foreground mb-1">视频格式要求:</p>
-                                      <ul className="list-disc list-inside space-y-1">
-                                        <li>支持的格式: MPEG4, H.264</li>
-                                        <li>最大文件大小: 50MB</li>
-                                        <li>视频URL必须可以直接访问下载</li>
-                                        <li>建议使用Telegram自己的文件存储或可靠的CDN服务</li>
-                                      </ul>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            }
-                            placement="right"
-                            size="lg"
-                            radius="lg"
-                            showArrow={true}
-                            delay={0}
-                            closeDelay={0}
-                            offset={10}
-                            classNames={{
-                              base: "py-2 px-4 shadow-xl",
-                              arrow: "bg-background",
-                            }}
-                            motionProps={{
-                              variants: {
-                                exit: {
-                                  opacity: 0,
-                                  transition: {
-                                    duration: 0.1,
-                                    ease: "easeIn"
-                                  }
-                                },
-                                enter: {
-                                  opacity: 1,
-                                  transition: {
-                                    duration: 0.15,
-                                    ease: "easeOut"
-                                  }
-                                }
-                              }
-                            }}
-                          >
-                            <Button 
-                              isIconOnly
-                              variant="light" 
-                              size="sm"
-                              radius="full"
-                              className="text-default-500 hover:text-foreground"
-                            >
-                              <HelpCircle className="h-4 w-4" />
-                            </Button>
-                          </Tooltip>
-                        )}
                       </CardBody>
                     </Card>
                   );
@@ -1143,87 +1064,6 @@ export function MenuResponse({
                             </p>
                           </div>
                         </div>
-                        {(type === ResponseType.HTML || type === ResponseType.MARKDOWN || type === ResponseType.VIDEO) && (
-                          <Tooltip
-                            content={
-                              <div className="px-2 py-1">
-                                <p className="font-medium text-small">
-                                  {type === ResponseType.HTML ? '支持的 HTML 标签' : 
-                                   type === ResponseType.MARKDOWN ? '支持的 Markdown 语法' :
-                                   'Telegram 视频要求'}
-                                </p>
-                                <div className="mt-1 text-tiny">
-                                  {type === ResponseType.HTML ? (
-                                    <div className="ml-1 space-y-1 text-default-500">
-                                      <p><code>&lt;b&gt;</code> 或 <code>&lt;strong&gt;</code> - <b>粗体</b></p>
-                                      <p><code>&lt;i&gt;</code> 或 <code>&lt;em&gt;</code> - <i>斜体</i></p>
-                                      <p><code>&lt;u&gt;</code> 或 <code>&lt;ins&gt;</code> - <u>下划线</u></p>
-                                      <p><code>&lt;s&gt;</code> 或 <code>&lt;del&gt;</code> - <s>删除线</s></p>
-                                      <p><code>&lt;tg-spoiler&gt;</code> - 剧透文本</p>
-                                    </div>
-                                  ) : type === ResponseType.MARKDOWN ? (
-                                    <div className="ml-1 space-y-1 text-default-500">
-                                      <p><code>**文本**</code> 或 <code>__文本__</code> - <b>粗体</b></p>
-                                      <p><code>*文本*</code> 或 <code>_文本_</code> - <i>斜体</i></p>
-                                      <p><code>__*文本*__</code> - <b><i>粗斜体</i></b></p>
-                                      <p><code>~文本~</code> - <s>删除线</s></p>
-                                      <p><code>||文本||</code> - 剧透文本</p>
-                                    </div>
-                                  ) : (
-                                    <div className="ml-1 space-y-1 text-default-500">
-                                      <p className="font-medium text-foreground mb-1">视频格式要求:</p>
-                                      <ul className="list-disc list-inside space-y-1">
-                                        <li>支持的格式: MPEG4, H.264</li>
-                                        <li>最大文件大小: 50MB</li>
-                                        <li>视频URL必须可以直接访问下载</li>
-                                        <li>建议使用Telegram自己的文件存储或可靠的CDN服务</li>
-                                      </ul>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            }
-                            placement="right"
-                            size="lg"
-                            radius="lg"
-                            showArrow={true}
-                            delay={0}
-                            closeDelay={0}
-                            offset={10}
-                            classNames={{
-                              base: "py-2 px-4 shadow-xl",
-                              arrow: "bg-background",
-                            }}
-                            motionProps={{
-                              variants: {
-                                exit: {
-                                  opacity: 0,
-                                  transition: {
-                                    duration: 0.1,
-                                    ease: "easeIn"
-                                  }
-                                },
-                                enter: {
-                                  opacity: 1,
-                                  transition: {
-                                    duration: 0.15,
-                                    ease: "easeOut"
-                                  }
-                                }
-                              }
-                            }}
-                          >
-                            <Button 
-                              isIconOnly
-                              variant="light" 
-                              size="sm"
-                              radius="full"
-                              className="text-default-500 hover:text-foreground"
-                            >
-                              <HelpCircle className="h-4 w-4" />
-                            </Button>
-                          </Tooltip>
-                        )}
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
@@ -1368,9 +1208,8 @@ export function MenuResponse({
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Button
-                variant="light"
+                variant="bordered"
                 onPress={() => setEditingButton(null)}
-                className="bg-background text-foreground border border-input"
               >
                 取消
               </Button>
