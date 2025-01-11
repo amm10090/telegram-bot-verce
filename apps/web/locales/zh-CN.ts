@@ -5,6 +5,8 @@ const zhCN = {
   'nav.bots': '机器人',
   'nav.settings': '设置',
   'nav.profile': '个人资料',
+  'nav.open': '打开',
+  'nav.mainNavigation': '主导航',
   
   // 搜索
   'search.placeholder': '搜索...',

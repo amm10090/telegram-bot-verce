@@ -65,7 +65,8 @@ export default {
   "nav.bots": "Bots",
   "nav.settings": "Settings",
   "nav.profile": "Profile",
-
+  "nav.mainNavigation": "Main Navigation",
+  "nav.open": "Open",
   // 应用标题
   "app.title": "TG Bot Manager",
   "app.description": "Manage your Telegram bots efficiently",
