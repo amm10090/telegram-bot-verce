@@ -1,10 +1,13 @@
 // src/components/Sidebar.tsx
 import React, { useCallback } from 'react';
 import Link from 'next/link';
-import { Home, MessageCircle, Settings, Moon, Sun } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Home, MessageCircle, Settings, Moon, Sun, Menu } from 'lucide-react';
 import { useIntl } from 'react-intl';
 import { useTheme } from '@contexts/ThemeContext';
 import { useRoutePreload } from '@hooks/useRoutePreload';
+import { useSpring, a } from '@react-spring/web';
+import { useDrag } from '@use-gesture/react';
 
 // 导航项接口定义
 interface NavItem {
@@ -19,10 +22,20 @@ interface SidebarProps {
   setOpen: (open: boolean) => void;
 }
 
+// 手势事件接口
+interface DragState {
+  down: boolean;
+  movement: [number, number];
+  direction: [number, number];
+  cancel: () => void;
+}
+
 // 导航链接组件
 const NavLink = React.memo(({ item, onClick }: { item: NavItem; onClick?: () => void }) => {
   const intl = useIntl();
+  const pathname = usePathname();
   const { preloadRoute } = useRoutePreload();
+  const isActive = pathname === item.path;
 
   // 处理鼠标悬停事件，触发预加载
   const handleMouseEnter = useCallback(() => {
@@ -33,28 +46,33 @@ const NavLink = React.memo(({ item, onClick }: { item: NavItem; onClick?: () => 
     <Link
       key={item.labelId}
       href={item.path}
-      className="
+      className={`
         flex items-center px-4 py-2.5
         text-muted-foreground
-        hover:text-foreground hover:bg-accent
+        hover:text-foreground hover:bg-accent/50
         active:bg-accent/80
         rounded-md
         transition-all duration-200
         group
         focus-visible:outline-none focus-visible:ring-2
         focus-visible:ring-ring
-      "
+        touch-target-large
+        relative
+        ${isActive ? 'bg-primary/10 text-primary border-l-2 border-primary font-medium' : ''}
+      `}
       onClick={onClick}
-      onMouseEnter={handleMouseEnter}  // 添加鼠标悬停事件
-      onFocus={handleMouseEnter}       // 添加焦点事件，支持键盘用户
+      onMouseEnter={handleMouseEnter}
+      onFocus={handleMouseEnter}
+      aria-current={isActive ? 'page' : undefined}
+      role="menuitem"
     >
-      <item.icon className="
+      <item.icon className={`
         h-5 w-5 mr-3 
         transition-colors
-        text-muted-foreground
+        ${isActive ? 'text-primary' : 'text-muted-foreground'}
         group-hover:text-foreground
-      " />
-      <span className="font-medium">
+      `} />
+      <span className={`${isActive ? 'text-primary' : ''}`}>
         {intl.formatMessage({ id: item.labelId })}
       </span>
     </Link>
@@ -74,6 +92,21 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const intl = useIntl();
   const { theme, setTheme } = useTheme();
   const { preloadAllRoutes } = useRoutePreload();
+
+  // 添加手势支持
+  const [{ x }, api] = useSpring(() => ({ x: 0 }));
+  
+  const bind = useDrag(({ down, movement: [mx], direction: [dx], cancel }: DragState) => {
+    if (down && Math.abs(mx) > 100) {
+      cancel();
+      setOpen(dx < 0);
+    }
+    api.start({ x: down ? mx : 0, immediate: down });
+  }, {
+    axis: 'x',
+    bounds: { left: -100, right: 100 },
+    rubberband: true,
+  });
 
   // 在组件加载后，延迟预加载所有路由组件
   React.useEffect(() => {
@@ -105,56 +138,76 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
 
   // 处理移动端导航点击
   const handleMobileNavClick = useCallback(() => {
-    if (window.innerWidth < 1024) {
-      setOpen(false);
-    }
+    setOpen(false);
   }, [setOpen]);
 
   return (
     <>
-      {/* 侧边栏主体 */}
-      <div 
-        className={`
-          fixed inset-y-0 left-0 z-30
-          w-64 flex flex-col
-          bg-background border-r border-border
-          transition-transform duration-300 ease-in-out
-          ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
+      {/* 移动端汉堡菜单按钮 */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="
+          fixed top-3 left-2 z-50
+          lg:hidden
+          p-2 rounded-md
+          bg-background
+          hover:bg-accent
+          focus:outline-none focus:ring-2 focus:ring-ring
+          transition-colors duration-200
+          touch-target-large
+        "
+        aria-label={intl.formatMessage({ 
+          id: open ? 'nav.close' : 'nav.open' 
+        })}
       >
-        {/* 顶部Logo和主题切换区域 */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-border">
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* 遮罩层 - 仅在移动端且侧边栏打开时显示 */}
+      {open && (
+        <div 
+          className="
+            fixed inset-0 z-40
+            bg-background/80 
+            backdrop-blur-sm 
+            lg:hidden
+            transition-opacity
+            cursor-pointer
+          "
+          onClick={handleMobileNavClick}
+          aria-hidden="true"
+          role="presentation"
+        />
+      )}
+
+      {/* 侧边栏主体 */}
+      <aside 
+        className={`
+          fixed lg:sticky top-0 left-0 
+          h-screen lg:h-screen
+          w-64 shrink-0
+          bg-background border-r border-border
+          transform transition-transform duration-300 ease-in-out
+          ${open ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
+          z-50 lg:z-0
+        `}
+        role="navigation"
+        aria-label={intl.formatMessage({ id: 'nav.mainNavigation' })}
+      >
+        {/* Logo区域 */}
+        <div className="h-14 flex items-center px-6 border-b border-border">
           <span className="text-lg font-semibold text-foreground truncate">
             {intl.formatMessage({ id: 'app.title' })}
           </span>
-          <div className="lg:hidden">
-            <button
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              className="
-                flex items-center justify-center
-                h-9 w-9
-                rounded-md
-                text-muted-foreground
-                hover:text-foreground hover:bg-accent
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-                transition-colors duration-200
-              "
-              aria-label={intl.formatMessage({ 
-                id: theme === 'light' ? 'theme.dark' : 'theme.light' 
-              })}
-            >
-              {theme === 'light' ? (
-                <Moon className="h-5 w-5" />
-              ) : (
-                <Sun className="h-5 w-5" />
-              )}
-            </button>
-          </div>
         </div>
 
         {/* 导航菜单 */}
-        <nav className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-1">
+        <nav 
+          className="flex-1 overflow-y-auto py-4"
+          role="menu"
+        >
+          <div className="space-y-1 px-3">
             {navigationItems.map((item) => (
               <NavLink
                 key={item.labelId}
@@ -164,22 +217,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
             ))}
           </div>
         </nav>
-      </div>
-
-      {/* 遮罩层 - 仅在移动端且侧边栏打开时显示 */}
-      {open && (
-        <div 
-          className="
-            fixed inset-0 z-20 
-            bg-background/80 
-            backdrop-blur-sm 
-            lg:hidden
-            transition-opacity
-          "
-          onClick={() => setOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+      </aside>
     </>
   );
 }

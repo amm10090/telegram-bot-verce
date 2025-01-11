@@ -63,7 +63,7 @@ function LoadingFallback() {
 function MainLayout({ children }: ClientLayoutProps) {
   const { theme } = useTheme();
   const intl = useIntl();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktopView, setIsDesktopView] = useState(false);
 
   const checkIsDesktop = useCallback(() => {
@@ -86,19 +86,13 @@ function MainLayout({ children }: ClientLayoutProps) {
   }, [checkIsDesktop, isDesktopView]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <Sidebar 
         open={sidebarOpen} 
         setOpen={setSidebarOpen} 
       />
 
-      <div 
-        className={`
-          flex flex-col min-h-screen
-          transition-all duration-300
-          ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}
-        `}
-      >
+      <div className="flex-1 flex flex-col min-h-screen">
         <Header 
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
