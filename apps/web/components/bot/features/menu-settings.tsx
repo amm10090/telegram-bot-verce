@@ -507,7 +507,6 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
    * 键盘快捷键处理
    * 支持以下快捷键：
    * - Ctrl/Cmd + S: 保存当前菜单项
-   * - Ctrl/Cmd + N: 新建菜单项
    * - Delete/Backspace: 删除当前选中的菜单项
    * - Escape: 取消选择
    * - 方向键: 导航菜单项
@@ -525,11 +524,6 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
         if (selectedItem) {
           handleSave(selectedItem);
         }
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-        e.preventDefault();
-        addMenuItem();
       }
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedItem) {
@@ -573,7 +567,7 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedItem, menuItems, handleSave, addMenuItem, removeMenuItem, undo, redo]);
+  }, [selectedItem, menuItems, handleSave, removeMenuItem, undo, redo]);
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -705,8 +699,8 @@ export function MenuSettings({ isOpen, onClose }: MenuSettingsProps) {
               <div className="flex-none p-4 bg-card border-t">
                 <div className="text-xs text-muted-foreground space-y-2">
                   <div className="flex items-center gap-2">
-                    <kbd className="px-2 py-1 rounded bg-muted text-muted-foreground">⌘/Ctrl + N</kbd>
-                    <span>新建菜单项</span>
+                    <kbd className="px-2 py-1 rounded bg-muted text-muted-foreground">Delete</kbd>
+                    <span>删除菜单项</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <kbd className="px-2 py-1 rounded bg-muted text-muted-foreground">⌘/Ctrl + S</kbd>
