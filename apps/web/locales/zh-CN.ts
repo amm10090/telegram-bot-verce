@@ -219,7 +219,7 @@ const zhCN = {
   "bots.table.menu.stop": "停止",
   "bots.table.menu.logs": "查看日志",
   "bots.table.menu.settings": "设置",
-
+  "bot.form.shortDescription.label": "简短描述",
   // 设置页面
   "settings.title": "机器人设置",
   "settings.description": "管理您的账户设置和偏好",

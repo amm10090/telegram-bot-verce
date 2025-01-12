@@ -23,12 +23,46 @@ export function BotSettingsDrawer({ isOpen, onClose, bot }: BotSettingsDrawerPro
   const intl = useIntl();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState<any>(null);
 
-  const handleSubmit = async (formData: any) => {
+  // 处理表单数据变更
+  const handleFormChange = (data: any) => {
+    setFormData(data);
+  };
+
+  // 处理保存
+  const handleSave = async () => {
+    if (!bot?.id || !formData) return;
+    
     try {
       setIsSaving(true);
-      // TODO: 实现保存逻辑
       
+      // 调用设置名称API
+      const nameResponse = await fetch(`/api/bot/telegram/bots/${bot.id}/name`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          name: formData.name
+        })
+      });
+
+      if (!nameResponse.ok) {
+        throw new Error('设置机器人名称失败');
+      }
+
+      // 调用设置描述API
+      const descResponse = await fetch(`/api/bot/telegram/bots/${bot.id}/shortDescription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          short_description: formData.description || ''
+        })
+      });
+
+      if (!descResponse.ok) {
+        throw new Error('设置机器人简短描述失败');
+      }
+
       toast({
         title: intl.formatMessage({ id: "settings.save.success.title" }),
         description: intl.formatMessage({ id: "settings.save.success.description" }),
@@ -38,7 +72,7 @@ export function BotSettingsDrawer({ isOpen, onClose, bot }: BotSettingsDrawerPro
       toast({
         variant: "destructive",
         title: intl.formatMessage({ id: "settings.save.error.title" }),
-        description: intl.formatMessage({ id: "settings.save.error.description" }),
+        description: error instanceof Error ? error.message : intl.formatMessage({ id: "settings.save.error.description" }),
       });
     } finally {
       setIsSaving(false);
@@ -75,7 +109,10 @@ export function BotSettingsDrawer({ isOpen, onClose, bot }: BotSettingsDrawerPro
               <h4 className="text-lg font-medium mb-4">
                 {intl.formatMessage({ id: "bot.settings.basicInfo.title" })}
               </h4>
-              <BotBasicInfoForm bot={bot} />
+              <BotBasicInfoForm 
+                bot={bot} 
+                onSubmit={handleFormChange}
+              />
             </section>
 
             {/* Webhook 配置 */}
@@ -93,12 +130,15 @@ export function BotSettingsDrawer({ isOpen, onClose, bot }: BotSettingsDrawerPro
             <Button 
               variant="ghost" 
               onClick={onClose}
+              isDisabled={isSaving}
             >
               {intl.formatMessage({ id: "common.cancel" })}
             </Button>
             <Button 
-              onClick={handleSubmit}
+              color="primary"
+              onClick={handleSave}
               isLoading={isSaving}
+              isDisabled={!formData}
             >
               {intl.formatMessage({ id: "common.save" })}
             </Button>
