@@ -54,13 +54,16 @@ export function BotBasicInfoForm({ bot, onSubmit }: BotBasicInfoFormProps) {
       try {
         setIsLoading(true);
         
-        // 获取名称
-        const nameResponse = await fetch(`/api/bot/telegram/bots/${bot.id}/name`);
-        const nameData = await nameResponse.json();
+        // 并行请求名称和描述
+        const [nameResponse, descResponse] = await Promise.all([
+          fetch(`/api/bot/telegram/bots/${bot.id}/name`),
+          fetch(`/api/bot/telegram/bots/${bot.id}/shortDescription`)
+        ]);
         
-        // 获取描述
-        const descResponse = await fetch(`/api/bot/telegram/bots/${bot.id}/shortDescription`);
-        const descData = await descResponse.json();
+        const [nameData, descData] = await Promise.all([
+          nameResponse.json(),
+          descResponse.json()
+        ]);
 
         if (nameData.success && descData.success) {
           reset({

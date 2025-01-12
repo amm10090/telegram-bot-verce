@@ -37,27 +37,27 @@ export function BotSettingsDrawer({ isOpen, onClose, bot }: BotSettingsDrawerPro
     try {
       setIsSaving(true);
       
-      // 调用设置名称API
-      const nameResponse = await fetch(`/api/bot/telegram/bots/${bot.id}/name`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: formData.name
+      // 并行调用设置API
+      const [nameResponse, descResponse] = await Promise.all([
+        fetch(`/api/bot/telegram/bots/${bot.id}/name`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            name: formData.name
+          })
+        }),
+        fetch(`/api/bot/telegram/bots/${bot.id}/shortDescription`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            short_description: formData.description || ''
+          })
         })
-      });
+      ]);
 
       if (!nameResponse.ok) {
         throw new Error('设置机器人名称失败');
       }
-
-      // 调用设置描述API
-      const descResponse = await fetch(`/api/bot/telegram/bots/${bot.id}/shortDescription`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          short_description: formData.description || ''
-        })
-      });
 
       if (!descResponse.ok) {
         throw new Error('设置机器人简短描述失败');
