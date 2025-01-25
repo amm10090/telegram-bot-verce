@@ -540,6 +540,105 @@ const zhCN = {
   "bot.settings.save.success.description": "机器人设置已更新",
   "bot.settings.save.error.title": "保存失败",
   "bot.settings.save.error.description": "更新机器人设置失败",
-} as const;
+   // 机器人功能
+   "bots": {
+    "configuration": {
+      "title": "机器人配置",
+      "description": "管理您的机器人功能和设置"
+    },
+    "actions": {
+      "add": "添加机器人",
+      "edit": "编辑机器人",
+      "delete": "删除机器人",
+      "save": "保存更改"
+    },
+    "features": {
+      // 菜单设置
+      "menu": {
+        "title": "菜单设置",
+        "description": "配置机器人的命令菜单和响应"
+      },
+  // 关键词回复
+      "keywords": {
+        "title": "关键词回复",
+        "description": "设置机器人的自动回复规则，支持关键词和正则表达式",
+        "modal": {
+          "title": "关键词回复管理",
+          "addRule": "添加规则",
+          "editRule": "编辑规则",
+          "form": {
+            "name": {
+    "label": "规则名称",
+    "placeholder": "输入规则名称"
+  },
+            "type": {
+    "label": "触发类型",
+    "keyword": "关键词",
+    "regex": "正则表达式"
+  },
+            "triggers": {
+    "label": "触发词",
+    "placeholder": "每行输入一个触发词"
+  },
+            "priority": {
+    "label": "优先级",
+    "placeholder": "数字越大优先级越高"
+  },
+            "enabled": "启用规则",
+            "response": {
+    "label": "回复内容",
+    "placeholder": "输入回复内容"
+            }
+  },
+          "table": {
+    "name": "规则名称",
+    "type": "触发类型",
+    "triggers": "触发词",
+    "priority": "优先级",
+    "status": "状态",
+    "actions": "操作"
+  },
+          "actions": {
+    "edit": "编辑",
+    "delete": "删除",
+    "save": "保存",
+    "cancel": "取消"
+          },
+          "messages": {
+            "deleteConfirm": "确定要删除此规则吗？",
+            "saveSuccess": "规则保存成功",
+            "saveError": "保存规则失败",
+            "deleteSuccess": "规则删除成功",
+            "deleteError": "删除规则失败",
+            "toggleSuccess": "规则状态已更新",
+            "toggleError": "更新规则状态失败",
+            "validation": {
+              "nameRequired": "请输入规则名称",
+              "triggersRequired": "请输入至少一个触发词",
+              "responseRequired": "请输入回复内容",
+              "invalidRegex": "无效的正则表达式"
+            }
+          }
+        }
+      },
+      // 用户管理
+      "users": {
+        "title": "用户管理",
+        "description": "查看和管理用户 TGID 信息"
+      },
+      // 基础设置
+      "settings": {
+        "title": "基础设置",
+        "description": "配置机器人的基本参数和行为"
+      }
+    }
+  },
 
+  // 错误提示
+  "error": {
+    "title": "错误",
+    "description": "发生错误",
+    "selectBot": "请先选择一个机器人"
+  }
+} as const;
 export default zhCN; 

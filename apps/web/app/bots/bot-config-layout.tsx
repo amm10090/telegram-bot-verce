@@ -40,6 +40,7 @@ import { useState } from 'react';
 import { useBotContext } from '@/contexts/BotContext';
 import { useToast } from "@workspace/ui/hooks/use-toast";
 import { BotSettingsDrawer } from "@/components/bot/settings/BotSettingsDrawer";
+import { KeywordRepliesModal } from "@/components/bot/features/keyword-replies";
 
 /**
  * 功能卡片配置数组
@@ -64,7 +65,6 @@ const botFeatures = [
     title: "bots.features.keywords.title",
     description: "bots.features.keywords.description",
     icon: MessageSquare,
-    href: "/bots/keyword-replies"
   },
   {
     id: "users",
@@ -78,7 +78,6 @@ const botFeatures = [
     title: "bots.features.settings.title",
     description: "bots.features.settings.description",
     icon: Settings2,
-    href: "/bots/settings"
   }
 ];
 
@@ -92,6 +91,7 @@ export function BotConfigLayout() {
   const router = useRouter();
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isKeywordModalOpen, setIsKeywordModalOpen] = useState(false);
   const { bots = [], selectedBot, isLoading, error, selectBot } = useBotContext();
   const { toast } = useToast();
 
@@ -110,13 +110,20 @@ export function BotConfigLayout() {
       return;
     }
 
-    // 根据功能类型执行不同操作
-    if (feature.id === "menu") {
-      setIsMenuDrawerOpen(true);  // 打开菜单设置抽屉
-    } else if (feature.id === "settings") {
-      setIsSettingsOpen(true);  // 打开设置抽屉
-    } else {
-      router.push(`${feature.href}?botId=${selectedBot.id}`);  // 导航到对应功能页面
+    switch (feature.id) {
+      case "menu":
+        setIsMenuDrawerOpen(true);
+        break;
+      case "settings":
+        setIsSettingsOpen(true);
+        break;
+      case "keywords":
+        setIsKeywordModalOpen(true);
+        break;
+      default:
+        if (feature.href) {
+          router.push(`${feature.href}?botId=${selectedBot.id}`);
+        }
     }
   };
 
@@ -252,6 +259,15 @@ export function BotConfigLayout() {
         <BotSettingsDrawer
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
+          bot={selectedBot}
+        />
+      )}
+
+      {/* 关键词回复模态框 */}
+      {selectedBot && (
+        <KeywordRepliesModal
+          isOpen={isKeywordModalOpen}
+          onClose={() => setIsKeywordModalOpen(false)}
           bot={selectedBot}
         />
       )}
