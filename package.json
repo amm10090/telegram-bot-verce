@@ -12,27 +12,26 @@
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "next": "15.1.2",
-    "prettier": "^3.4.2",
-    "turbo": "^2.3.3",
-    "typescript": "^5.7.2"
+    "next": "16.0.1",
+    "prettier": "^3.6.2",
+    "turbo": "^2.6.0",
+    "typescript": "^5.9.3"
   },
   "resolutions": {
-    "@types/react": "18.2.0",
-    "@types/react-dom": "18.2.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
   },
-  "packageManager": "pnpm@9.12.3",
+  "packageManager": "pnpm@9.15.4",
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
-    "@nextui-org/react": "^2.6.10",
-    "@radix-ui/react-alert-dialog": "^1.1.4",
-    "@radix-ui/react-popover": "^1.1.4",
-    "@types/mongoose": "^5.11.97",
-    "framer-motion": "^11.15.0",
-    "mongoose": "^8.9.2"
+    "@nextui-org/react": "^2.6.11",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
+    "@radix-ui/react-popover": "^1.1.15",
+    "framer-motion": "^12.23.24",
+    "mongoose": "^8.19.3"
   }
 }

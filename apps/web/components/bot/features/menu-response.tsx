@@ -11,6 +11,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ReactElement } from "react";
 import { Button, Card, CardBody, CardHeader, Input, Tooltip, Popover, PopoverContent, PopoverTrigger, Image as NextImage } from "@nextui-org/react";
 import { CommandResponse, ResponseType } from "@/types/bot";
 import { X, ChevronDown, MessageSquare, Hash as Markdown, Code, ImageIcon, Video, FileText, Layout, Keyboard, HelpCircle, Link, Zap, User, Plus } from "lucide-react";
@@ -93,7 +94,7 @@ interface TypeConfig {
   value: ResponseType;    // 响应类型值
   label: string;         // 显示标签
   description: string;   // 类型描述
-  icon: JSX.Element;     // 类型图标
+  icon: ReactElement;     // 类型图标
 }
 
 /**

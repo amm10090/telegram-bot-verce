@@ -23,10 +23,10 @@ function transformBotToResponse(bot: any): BotResponse {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // 验证 ID 格式
     if (!isValidObjectId(id)) {
@@ -75,10 +75,10 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     // 验证 ID 格式
@@ -172,10 +172,10 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // 验证 ID 格式
     if (!isValidObjectId(id)) {

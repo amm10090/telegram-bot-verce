@@ -128,13 +128,14 @@ async function syncToTelegram(token: string, menus: MenuItem[]) {
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    const resolvedParams = await params;
 
     // 验证机器人ID格式
-    if (!isValidObjectId(params.id)) {
+    if (!isValidObjectId(resolvedParams.id)) {
       return NextResponse.json(
         { success: false, message: '无效的Bot ID' },
         { status: 400 }
@@ -142,7 +143,7 @@ export async function GET(
     }
 
     // 查询机器人菜单
-    const bot = await BotModel.findById(params.id)
+    const bot = await BotModel.findById(resolvedParams.id)
       .select('menus')
       .lean();
 
@@ -180,12 +181,13 @@ export async function GET(
  */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await BotModel.startSession();
   try {
     await connectDB();
     const body = await request.json() as MenuItemInput;
+    const resolvedParams = await params;
     let updatedMenu: MenuItem | undefined;
     
     // 验证响应类型
@@ -285,7 +287,7 @@ export async function POST(
 
     // 使用事务处理菜单更新
     await session.withTransaction(async () => {
-      const bot = await BotModel.findById(params.id).session(session);
+      const bot = await BotModel.findById(resolvedParams.id).session(session);
       if (!bot) throw new Error('BOT_NOT_FOUND');
 
       // 验证命令格式
@@ -307,7 +309,7 @@ export async function POST(
         // 更新现有菜单项
         const updateResult = await BotModel.findOneAndUpdate(
           { 
-            _id: params.id,
+            _id: resolvedParams.id,
             'menus._id': new Types.ObjectId(body.id)
           },
           {
@@ -355,7 +357,7 @@ export async function POST(
         };
         
         await BotModel.findByIdAndUpdate(
-          params.id,
+          resolvedParams.id,
           { $push: { menus: newMenu } },
           { session }
         );
@@ -404,15 +406,16 @@ export async function POST(
 // 更新整个菜单列表
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await BotModel.startSession();
   try {
     await connectDB();
     const body = await request.json();
+    const resolvedParams = await params;
     
     await session.withTransaction(async () => {
-      const bot = await BotModel.findById(params.id).session(session);
+      const bot = await BotModel.findById(resolvedParams.id).session(session);
       if (!bot) throw new Error('BOT_NOT_FOUND');
 
       const newMenus = (body.menus || []).map((menu: MenuItemInput) => ({
@@ -424,7 +427,7 @@ export async function PUT(
       }));
 
       await BotModel.findByIdAndUpdate(
-        params.id,
+        resolvedParams.id,
         { $set: { menus: newMenus } },
         { session }
       );
@@ -464,13 +467,14 @@ export async function PUT(
 // 删除菜单
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await BotModel.startSession();
   try {
     await connectDB();
+    const resolvedParams = await params;
 
-    if (!isValidObjectId(params.id)) {
+    if (!isValidObjectId(resolvedParams.id)) {
       return NextResponse.json(
         { success: false, message: '无效的Bot ID' },
         { status: 400 }
@@ -479,7 +483,7 @@ export async function DELETE(
 
     await session.withTransaction(async () => {
       const bot = await BotModel.findByIdAndUpdate(
-        params.id,
+        resolvedParams.id,
         { $set: { menus: [] } },
         { session, new: true }
       );

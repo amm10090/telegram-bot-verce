@@ -5,9 +5,10 @@ import { cache } from "../../../../../../../lib/cache";
 // 获取机器人短描述
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const cacheKey = `bot_desc:${params.id}`;
+  const resolvedParams = await params;
+  const cacheKey = `bot_desc:${resolvedParams.id}`;
   
   // 尝试从缓存获取
   const cachedDesc = cache.get<string>(cacheKey);
@@ -19,7 +20,7 @@ export async function GET(
   }
 
   try {
-    const token = await getBotToken(params.id);
+    const token = await getBotToken(resolvedParams.id);
     if (!token) {
       return NextResponse.json(
         { success: false, message: '无效的机器人Token' },
@@ -56,11 +57,12 @@ export async function GET(
 // 设置机器人短描述
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { short_description } = await request.json();
-    const token = await getBotToken(params.id);
+    const resolvedParams = await params;
+    const token = await getBotToken(resolvedParams.id);
     if (!token) {
       return NextResponse.json(
         { success: false, message: '无效的机器人Token' },
@@ -84,7 +86,7 @@ export async function POST(
     }
 
     // 更新缓存
-    cache.set(`bot_desc:${params.id}`, short_description, 3600);
+    cache.set(`bot_desc:${resolvedParams.id}`, short_description, 3600);
 
     return NextResponse.json({ 
       success: true, 

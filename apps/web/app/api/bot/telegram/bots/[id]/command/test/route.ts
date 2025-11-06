@@ -7,7 +7,7 @@ import { isValidObjectId } from "mongoose";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -21,7 +21,7 @@ export async function POST(
     }
 
     // 验证 Bot ID
-    const { id } = params;
+    const { id } = await params;
     if (!isValidObjectId(id)) {
       return NextResponse.json(
         { error: "无效的机器人ID" },
