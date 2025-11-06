@@ -6,7 +6,7 @@
 
 import mongoose from 'mongoose';
 import mongoosePaginate from 'mongoose-paginate-v2';
-import type { IBotDocument, IBotModel, ResponseType } from '@/types/bot';
+import type { IBotDocument, IBotModel } from '@/types/bot';
 
 // 防止热重载时的模型重复定义
 if (mongoose.models.Bot) {

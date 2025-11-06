@@ -5,6 +5,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@workspace/ui"],
@@ -37,7 +38,7 @@ const nextConfig = {
     pagesBufferLength: 5,
   },
   // 配置 webpack
-  webpack: (config, { dev, isServer }) => {
+  webpack: (config, { dev }) => {
     if (dev) {
       config.devtool = 'eval-source-map';
       config.resolve.fallback = {
