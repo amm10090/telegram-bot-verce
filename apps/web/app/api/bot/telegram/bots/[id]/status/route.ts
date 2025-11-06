@@ -5,14 +5,15 @@ import { isValidObjectId } from 'mongoose';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await BotModel.startSession();
   try {
     await connectDB();
     const body = await request.json();
+    const resolvedParams = await params;
     
-    if (!isValidObjectId(params.id)) {
+    if (!isValidObjectId(resolvedParams.id)) {
       return NextResponse.json(
         { success: false, message: '无效的Bot ID' },
         { status: 400 }
@@ -32,7 +33,7 @@ export async function PATCH(
     await session.withTransaction(async () => {
       // 更新Bot状态
       const result = await BotModel.findByIdAndUpdate(
-        params.id,
+        resolvedParams.id,
         { 
           $set: { 
             status: body.status,

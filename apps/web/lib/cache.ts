@@ -6,7 +6,7 @@ interface CacheItem<T> {
 
 class Cache {
   private static instance: Cache;
-  private cache: Map<string, CacheItem<any>>;
+  private cache: Map<string, CacheItem<unknown>>;
 
   private constructor() {
     this.cache = new Map();

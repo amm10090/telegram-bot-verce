@@ -18,7 +18,10 @@ interface CachedConnection {
 
 // 在全局作用域中声明mongoose变量类型
 declare global {
-  var mongoose: CachedConnection | undefined;
+  var mongoose: {
+    conn: typeof mongoose | null;
+    promise: Promise<typeof mongoose> | null;
+  } | undefined;
 }
 
 // 从环境变量获取MongoDB连接URI
@@ -33,8 +36,8 @@ if (!MONGODB_URI) {
 let cached: CachedConnection = (global as any).mongoose || { conn: null, promise: null };
 
 // 确保全局缓存对象存在
-if (!global.mongoose) {
-  global.mongoose = cached;
+if (!(global as any).mongoose) {
+  (global as any).mongoose = cached;
 }
 
 /**

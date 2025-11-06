@@ -22,11 +22,12 @@ interface BotDoc {
 
 export async function PUT(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     const body = await request.json();
+    const resolvedParams = await context.params;
     
     if (!Array.isArray(body.orders)) {
       return NextResponse.json(
@@ -39,7 +40,7 @@ export async function PUT(
     
     // 1. 使用投影只获取必要字段
     const bot = await BotModel.findById(
-      context.params.id,
+      resolvedParams.id,
       { menus: 1, token: 1 }
     ).lean() as BotDoc;
 
@@ -65,7 +66,7 @@ export async function PUT(
     const bulkOps = orders.map(({ id, order }) => ({
       updateOne: {
         filter: {
-          _id: context.params.id,
+          _id: resolvedParams.id,
           "menus._id": id
         },
         update: {
@@ -82,7 +83,7 @@ export async function PUT(
       try {
         // 重新获取排序后的菜单
         const updatedBot = await BotModel.findById(
-          context.params.id,
+          resolvedParams.id,
           { menus: 1 }
         ).lean();
 

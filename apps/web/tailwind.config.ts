@@ -1,6 +1,5 @@
 import type { Config } from "tailwindcss"
 import uiConfig from "../../packages/ui/tailwind.config"
-const {nextui} = require("@nextui-org/react");
 
 const config = {
   ...uiConfig,
@@ -69,7 +68,7 @@ const config = {
     },
   },
   darkMode: "class",
-  plugins: [nextui(), ...(uiConfig.plugins || [])]
+  plugins: [...(uiConfig.plugins || [])]
 } satisfies Config
 
 export default config

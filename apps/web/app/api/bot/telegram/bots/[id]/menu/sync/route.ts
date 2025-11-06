@@ -8,9 +8,10 @@ import BotModel from '@/models/bot';
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log('开始同步菜单到Telegram:', { botId: params.id });
+  const resolvedParams = await params;
+  console.log('开始同步菜单到Telegram:', { botId: resolvedParams.id });
   
   try {
     console.log('正在连接数据库...');
@@ -19,16 +20,16 @@ export async function POST(
 
     // 获取机器人信息
     console.log('正在查询机器人信息...');
-    const bot = await BotModel.findById(params.id);
+    const bot = await BotModel.findById(resolvedParams.id);
     if (!bot) {
-      console.log('机器人不存在:', params.id);
+      console.log('机器人不存在:', resolvedParams.id);
       return new Response(
         JSON.stringify({
           success: false,
           message: '机器人不存在',
           error: '找不到指定ID的机器人',
           details: {
-            botId: params.id,
+            botId: resolvedParams.id,
             timestamp: new Date().toISOString()
           }
         }),

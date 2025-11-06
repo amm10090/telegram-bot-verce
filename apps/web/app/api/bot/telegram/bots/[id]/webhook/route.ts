@@ -25,12 +25,13 @@ import { TelegramClient } from '@/lib/telegram';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    const resolvedParams = await params;
     
-    const bot = await BotModel.findById(params.id);
+    const bot = await BotModel.findById(resolvedParams.id);
     if (!bot) {
       return NextResponse.json(
         { success: false, message: '未找到机器人' },
@@ -75,14 +76,15 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { url } = await request.json();
     
     await connectDB();
+    const resolvedParams = await params;
     
-    const bot = await BotModel.findById(params.id);
+    const bot = await BotModel.findById(resolvedParams.id);
     if (!bot) {
       return NextResponse.json(
         { success: false, message: '未找到机器人' },
@@ -129,12 +131,13 @@ export async function POST(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    const resolvedParams = await params;
     
-    const bot = await BotModel.findById(params.id);
+    const bot = await BotModel.findById(resolvedParams.id);
     if (!bot) {
       return NextResponse.json(
         { success: false, message: '未找到机器人' },

@@ -9,7 +9,7 @@ import zhCN from '../locales/zh-CN';
 type SupportedLocales = 'en-US' | 'zh-CN';
 
 // 定义消息字典
-const messages = {
+const messages: any = {
   'en-US': enUS,
   'zh-CN': zhCN,
 };

@@ -14,7 +14,7 @@ export class TelegramClient {
     chat_id: string;
     text: string;
     parse_mode?: 'Markdown' | 'HTML';
-    reply_markup?: any;
+    reply_markup?: Record<string, unknown>;
   }) {
     return this.post('/sendMessage', params);
   }
@@ -27,7 +27,7 @@ export class TelegramClient {
     photo: string;
     caption?: string;
     parse_mode?: 'Markdown' | 'HTML';
-    reply_markup?: any;
+    reply_markup?: Record<string, unknown>;
   }) {
     return this.post('/sendPhoto', params);
   }
@@ -40,7 +40,7 @@ export class TelegramClient {
     video: string;
     caption?: string;
     parse_mode?: 'Markdown' | 'HTML';
-    reply_markup?: any;
+    reply_markup?: Record<string, unknown>;
   }) {
     return this.post('/sendVideo', params);
   }
@@ -53,7 +53,7 @@ export class TelegramClient {
     document: string;
     caption?: string;
     parse_mode?: 'Markdown' | 'HTML';
-    reply_markup?: any;
+    reply_markup?: Record<string, unknown>;
   }) {
     return this.post('/sendDocument', params);
   }
@@ -112,7 +112,7 @@ export class TelegramClient {
   /**
    * 发送 POST 请求到 Telegram API
    */
-  private async post(endpoint: string, body: any) {
+  private async post(endpoint: string, body: Record<string, unknown>) {
     const url = `${this.baseUrl}${endpoint}`;
     console.log(`发送请求到 Telegram API: ${url}`, body);
 
@@ -125,8 +125,8 @@ export class TelegramClient {
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
-      
+      const data = await response.json() as any;
+
       if (!response.ok) {
         console.error('Telegram API 错误响应:', {
           status: response.status,
@@ -137,9 +137,9 @@ export class TelegramClient {
       }
 
       return data;
-    } catch (error) {
+      } catch (error) {
       console.error('Telegram API 请求失败:', error);
       throw error;
-    }
+      }
   }
 } 
