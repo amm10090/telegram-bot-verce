@@ -22,4 +22,4 @@ export default function ClientProvider({ children }: { children: React.ReactNode
       <ClientLayout>{children}</ClientLayout>
     </NextUIProvider>
   );
-} 
+}

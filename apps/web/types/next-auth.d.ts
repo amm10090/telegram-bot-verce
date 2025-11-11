@@ -1,12 +1,12 @@
-import "next-auth";
+import type { AuthUser } from "better-auth/types";
 
-declare module "next-auth" {
+declare module "better-auth/types" {
   interface Session {
-    user: {
+    user: AuthUser & {
       id: string;
       email?: string | null;
       name?: string | null;
       image?: string | null;
-    }
+    };
   }
-} 
+}
